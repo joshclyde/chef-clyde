@@ -2,8 +2,10 @@ import express from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs";
 import path from "path";
+import recipesRouter from "./routes/recipes";
 
-if (!process.env.DB_PATH) throw new Error("DB_PATH environment variable is not set");
+if (!process.env.DB_PATH)
+  throw new Error("DB_PATH environment variable is not set");
 const DB_DIR = process.env.DB_PATH;
 
 const app = express();
@@ -11,6 +13,7 @@ const PORT = process.env.PORT ?? 3001;
 const anthropic = new Anthropic();
 
 app.use(express.json());
+app.use("/api/recipes", recipesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -33,7 +36,9 @@ app.get("/api/pantry", (_req, res) => {
     res.json({ pantry: "" });
     return;
   }
-  const data = JSON.parse(fs.readFileSync(filePath, "utf-8")) as { pantry: string };
+  const data = JSON.parse(fs.readFileSync(filePath, "utf-8")) as {
+    pantry: string;
+  };
   res.json(data);
 });
 

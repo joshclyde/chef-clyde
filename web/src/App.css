@@ -168,3 +168,120 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.chat-save-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.save-recipe-btn {
+  padding: 8px 18px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.save-recipe-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.save-recipe-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-error {
+  color: #c62828;
+  font-size: 0.9rem;
+}
+
+.saved-recipes {
+  max-width: 720px;
+}
+
+.saved-recipes h1 {
+  margin-bottom: 24px;
+}
+
+.no-recipes-hint {
+  color: #555;
+  font-size: 1rem;
+}
+
+.recipe-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+}
+
+.recipe-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recipe-card h2 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.recipe-meta {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.recipe-description {
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.recipe-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recipe-tag {
+  background: #e8eaf6;
+  color: #3949ab;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.recipe-saved-at {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.recipe-card details {
+  margin-top: 4px;
+}
+
+.recipe-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.recipe-card details ul,
+.recipe-card details ol {
+  padding-left: 20px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}

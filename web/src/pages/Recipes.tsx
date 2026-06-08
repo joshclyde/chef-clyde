@@ -10,6 +10,9 @@ export default function Recipes() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedRecipeId, setSavedRecipeId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,6 +30,8 @@ export default function Recipes() {
     setMessages(newMessages);
     setInput("");
     setLoading(true);
+    setSavedRecipeId(null);
+    setSaveError(null);
 
     fetch("/api/chat", {
       method: "POST",
@@ -50,6 +55,30 @@ export default function Recipes() {
         ]);
       })
       .finally(() => setLoading(false));
+  };
+
+  const saveRecipe = () => {
+    if (saving || messages.length === 0) return;
+    setSaving(true);
+    setSaveError(null);
+
+    fetch("/api/recipes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    })
+      .then((res) => {
+        if (!res.ok)
+          return res.json().then((d) => Promise.reject(d.error ?? "Save failed"));
+        return res.json();
+      })
+      .then((data: { recipe: { id: string } }) => {
+        setSavedRecipeId(data.recipe.id);
+      })
+      .catch((err: unknown) => {
+        setSaveError(typeof err === "string" ? err : "Failed to save recipe.");
+      })
+      .finally(() => setSaving(false));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -78,6 +107,18 @@ export default function Recipes() {
             </div>
           )}
           <div ref={bottomRef} />
+        </div>
+      )}
+      {hasMessages && !loading && (
+        <div className="chat-save-row">
+          <button
+            onClick={saveRecipe}
+            disabled={saving}
+            className="save-recipe-btn"
+          >
+            {saving ? "Saving..." : savedRecipeId ? "Saved!" : "Save Recipe"}
+          </button>
+          {saveError && <span className="save-error">{saveError}</span>}
         </div>
       )}
       <div className={`chat-input-area${!hasMessages ? " centered" : ""}`}>

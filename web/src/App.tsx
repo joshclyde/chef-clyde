@@ -8,9 +8,11 @@ import {
 import "./App.css";
 import Pantry from "./pages/Pantry";
 import Recipes from "./pages/Recipes";
+import SavedRecipes from "./pages/SavedRecipes";
 
 const navItems = [
   { label: "Recipes", path: "/" },
+  { label: "Saved Recipes", path: "/saved-recipes" },
   { label: "Pantry", path: "/pantry" },
 ];
 
@@ -42,6 +44,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Recipes />} />
             <Route path="/pantry" element={<Pantry />} />
+            <Route path="/saved-recipes" element={<SavedRecipes />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
