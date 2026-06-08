@@ -5,8 +5,6 @@ type Message = {
   content: string;
 };
 
-const MOCK_RESPONSE =
-  "Here's a simple pasta recipe!\n\n**Ingredients:**\n- 200g spaghetti\n- 2 cloves garlic\n- 3 tbsp olive oil\n- Salt and pepper\n- Fresh parsley\n\n**Instructions:**\n1. Boil salted water and cook spaghetti al dente.\n2. Sauté minced garlic in olive oil over medium heat for 1 minute.\n3. Toss drained pasta in the garlic oil.\n4. Season with salt, pepper, and chopped parsley.\n\nEnjoy!";
 
 export default function Recipes() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,13 +28,28 @@ export default function Recipes() {
     setInput("");
     setLoading(true);
 
-    setTimeout(() => {
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: MOCK_RESPONSE },
-      ]);
-      setLoading(false);
-    }, 800);
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: newMessages }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setMessages([
+          ...newMessages,
+          { role: "assistant", content: data.content },
+        ]);
+      })
+      .catch(() => {
+        setMessages([
+          ...newMessages,
+          {
+            role: "assistant",
+            content: "Something went wrong. Please try again.",
+          },
+        ]);
+      })
+      .finally(() => setLoading(false));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
