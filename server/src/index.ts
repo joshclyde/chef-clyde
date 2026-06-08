@@ -16,6 +16,11 @@ app.post("/api/chat", async (req, res) => {
     messages: { role: "user" | "assistant"; content: string }[];
   };
 
+  if (process.env.MOCK_AI === "true") {
+    res.json({ content: "Mocked response." });
+    return;
+  }
+
   try {
     const response = await anthropic.messages.create({
       model: "claude-opus-4-8",
