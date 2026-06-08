@@ -1,18 +1,18 @@
-import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom"
-import "./App.css"
-import Dashboard from "./pages/Dashboard"
-import MealPlan from "./pages/MealPlan"
-import Recipes from "./pages/Recipes"
-import Settings from "./pages/Settings"
-import ShoppingList from "./pages/ShoppingList"
+import {
+  BrowserRouter,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
+import "./App.css";
+import Pantry from "./pages/Pantry";
+import Recipes from "./pages/Recipes";
 
 const navItems = [
-  { label: "Dashboard", path: "/" },
-  { label: "Recipes", path: "/recipes" },
-  { label: "Meal Plan", path: "/meal-plan" },
-  { label: "Shopping List", path: "/shopping-list" },
-  { label: "Settings", path: "/settings" },
-]
+  { label: "Recipes", path: "/" },
+  { label: "Pantry", path: "/pantry" },
+];
 
 function App() {
   return (
@@ -27,7 +27,9 @@ function App() {
                   to={item.path}
                   end={item.path === "/"}
                   className={({ isActive }) =>
-                    ["sidebar-nav-item", isActive ? "active" : ""].join(" ").trim()
+                    ["sidebar-nav-item", isActive ? "active" : ""]
+                      .join(" ")
+                      .trim()
                   }
                 >
                   {item.label}
@@ -38,17 +40,14 @@ function App() {
         </nav>
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/recipes" element={<Recipes />} />
-            <Route path="/meal-plan" element={<MealPlan />} />
-            <Route path="/shopping-list" element={<ShoppingList />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/" element={<Recipes />} />
+            <Route path="/pantry" element={<Pantry />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
