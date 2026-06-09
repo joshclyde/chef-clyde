@@ -52,7 +52,7 @@
   overflow-y: auto;
 }
 
-.recipes-chat {
+.chat {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -201,15 +201,15 @@
   font-size: 0.9rem;
 }
 
-.saved-recipes {
+.recipes {
   max-width: 720px;
 }
 
-.saved-recipes h1 {
+.recipes h1 {
   margin-bottom: 24px;
 }
 
-.no-recipes-hint {
+.no-recipes {
   color: #555;
   font-size: 1rem;
 }

@@ -7,12 +7,12 @@ import {
 } from "react-router-dom";
 import "./App.css";
 import Pantry from "./pages/Pantry";
+import Chat from "./pages/Chat";
 import Recipes from "./pages/Recipes";
-import SavedRecipes from "./pages/SavedRecipes";
 
 const navItems = [
-  { label: "Recipes", path: "/" },
-  { label: "Saved Recipes", path: "/saved-recipes" },
+  { label: "Chat", path: "/" },
+  { label: "Recipes", path: "/recipes" },
   { label: "Pantry", path: "/pantry" },
 ];
 
@@ -42,9 +42,9 @@ function App() {
         </nav>
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Recipes />} />
+            <Route path="/" element={<Chat />} />
             <Route path="/pantry" element={<Pantry />} />
-            <Route path="/saved-recipes" element={<SavedRecipes />} />
+            <Route path="/recipes" element={<Recipes />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
