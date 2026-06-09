@@ -1,0 +1,20 @@
+/*
+ * Base element defaults, driven by semantic tokens.
+ * Layered after reset.css and tokens.css.
+ */
+
+body {
+  background: var(--color-bg-canvas);
+  color: var(--color-text-default);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

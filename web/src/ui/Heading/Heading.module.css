@@ -1,0 +1,19 @@
+.heading {
+  margin: 0;
+  font-family: inherit;
+  color: var(--color-text-strong);
+  line-height: var(--line-height-tight);
+}
+
+.h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+.h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+.h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
