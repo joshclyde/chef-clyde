@@ -5,6 +5,13 @@ export type Ingredient = {
   notes?: string;
 };
 
+export type Note = {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Recipe = {
   id: string;
   name: string;
@@ -16,4 +23,5 @@ export type Recipe = {
   steps: string[];
   tags?: string[];
   savedAt: string;
+  notes?: Note[];
 };
