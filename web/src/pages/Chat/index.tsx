@@ -2,6 +2,7 @@ import { useChat } from "./useChat";
 import { ChatMessages } from "./ChatMessages";
 import { SaveRecipeRow } from "./SaveRecipeRow";
 import { ChatInput } from "./ChatInput";
+import { Stack } from "../../ui";
 
 export default function Chat() {
   const {
@@ -22,7 +23,7 @@ export default function Chat() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="chat">
+    <Stack gap="xl">
       {hasMessages && <ChatMessages messages={messages} loading={loading} />}
       {hasMessages && !loading && (
         <SaveRecipeRow
@@ -42,6 +43,6 @@ export default function Chat() {
         loading={loading}
         hasMessages={hasMessages}
       />
-    </div>
+    </Stack>
   );
 }

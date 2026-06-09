@@ -1,4 +1,15 @@
 import { useEffect, useState } from "react";
+import {
+  Badge,
+  Button,
+  Card,
+  Heading,
+  Inline,
+  Stack,
+  Text,
+  Textarea,
+} from "../ui";
+import styles from "./Recipes.module.css";
 
 type Ingredient = {
   amount: string;
@@ -94,183 +105,200 @@ export default function Recipes() {
 
   if (loading) {
     return (
-      <div className="recipes">
-        <h1>Recipes</h1>
-        <p>Loading...</p>
-      </div>
+      <Stack gap="lg" className={styles.page}>
+        <Heading level={1}>Recipes</Heading>
+        <Text variant="muted">Loading...</Text>
+      </Stack>
     );
   }
 
   return (
-    <div className="recipes">
-      <h1>Recipes</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <Stack gap="lg" className={styles.page}>
+      <Heading level={1}>Recipes</Heading>
+      {error && <Text variant="danger">{error}</Text>}
       {recipes.length === 0 ? (
-        <p className="no-recipes">
+        <Text variant="muted">
           No recipes yet. Chat with Chef Clyde and click "Save to Recipes" to
           save one!
-        </p>
+        </Text>
       ) : (
-        <ul className="recipe-list">
+        <ul className={styles.list}>
           {recipes.map((recipe) => {
             const notes = recipe.notes ?? [];
             const activeEdit = editingNote[recipe.id] ?? null;
             return (
-              <li key={recipe.id} className="recipe-card">
-                <h2>{recipe.name}</h2>
-                <p className="recipe-meta">
-                  Serves {recipe.servings} · Prep {recipe.prepTime}m · Cook{" "}
-                  {recipe.cookTime}m
-                </p>
-                <p className="recipe-description">{recipe.description}</p>
-                {recipe.tags && recipe.tags.length > 0 && (
-                  <div className="recipe-tags">
-                    {recipe.tags.map((tag) => (
-                      <span key={tag} className="recipe-tag">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <details>
-                  <summary>Ingredients ({recipe.ingredients.length})</summary>
-                  <ul>
-                    {recipe.ingredients.map((ing, i) => (
-                      <li key={i}>
-                        {ing.amount} {ing.unit} {ing.name}
-                        {ing.notes ? ` (${ing.notes})` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-                <details>
-                  <summary>Steps ({recipe.steps.length})</summary>
-                  <ol>
-                    {recipe.steps.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ol>
-                </details>
-                <details>
-                  <summary>Notes ({notes.length})</summary>
-                  <div className="recipe-notes">
-                    {notes.length === 0 && (
-                      <p className="note-empty">No notes yet.</p>
+              <li key={recipe.id}>
+                <Card>
+                  <Stack gap="sm">
+                    <Heading level={2}>{recipe.name}</Heading>
+                    <Text variant="muted" size="sm">
+                      Serves {recipe.servings} · Prep {recipe.prepTime}m · Cook{" "}
+                      {recipe.cookTime}m
+                    </Text>
+                    <Text size="sm">{recipe.description}</Text>
+                    {recipe.tags && recipe.tags.length > 0 && (
+                      <Inline gap="xs" wrap>
+                        {recipe.tags.map((tag) => (
+                          <Badge key={tag}>{tag}</Badge>
+                        ))}
+                      </Inline>
                     )}
-                    {notes.map((note) => {
-                      const isEditing =
-                        activeEdit?.noteId === note.id;
-                      return (
-                        <div key={note.id} className="note-item">
-                          {isEditing ? (
-                            <>
-                              <textarea
-                                className="note-edit-textarea"
-                                value={activeEdit.content}
-                                onChange={(e) =>
-                                  setEditingNote((prev) => ({
-                                    ...prev,
-                                    [recipe.id]: {
-                                      noteId: note.id,
-                                      content: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                              <div className="note-actions">
-                                <button
-                                  className="note-save-btn"
-                                  onClick={() => saveNoteEdit(recipe.id)}
-                                  disabled={!activeEdit.content.trim()}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  className="note-cancel-btn"
-                                  onClick={() =>
-                                    setEditingNote((prev) => ({
-                                      ...prev,
-                                      [recipe.id]: null,
-                                    }))
-                                  }
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <p className="note-content">{note.content}</p>
-                              <p className="note-timestamps">
-                                Added {formatDate(note.createdAt)}
-                                {note.updatedAt !== note.createdAt &&
-                                  ` · Edited ${formatDate(note.updatedAt)}`}
-                              </p>
-                              <div className="note-actions">
-                                <button
-                                  className="note-edit-btn"
-                                  onClick={() =>
-                                    setEditingNote((prev) => ({
-                                      ...prev,
-                                      [recipe.id]: {
-                                        noteId: note.id,
-                                        content: note.content,
-                                      },
-                                    }))
-                                  }
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="note-delete-btn"
-                                  onClick={() =>
-                                    deleteNote(recipe.id, note.id)
-                                  }
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <div className="note-add">
-                      <textarea
-                        className="note-edit-textarea"
-                        placeholder="Add a note…"
-                        value={newNoteContent[recipe.id] ?? ""}
-                        onChange={(e) =>
-                          setNewNoteContent((prev) => ({
-                            ...prev,
-                            [recipe.id]: e.target.value,
-                          }))
-                        }
-                      />
-                      <button
-                        className="note-save-btn"
-                        onClick={() => addNote(recipe.id)}
-                        disabled={!(newNoteContent[recipe.id] ?? "").trim()}
+                    <details>
+                      <summary className={styles.summary}>
+                        Ingredients ({recipe.ingredients.length})
+                      </summary>
+                      <ul className={styles.detailsList}>
+                        {recipe.ingredients.map((ing, i) => (
+                          <li key={i}>
+                            {ing.amount} {ing.unit} {ing.name}
+                            {ing.notes ? ` (${ing.notes})` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                    <details>
+                      <summary className={styles.summary}>
+                        Steps ({recipe.steps.length})
+                      </summary>
+                      <ol className={styles.detailsList}>
+                        {recipe.steps.map((step, i) => (
+                          <li key={i}>{step}</li>
+                        ))}
+                      </ol>
+                    </details>
+                    <details>
+                      <summary className={styles.summary}>
+                        Notes ({notes.length})
+                      </summary>
+                      <Stack gap="sm">
+                        {notes.length === 0 && (
+                          <Text variant="subtle" size="sm">
+                            No notes yet.
+                          </Text>
+                        )}
+                        {notes.map((note) => {
+                          const isEditing = activeEdit?.noteId === note.id;
+                          return (
+                            <div key={note.id} className={styles.noteItem}>
+                              {isEditing ? (
+                                <Stack gap="xs">
+                                  <Textarea
+                                    className={styles.noteTextarea}
+                                    value={activeEdit.content}
+                                    onChange={(e) =>
+                                      setEditingNote((prev) => ({
+                                        ...prev,
+                                        [recipe.id]: {
+                                          noteId: note.id,
+                                          content: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                  <Inline gap="xs">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => saveNoteEdit(recipe.id)}
+                                      disabled={!activeEdit.content.trim()}
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setEditingNote((prev) => ({
+                                          ...prev,
+                                          [recipe.id]: null,
+                                        }))
+                                      }
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </Inline>
+                                </Stack>
+                              ) : (
+                                <Stack gap="xs">
+                                  <Text size="sm" className={styles.notePre}>
+                                    {note.content}
+                                  </Text>
+                                  <Text variant="subtle" size="xs">
+                                    Added {formatDate(note.createdAt)}
+                                    {note.updatedAt !== note.createdAt &&
+                                      ` · Edited ${formatDate(note.updatedAt)}`}
+                                  </Text>
+                                  <Inline gap="xs">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setEditingNote((prev) => ({
+                                          ...prev,
+                                          [recipe.id]: {
+                                            noteId: note.id,
+                                            content: note.content,
+                                          },
+                                        }))
+                                      }
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      variant="danger"
+                                      size="sm"
+                                      onClick={() => deleteNote(recipe.id, note.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Inline>
+                                </Stack>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <Stack gap="xs">
+                          <Textarea
+                            className={styles.noteTextarea}
+                            placeholder="Add a note…"
+                            value={newNoteContent[recipe.id] ?? ""}
+                            onChange={(e) =>
+                              setNewNoteContent((prev) => ({
+                                ...prev,
+                                [recipe.id]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Inline gap="xs">
+                            <Button
+                              size="sm"
+                              onClick={() => addNote(recipe.id)}
+                              disabled={!(newNoteContent[recipe.id] ?? "").trim()}
+                            >
+                              Save Note
+                            </Button>
+                          </Inline>
+                        </Stack>
+                      </Stack>
+                    </details>
+                    <Text variant="subtle" size="xs">
+                      Saved {new Date(recipe.savedAt).toLocaleDateString()}
+                    </Text>
+                    <Inline gap="sm">
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => deleteRecipe(recipe.id)}
                       >
-                        Save Note
-                      </button>
-                    </div>
-                  </div>
-                </details>
-                <p className="recipe-saved-at">
-                  Saved {new Date(recipe.savedAt).toLocaleDateString()}
-                </p>
-                <button
-                  className="recipe-delete-btn"
-                  onClick={() => deleteRecipe(recipe.id)}
-                >
-                  Delete
-                </button>
+                        Delete
+                      </Button>
+                    </Inline>
+                  </Stack>
+                </Card>
               </li>
             );
           })}
         </ul>
       )}
-    </div>
+    </Stack>
   );
 }

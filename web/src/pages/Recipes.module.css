@@ -1,0 +1,41 @@
+.page {
+  max-width: 720px;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.summary {
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.detailsList {
+  padding-left: var(--space-lg);
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.8;
+  color: var(--color-text-default);
+}
+
+.noteItem {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.notePre {
+  white-space: pre-wrap;
+}
+
+.noteTextarea {
+  min-height: 72px;
+}

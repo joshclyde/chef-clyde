@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Button, Card, Heading, Inline, Stack, Text, Textarea } from "../ui";
+import styles from "./Pantry.module.css";
 
 export default function Pantry() {
   const [items, setItems] = useState("");
@@ -43,32 +45,55 @@ export default function Pantry() {
       .finally(() => setSaving(false));
   }
 
-  if (loading) return <div><h1>Pantry</h1><p>Loading...</p></div>;
+  if (loading) {
+    return (
+      <Stack gap="lg" className={styles.page}>
+        <Heading level={1}>Pantry</Heading>
+        <Text variant="muted">Loading...</Text>
+      </Stack>
+    );
+  }
 
   return (
-    <div>
-      <h1>Pantry</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <Stack gap="lg" className={styles.page}>
+      <Heading level={1}>Pantry</Heading>
+      {error && <Text variant="danger">{error}</Text>}
       {editing ? (
         <form onSubmit={handleSubmit}>
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={10}
-            cols={50}
-            placeholder="List your pantry items..."
-          />
-          <div>
-            <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save"}</button>
-            <button type="button" onClick={handleCancel} disabled={saving}>Cancel</button>
-          </div>
+          <Stack gap="sm">
+            <Textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={10}
+              placeholder="List your pantry items..."
+            />
+            <Inline gap="sm">
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </Inline>
+          </Stack>
         </form>
       ) : (
-        <div>
-          <pre>{items || "No items yet."}</pre>
-          <button onClick={handleEdit}>Edit</button>
-        </div>
+        <Stack gap="sm">
+          <Card className={styles.viewer}>
+            <pre className={styles.pre}>{items || "No items yet."}</pre>
+          </Card>
+          <Inline gap="sm">
+            <Button variant="secondary" onClick={handleEdit}>
+              Edit
+            </Button>
+          </Inline>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }

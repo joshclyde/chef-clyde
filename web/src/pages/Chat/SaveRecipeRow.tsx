@@ -1,3 +1,5 @@
+import { Button, Inline, Text } from "../../ui";
+
 type Props = {
   saving: boolean;
   savedRecipeId: string | null;
@@ -5,13 +7,22 @@ type Props = {
   onSave: () => void;
 };
 
-export function SaveRecipeRow({ saving, savedRecipeId, saveError, onSave }: Props) {
+export function SaveRecipeRow({
+  saving,
+  savedRecipeId,
+  saveError,
+  onSave,
+}: Props) {
   return (
-    <div className="chat-save-row">
-      <button onClick={onSave} disabled={saving} className="save-recipe-btn">
+    <Inline gap="md">
+      <Button variant="success" size="sm" onClick={onSave} disabled={saving}>
         {saving ? "Saving..." : savedRecipeId ? "Saved!" : "Save to Recipes"}
-      </button>
-      {saveError && <span className="save-error">{saveError}</span>}
-    </div>
+      </Button>
+      {saveError && (
+        <Text variant="danger" size="sm">
+          {saveError}
+        </Text>
+      )}
+    </Inline>
   );
 }

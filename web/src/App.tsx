@@ -5,10 +5,12 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
-import "./App.css";
 import Pantry from "./pages/Pantry";
 import Chat from "./pages/Chat";
 import Recipes from "./pages/Recipes";
+import { useTheme } from "./theme/useTheme";
+import { cn } from "./ui/cn";
+import styles from "./App.module.css";
 
 const navItems = [
   { label: "Chat", path: "/" },
@@ -16,22 +18,29 @@ const navItems = [
   { label: "Pantry", path: "/pantry" },
 ];
 
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <button type="button" className={styles.themeToggle} onClick={toggle}>
+      {theme === "dark" ? "☀ Light mode" : "🌙 Dark mode"}
+    </button>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <div className="layout">
-        <nav className="sidebar">
-          <div className="sidebar-logo">Chef Clyde</div>
-          <ul className="sidebar-nav">
+      <div className={styles.layout}>
+        <nav className={styles.sidebar}>
+          <div className={styles.logo}>Chef Clyde</div>
+          <ul className={styles.nav}>
             {navItems.map((item) => (
               <li key={item.path}>
                 <NavLink
                   to={item.path}
                   end={item.path === "/"}
                   className={({ isActive }) =>
-                    ["sidebar-nav-item", isActive ? "active" : ""]
-                      .join(" ")
-                      .trim()
+                    cn(styles.navItem, isActive && styles.active)
                   }
                 >
                   {item.label}
@@ -39,8 +48,9 @@ function App() {
               </li>
             ))}
           </ul>
+          <ThemeToggle />
         </nav>
-        <main className="main-content">
+        <main className={styles.main}>
           <Routes>
             <Route path="/" element={<Chat />} />
             <Route path="/pantry" element={<Pantry />} />

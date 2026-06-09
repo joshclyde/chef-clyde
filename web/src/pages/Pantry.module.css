@@ -1,0 +1,15 @@
+.page {
+  max-width: 600px;
+}
+
+.viewer {
+  width: 100%;
+}
+
+.pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  color: var(--color-text-default);
+}
