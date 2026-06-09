@@ -34,6 +34,12 @@ function getRecipesDir(): string {
   return dir;
 }
 
+function getSoftDeleteDir(): string {
+  const dir = path.join(process.env.DB_PATH!, "soft-deletion", "recipes");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 function readAllRecipes(): Recipe[] {
   const dir = getRecipesDir();
   return fs
@@ -167,6 +173,18 @@ router.post("/", async (req, res) => {
 
   writeRecipe(recipe);
   res.status(201).json({ recipe });
+});
+
+router.delete("/:id", (req, res) => {
+  const { id } = req.params;
+  const srcPath = path.join(getRecipesDir(), `${id}.json`);
+  if (!fs.existsSync(srcPath)) {
+    res.status(404).json({ error: "Recipe not found" });
+    return;
+  }
+  const destPath = path.join(getSoftDeleteDir(), `${id}.json`);
+  fs.renameSync(srcPath, destPath);
+  res.status(200).json({ success: true });
 });
 
 export default router;

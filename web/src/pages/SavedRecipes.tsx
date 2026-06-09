@@ -25,6 +25,11 @@ export default function SavedRecipes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function deleteRecipe(id: string) {
+    await fetch(`/api/recipes/${id}`, { method: "DELETE" });
+    setRecipes((prev) => prev.filter((r) => r.id !== id));
+  }
+
   useEffect(() => {
     fetch("/api/recipes")
       .then((res) => res.json())
@@ -92,6 +97,12 @@ export default function SavedRecipes() {
               <p className="recipe-saved-at">
                 Saved {new Date(recipe.savedAt).toLocaleDateString()}
               </p>
+              <button
+                className="recipe-delete-btn"
+                onClick={() => deleteRecipe(recipe.id)}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
