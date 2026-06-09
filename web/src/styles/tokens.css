@@ -8,56 +8,42 @@
  *
  * Theming works by remapping the SEMANTIC layer per [data-theme]. Primitives never change.
  *
- * Light values are extracted faithfully from the original App.css. Dark values are derived.
+ * Direction: clean & minimal. Deep pine green is the brand, used ONLY for primary
+ * actions (and success); everything else is cool-gray neutral. System sans type,
+ * subtle radii, comfortable spacing. Dark theme is derived from the same palette.
  */
 
 :root {
-  /* ----- PRIMITIVES: neutrals (extracted) ----- */
-  --c-white: #ffffff;
-  --c-gray-50: #fafafa;
-  --c-gray-75: #f8f8fc;
-  --c-gray-100: #f0f0f4;
-  --c-gray-150: #eeeeee;
-  --c-gray-200: #e0e0e8;
-  --c-gray-250: #e0e0e0;
-  --c-gray-300: #dddddd;
-  --c-gray-400: #bbbbbb;
-  --c-gray-500: #999999;
-  --c-gray-600: #666666;
-  --c-gray-650: #555555;
-  --c-gray-700: #333333;
+  /* ----- PRIMITIVES: neutrals — cool gray ramp ----- */
+  --c-gray-0: #ffffff;
+  --c-gray-50: #f7f8fa;
+  --c-gray-100: #eef0f4;
+  --c-gray-200: #dde1e8;
+  --c-gray-300: #cdd3db;
+  --c-gray-400: #aab2bf;
+  --c-gray-500: #828b99;
+  --c-gray-550: #6f7886;
+  --c-gray-600: #5d6675;
+  --c-gray-700: #3e4651;
+  --c-gray-750: #353d48;
+  --c-gray-800: #272d36;
+  --c-gray-850: #1d222a;
+  --c-gray-900: #161a20;
+  --c-gray-950: #0f1216;
 
-  /* ----- PRIMITIVES: brand navy (extracted + derived dark steps) ----- */
-  --c-navy-950: #14141f; /* derived */
-  --c-navy-900: #1a1a2e; /* extracted (brand) */
-  --c-navy-850: #1e1e2e; /* derived */
-  --c-navy-800: #26263a; /* derived */
-  --c-navy-750: #2e2e44; /* derived */
-  --c-navy-700: #2e2e4a; /* extracted (sidebar border/hover) */
-  --c-navy-650: #3a3a54; /* derived */
+  /* ----- PRIMITIVES: brand — deep pine green (primary actions only) ----- */
+  --c-green-400: #3f9b7d; /* dark-theme primary (bright, dark text on top) */
+  --c-green-600: #1f6e54; /* light-theme primary (white text on top) */
+  --c-green-700: #18573f; /* deeper pine, reserved */
+  --c-green-950: #0b1c14; /* near-black green — text on bright green */
 
-  /* ----- PRIMITIVES: accent indigo (extracted + derived) ----- */
-  --c-indigo-100: #e8eaf6; /* extracted */
-  --c-indigo-600: #3949ab; /* extracted */
-  --c-indigo-400: #5865d8; /* derived (dark primary) */
-  --c-indigo-300: #aab0ff; /* derived (dark accent text) */
+  /* ----- PRIMITIVES: danger — red ----- */
+  --c-red-300: #f0a79e; /* dark error text */
+  --c-red-400: #e06a5b; /* dark danger */
+  --c-red-500: #c0392b; /* light danger */
+  --c-red-600: #a5301f; /* light error text */
 
-  /* ----- PRIMITIVES: success / danger (extracted + derived) ----- */
-  --c-green-700: #2e7d32; /* extracted */
-  --c-green-500: #43a047; /* derived */
-  --c-red-700: #c62828; /* extracted (error text) */
-  --c-red-600: #c0392b; /* extracted (delete) */
-  --c-red-400: #ef5350; /* derived */
-  --c-red-300: #ef9a9a; /* derived */
-
-  /* ----- PRIMITIVES: dark-mode neutrals (derived) ----- */
-  --c-slate-100: #e6e6ee;
-  --c-slate-200: #c8c8d4;
-  --c-slate-400: #9a9aae;
-  --c-slate-500: #7a7a90;
-
-  /* ----- PRIMITIVES: typography ----- */
-  /* NOTE: no font-family existed before; this system stack is a derived default. */
+  /* ----- PRIMITIVES: typography (system sans) ----- */
   --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
   --font-size-xs: 0.75rem;
@@ -72,7 +58,7 @@
   --line-height-tight: 1.5;
   --line-height-relaxed: 1.6;
 
-  /* ----- PRIMITIVES: spacing ----- */
+  /* ----- PRIMITIVES: spacing (comfortable) ----- */
   --space-3xs: 2px;
   --space-2xs: 4px;
   --space-xs: 6px;
@@ -82,7 +68,7 @@
   --space-xl: 24px;
   --space-2xl: 32px;
 
-  /* ----- PRIMITIVES: radii ----- */
+  /* ----- PRIMITIVES: radii (subtle) ----- */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -90,9 +76,9 @@
   --radius-2xl: 12px;
   --radius-pill: 999px;
 
-  /* ----- PRIMITIVES: elevation (derived; unused until needed) ----- */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* ----- PRIMITIVES: elevation (subtle; flat UI mostly uses borders) ----- */
+  --shadow-sm: 0 1px 2px rgba(15, 18, 22, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 18, 22, 0.1);
 
   /* ----- PRIMITIVES: motion / misc ----- */
   --duration-fast: 0.15s;
@@ -107,54 +93,54 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --color-bg-canvas: var(--c-white);
-  --color-bg-surface: var(--c-white);
+  --color-bg-canvas: var(--c-gray-0);
+  --color-bg-surface: var(--c-gray-0);
   --color-bg-subtle: var(--c-gray-50);
   --color-bg-muted: var(--c-gray-100);
 
-  --color-text-strong: var(--c-navy-900);
+  --color-text-strong: var(--c-gray-900);
   --color-text-default: var(--c-gray-700);
-  --color-text-muted: var(--c-gray-650);
-  --color-text-subtle: var(--c-gray-500);
-  --color-text-on-emphasis: var(--c-white);
+  --color-text-muted: var(--c-gray-600);
+  --color-text-subtle: var(--c-gray-550);
+  --color-text-on-emphasis: var(--c-gray-0);
 
   --color-border-default: var(--c-gray-300);
   --color-border-subtle: var(--c-gray-200);
   --color-border-strong: var(--c-gray-400);
 
-  /* sidebar (app shell — migrated later, defined here for completeness) */
-  --color-bg-sidebar: var(--c-navy-900);
-  --color-text-on-sidebar: var(--c-gray-250);
-  --color-text-on-sidebar-strong: var(--c-white);
-  --color-sidebar-divider: var(--c-navy-700);
-  --color-sidebar-hover: var(--c-navy-700);
+  /* sidebar (app shell) */
+  --color-bg-sidebar: var(--c-gray-900);
+  --color-text-on-sidebar: var(--c-gray-400);
+  --color-text-on-sidebar-strong: var(--c-gray-50);
+  --color-sidebar-divider: var(--c-gray-800);
+  --color-sidebar-hover: var(--c-gray-800);
 
-  /* actions */
-  --color-action-primary-bg: var(--c-navy-900);
-  --color-action-primary-fg: var(--c-white);
-  --color-action-success-bg: var(--c-green-700);
-  --color-action-success-fg: var(--c-white);
-  --color-action-secondary-fg: var(--c-navy-900);
-  --color-action-secondary-border: var(--c-navy-900);
+  /* actions — green is reserved for primary + success only */
+  --color-action-primary-bg: var(--c-green-600);
+  --color-action-primary-fg: var(--c-gray-0);
+  --color-action-success-bg: var(--c-green-600);
+  --color-action-success-fg: var(--c-gray-0);
+  --color-action-secondary-fg: var(--c-gray-700);
+  --color-action-secondary-border: var(--c-gray-300);
   --color-action-secondary-bg-hover: var(--c-gray-100);
-  --color-action-danger-fg: var(--c-red-600);
-  --color-action-danger-bg-hover: var(--c-red-600);
-  --color-action-danger-fg-hover: var(--c-white);
-  --color-action-ghost-fg: var(--c-gray-650);
-  --color-action-ghost-border: var(--c-gray-400);
-  --color-action-ghost-bg-hover: var(--c-gray-150);
+  --color-action-danger-fg: var(--c-red-500);
+  --color-action-danger-bg-hover: var(--c-red-500);
+  --color-action-danger-fg-hover: var(--c-gray-0);
+  --color-action-ghost-fg: var(--c-gray-600);
+  --color-action-ghost-border: var(--c-gray-300);
+  --color-action-ghost-bg-hover: var(--c-gray-100);
 
   /* form controls */
   --color-input-bg: var(--c-gray-50);
   --color-input-border: var(--c-gray-300);
-  --color-input-border-focus: var(--c-navy-900);
+  --color-input-border-focus: var(--c-green-600);
 
-  /* accent / feedback */
-  --color-accent-bg: var(--c-indigo-100);
-  --color-accent-fg: var(--c-indigo-600);
-  --color-feedback-danger-text: var(--c-red-700);
+  /* accent / feedback — neutral chips, no separate accent hue */
+  --color-accent-bg: var(--c-gray-100);
+  --color-accent-fg: var(--c-gray-700);
+  --color-feedback-danger-text: var(--c-red-600);
 
-  --color-focus-ring: var(--c-navy-900);
+  --color-focus-ring: var(--c-green-600);
 }
 
 /* ============================================================= */
@@ -163,48 +149,49 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --color-bg-canvas: var(--c-navy-950);
-  --color-bg-surface: var(--c-navy-850);
-  --color-bg-subtle: var(--c-navy-800);
-  --color-bg-muted: var(--c-navy-750);
+  --color-bg-canvas: var(--c-gray-950);
+  --color-bg-surface: var(--c-gray-900);
+  --color-bg-subtle: var(--c-gray-850);
+  --color-bg-muted: var(--c-gray-800);
 
-  --color-text-strong: var(--c-slate-100);
-  --color-text-default: var(--c-slate-200);
-  --color-text-muted: var(--c-slate-400);
-  --color-text-subtle: var(--c-slate-500);
-  --color-text-on-emphasis: var(--c-white);
+  --color-text-strong: var(--c-gray-50);
+  --color-text-default: var(--c-gray-300);
+  --color-text-muted: var(--c-gray-400);
+  --color-text-subtle: var(--c-gray-500);
+  --color-text-on-emphasis: var(--c-gray-0);
 
-  --color-border-default: var(--c-navy-750);
-  --color-border-subtle: var(--c-navy-800);
-  --color-border-strong: var(--c-navy-650);
+  --color-border-default: var(--c-gray-800);
+  --color-border-subtle: var(--c-gray-850);
+  --color-border-strong: var(--c-gray-750);
 
-  --color-bg-sidebar: var(--c-navy-950);
-  --color-text-on-sidebar: var(--c-slate-200);
-  --color-text-on-sidebar-strong: var(--c-white);
-  --color-sidebar-divider: var(--c-navy-750);
-  --color-sidebar-hover: var(--c-navy-800);
+  --color-bg-sidebar: var(--c-gray-950);
+  --color-text-on-sidebar: var(--c-gray-500);
+  --color-text-on-sidebar-strong: var(--c-gray-50);
+  --color-sidebar-divider: var(--c-gray-800);
+  --color-sidebar-hover: var(--c-gray-850);
 
-  --color-action-primary-bg: var(--c-indigo-400);
-  --color-action-primary-fg: var(--c-white);
-  --color-action-success-bg: var(--c-green-500);
-  --color-action-success-fg: var(--c-white);
-  --color-action-secondary-fg: var(--c-slate-100);
-  --color-action-secondary-border: var(--c-navy-650);
-  --color-action-secondary-bg-hover: var(--c-navy-800);
+  /* bright green chip with a dark label reads better than white-on-green here */
+  --color-action-primary-bg: var(--c-green-400);
+  --color-action-primary-fg: var(--c-green-950);
+  --color-action-success-bg: var(--c-green-400);
+  --color-action-success-fg: var(--c-green-950);
+  --color-action-secondary-fg: var(--c-gray-200);
+  --color-action-secondary-border: var(--c-gray-700);
+  --color-action-secondary-bg-hover: var(--c-gray-850);
   --color-action-danger-fg: var(--c-red-400);
   --color-action-danger-bg-hover: var(--c-red-400);
-  --color-action-danger-fg-hover: var(--c-navy-950);
-  --color-action-ghost-fg: var(--c-slate-200);
-  --color-action-ghost-border: var(--c-navy-650);
-  --color-action-ghost-bg-hover: var(--c-navy-800);
+  --color-action-danger-fg-hover: var(--c-gray-950);
+  --color-action-ghost-fg: var(--c-gray-300);
+  --color-action-ghost-border: var(--c-gray-700);
+  --color-action-ghost-bg-hover: var(--c-gray-850);
 
-  --color-input-bg: var(--c-navy-850);
-  --color-input-border: var(--c-navy-650);
-  --color-input-border-focus: var(--c-indigo-400);
+  --color-input-bg: var(--c-gray-900);
+  --color-input-border: var(--c-gray-700);
+  --color-input-border-focus: var(--c-green-400);
 
-  --color-accent-bg: var(--c-navy-750);
-  --color-accent-fg: var(--c-indigo-300);
+  --color-accent-bg: var(--c-gray-800);
+  --color-accent-fg: var(--c-gray-200);
   --color-feedback-danger-text: var(--c-red-300);
 
-  --color-focus-ring: var(--c-indigo-400);
+  --color-focus-ring: var(--c-green-400);
 }
