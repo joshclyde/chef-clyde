@@ -5,9 +5,27 @@ type Message = {
   content: string;
 };
 
+type ChatMode = "new-recipe" | "pantry-recipe";
+
+const MODE_CONFIG: Record<
+  ChatMode,
+  { label: string; hint: string; placeholder: string }
+> = {
+  "new-recipe": {
+    label: "New Recipe Creator",
+    hint: "Plan your meals — I'll create recipes you can shop for.",
+    placeholder: "e.g. Make me a pasta recipe with mushrooms...",
+  },
+  "pantry-recipe": {
+    label: "Pantry Recipe Creator",
+    hint: "I'll build a recipe from what's already in your pantry.",
+    placeholder: "e.g. What can I make for dinner tonight?",
+  },
+};
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [mode, setMode] = useState<ChatMode>("new-recipe");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -36,7 +54,7 @@ export default function Chat() {
     fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: newMessages }),
+      body: JSON.stringify({ messages: newMessages, mode }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -89,6 +107,7 @@ export default function Chat() {
   };
 
   const hasMessages = messages.length > 0;
+  const config = MODE_CONFIG[mode];
 
   return (
     <div className="chat">
@@ -123,7 +142,20 @@ export default function Chat() {
       )}
       <div className={`chat-input-area${!hasMessages ? " centered" : ""}`}>
         {!hasMessages && (
-          <p className="chat-prompt-hint">Ask me to create a recipe for you!</p>
+          <>
+            <div className="mode-toggle">
+              {(Object.keys(MODE_CONFIG) as ChatMode[]).map((m) => (
+                <button
+                  key={m}
+                  className={`mode-toggle-btn${mode === m ? " active" : ""}`}
+                  onClick={() => setMode(m)}
+                >
+                  {MODE_CONFIG[m].label}
+                </button>
+              ))}
+            </div>
+            <p className="chat-prompt-hint">{config.hint}</p>
+          </>
         )}
         <div className="chat-input-row">
           <textarea
@@ -131,9 +163,7 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              hasMessages
-                ? "Continue the conversation..."
-                : "e.g. Make me a pasta recipe with mushrooms..."
+              hasMessages ? "Continue the conversation..." : config.placeholder
             }
             disabled={loading}
             rows={3}

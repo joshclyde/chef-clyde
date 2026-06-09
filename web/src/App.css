@@ -112,6 +112,33 @@
   padding-top: 80px;
 }
 
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-toggle-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 2px solid #1a1a2e;
+  background: transparent;
+  color: #1a1a2e;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-toggle-btn.active {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.mode-toggle-btn:hover:not(.active) {
+  background: #f0f0f4;
+}
+
 .chat-prompt-hint {
   font-size: 1.1rem;
   color: #555;
