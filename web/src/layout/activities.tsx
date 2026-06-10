@@ -1,4 +1,4 @@
-import { BookOpen, ListChecks, type LucideIcon } from "lucide-react";
+import { BrushCleaning, ChefHat, type LucideIcon } from "lucide-react";
 
 export type NavItem = { label: string; path: string; end?: boolean };
 
@@ -13,7 +13,7 @@ export const activities: Activity[] = [
   {
     id: "cookbook",
     label: "Cookbook",
-    icon: BookOpen,
+    icon: ChefHat,
     navItems: [
       { label: "Chat", path: "/", end: true },
       { label: "Recipes", path: "/recipes" },
@@ -23,7 +23,7 @@ export const activities: Activity[] = [
   {
     id: "chores",
     label: "Chores",
-    icon: ListChecks,
+    icon: BrushCleaning,
     navItems: [
       { label: "Tasks", path: "/chores/tasks" },
       { label: "Schedule", path: "/chores/schedule" },
