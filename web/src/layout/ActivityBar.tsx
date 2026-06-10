@@ -1,4 +1,6 @@
+import { Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../theme/useTheme";
 import { cn } from "../ui/cn";
 import { activities, type Activity } from "./activities";
 import styles from "./ActivityBar.module.css";
@@ -9,6 +11,7 @@ type ActivityBarProps = {
 
 export function ActivityBar({ activeActivity }: ActivityBarProps) {
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
 
   return (
     <nav className={styles.activityBar} aria-label="Activities">
@@ -29,6 +32,19 @@ export function ActivityBar({ activeActivity }: ActivityBarProps) {
           </button>
         );
       })}
+      <button
+        type="button"
+        className={cn(styles.item, styles.themeToggle)}
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        title={theme === "dark" ? "Light mode" : "Dark mode"}
+        onClick={toggle}
+      >
+        {theme === "dark" ? (
+          <Sun size={22} strokeWidth={2} aria-hidden />
+        ) : (
+          <Moon size={22} strokeWidth={2} aria-hidden />
+        )}
+      </button>
     </nav>
   );
 }

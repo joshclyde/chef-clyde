@@ -1,17 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { useTheme } from "../theme/useTheme";
 import { cn } from "../ui/cn";
 import { type Activity } from "./activities";
 import styles from "./Sidebar.module.css";
-
-function ThemeToggle() {
-  const { theme, toggle } = useTheme();
-  return (
-    <button type="button" className={styles.themeToggle} onClick={toggle}>
-      {theme === "dark" ? "☀ Light mode" : "🌙 Dark mode"}
-    </button>
-  );
-}
 
 type SidebarProps = {
   activity: Activity;
@@ -36,7 +26,6 @@ export function Sidebar({ activity }: SidebarProps) {
           </li>
         ))}
       </ul>
-      <ThemeToggle />
     </nav>
   );
 }
