@@ -11,6 +11,7 @@ import {
   writeSchedule,
 } from "../db/schedules";
 import { generateScheduleResponse } from "../services/schedule";
+import { parseScheduleTasks } from "../services/scheduleParser";
 
 const router = express.Router();
 
@@ -103,14 +104,76 @@ router.put("/:id", (req, res) => {
     return;
   }
 
+  const trimmed = content.trim();
   const updated: Schedule = {
     ...schedule,
     date,
-    content: content.trim(),
+    content: trimmed,
+    updatedAt: new Date().toISOString(),
+  };
+  // The parsed tasks were derived from the old text — drop them when the
+  // content changes so a stale task list can't linger. The user re-parses.
+  if (trimmed !== schedule.content) delete updated.tasks;
+  writeSchedule(updated);
+  res.status(200).json({ schedule: updated });
+});
+
+// Parse a saved schedule's free text into a structured, ordered task list and
+// persist it onto the schedule. Mirrors the recipe-extraction route.
+router.post("/:id/parse", async (req, res) => {
+  const { id } = req.params;
+  const schedule = readSchedule(id);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule not found" });
+    return;
+  }
+
+  const result = await parseScheduleTasks(schedule.content);
+  if ("error" in result) {
+    const status = result.error === "No tasks found in this schedule" ? 422 : 500;
+    res.status(status).json({ error: result.error });
+    return;
+  }
+
+  const updated: Schedule = {
+    ...schedule,
+    tasks: result.tasks.map((task) => ({
+      ...task,
+      id: crypto.randomUUID(),
+      completed: false,
+    })),
     updatedAt: new Date().toISOString(),
   };
   writeSchedule(updated);
   res.status(200).json({ schedule: updated });
+});
+
+// Toggle a single task's completion state.
+router.patch("/:id/tasks/:taskId", (req, res) => {
+  const { id, taskId } = req.params;
+  const { completed } = req.body as { completed?: unknown };
+
+  if (typeof completed !== "boolean") {
+    res.status(400).json({ error: "completed (boolean) is required" });
+    return;
+  }
+
+  const schedule = readSchedule(id);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule not found" });
+    return;
+  }
+
+  const task = schedule.tasks?.find((t) => t.id === taskId);
+  if (!task) {
+    res.status(404).json({ error: "Task not found" });
+    return;
+  }
+
+  task.completed = completed;
+  schedule.updatedAt = new Date().toISOString();
+  writeSchedule(schedule);
+  res.status(200).json({ schedule });
 });
 
 router.delete("/:id", (req, res) => {

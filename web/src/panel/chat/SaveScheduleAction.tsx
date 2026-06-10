@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { Button, Inline, Input, Text } from "../../ui";
+import { todayLocal } from "../../lib/date";
 import { type Message } from "./types";
 import styles from "./Chat.module.css";
-
-/** Today's date as a local "YYYY-MM-DD" string (en-CA formats this way). */
-function todayLocal() {
-  return new Date().toLocaleDateString("en-CA");
-}
 
 /** Date picker + "Save schedule" action for the Schedule chat. */
 export function SaveScheduleAction({ messages }: { messages: Message[] }) {

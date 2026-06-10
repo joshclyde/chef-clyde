@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Pantry from "../pages/Pantry";
 import Recipes from "../pages/Recipes";
 import Tasks from "../pages/Chores/Tasks";
+import ScheduleDaily from "../pages/Schedule/Daily";
 import ScheduleSaved from "../pages/Schedule/Saved";
 import { Panel } from "../panel/Panel";
 import { usePanel } from "../panel/usePanel";
@@ -27,7 +28,8 @@ export function AppLayout() {
             <Route path="/recipes" element={<Recipes />} />
             <Route path="/chores" element={<Navigate to="/chores/tasks" replace />} />
             <Route path="/chores/tasks" element={<Tasks />} />
-            <Route path="/schedule" element={<Navigate to="/schedule/saved" replace />} />
+            <Route path="/schedule" element={<Navigate to="/schedule/daily" replace />} />
+            <Route path="/schedule/daily" element={<ScheduleDaily />} />
             <Route path="/schedule/saved" element={<ScheduleSaved />} />
             <Route path="*" element={<Navigate to="/recipes" replace />} />
           </Routes>

@@ -14,3 +14,98 @@
 .editField {
   width: 100%;
 }
+
+/* ----- daily task list ----- */
+.taskRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+}
+.taskRow:hover {
+  background: var(--color-bg-subtle);
+}
+
+.taskCheckbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-action-primary-bg);
+}
+
+.taskTime {
+  flex-shrink: 0;
+  min-width: 130px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.taskLabel {
+  flex: 1;
+  color: var(--color-text-default);
+}
+
+.nowBadge {
+  flex-shrink: 0;
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-action-primary-bg);
+  color: var(--color-action-primary-fg);
+}
+
+/* current — the task happening right now */
+.taskRow.current {
+  border-color: var(--color-action-primary-bg);
+  background: var(--color-bg-subtle);
+}
+.taskRow.current::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: var(--radius-pill);
+  background: var(--color-action-primary-bg);
+}
+.taskRow.current .taskLabel {
+  color: var(--color-text-strong);
+  font-weight: var(--font-weight-semibold);
+}
+.taskRow.current .taskTime {
+  color: var(--color-text-strong);
+}
+
+/* completed — checked off */
+.taskRow.completed {
+  background: var(--color-bg-subtle);
+}
+.taskRow.completed .taskLabel {
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+.taskRow.completed .taskTime {
+  color: var(--color-text-subtle);
+}
+
+/* past — its time block has elapsed and it was not completed (missed) */
+.taskRow.past {
+  border-style: dashed;
+}
+.taskRow.past .taskLabel,
+.taskRow.past .taskTime {
+  color: var(--color-text-subtle);
+}

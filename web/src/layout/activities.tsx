@@ -19,7 +19,10 @@ export const activities: Activity[] = [
     id: "schedule",
     label: "Schedule",
     icon: CalendarDays,
-    navItems: [{ label: "Saved", path: "/schedule/saved" }],
+    navItems: [
+      { label: "Daily", path: "/schedule/daily" },
+      { label: "Saved", path: "/schedule/saved" },
+    ],
   },
   {
     id: "chores",
