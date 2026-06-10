@@ -5,8 +5,7 @@ export default function Schedule() {
     <Stack gap="lg">
       <Heading level={1}>Schedule</Heading>
       <Text variant="muted">
-        The chores schedule is coming soon. This is a placeholder page for the
-        Chores activity.
+        Your chores and when they're due next live on the Tasks page.
       </Text>
     </Stack>
   );

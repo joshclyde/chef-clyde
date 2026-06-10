@@ -1,4 +1,6 @@
 export { Button } from "./Button/Button";
+export { Input } from "./Input/Input";
+export { Select } from "./Select/Select";
 export { Textarea } from "./Textarea/Textarea";
 export { Card } from "./Card/Card";
 export { Badge } from "./Badge/Badge";
