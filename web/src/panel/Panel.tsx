@@ -2,10 +2,11 @@ import { PanelBottom, PanelRight, X } from "lucide-react";
 import { cn } from "../ui/cn";
 import { usePanel } from "./usePanel";
 import { panelTabs } from "./panelTabs";
+import { PanelResizeHandle } from "./PanelResizeHandle";
 import styles from "./Panel.module.css";
 
 export function Panel() {
-  const { position, activeTab, setActiveTab, togglePosition, setOpen } =
+  const { position, activeTab, width, height, setActiveTab, togglePosition, setOpen } =
     usePanel();
 
   const active =
@@ -14,8 +15,10 @@ export function Panel() {
   return (
     <section
       className={cn(styles.panel, styles[position])}
+      style={position === "right" ? { width } : { height }}
       aria-label="Panel"
     >
+      <PanelResizeHandle />
       <header className={styles.header}>
         <div className={styles.tabs} role="tablist">
           {panelTabs.map((tab) => {

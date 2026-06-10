@@ -1,4 +1,5 @@
 .panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -7,12 +8,44 @@
   min-width: 0;
 }
 .panel.right {
-  width: 400px;
+  min-width: 280px;
+  max-width: 80vw;
   border-left: 1px solid var(--color-border-default);
 }
 .panel.bottom {
-  height: 320px;
+  min-height: 200px;
+  max-height: 80vh;
   border-top: 1px solid var(--color-border-default);
+}
+
+/* ----- resize handle ----- */
+.resizeHandle {
+  position: absolute;
+  z-index: 2;
+  background: transparent;
+  touch-action: none;
+  transition: background var(--duration-fast) var(--easing-standard);
+}
+.resizeHandle:hover,
+.resizeHandle:focus-visible {
+  background: var(--color-action-primary-bg);
+  outline: none;
+}
+.handleRight {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  transform: translateX(-3px);
+  cursor: col-resize;
+}
+.handleBottom {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  transform: translateY(-3px);
+  cursor: row-resize;
 }
 
 .header {
