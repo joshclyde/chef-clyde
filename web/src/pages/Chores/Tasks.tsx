@@ -1,14 +1,6 @@
-import { useState } from "react";
-import {
-  Badge,
-  Button,
-  Card,
-  Heading,
-  Inline,
-  Input,
-  Stack,
-  Text,
-} from "../../ui";
+import { Fragment, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Button, Card, Heading, Inline, Input, Stack, Text } from "../../ui";
 import { ChoreForm } from "./ChoreForm";
 import {
   dueSortKey,
@@ -21,6 +13,8 @@ import {
   type FrequencyUnit,
 } from "./useChores";
 import styles from "./Tasks.module.css";
+
+const COLUMN_COUNT = 8;
 
 function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString(undefined, {
@@ -35,32 +29,33 @@ function unitLabel(value: number, unit: FrequencyUnit) {
   return value === 1 ? singular : `${singular}s`;
 }
 
-function DueLine({ chore }: { chore: Chore }) {
+function DueCell({ chore }: { chore: Chore }) {
   const status = dueStatus(chore);
   const due = nextDue(chore);
-  const last = lastPerformed(chore);
 
+  if (status === "never") {
+    return (
+      <Text size="sm" variant="strong">
+        Due now
+      </Text>
+    );
+  }
+  if (status === "overdue" && due) {
+    return (
+      <Text size="sm" variant="danger">
+        Overdue · {formatDate(due)}
+      </Text>
+    );
+  }
+  return <Text size="sm">{due ? formatDate(due) : "—"}</Text>;
+}
+
+/** A "—" placeholder for empty optional cells. */
+function Empty() {
   return (
-    <Stack gap="3xs">
-      {status === "never" && (
-        <Text size="sm" variant="strong">
-          Never done — due now
-        </Text>
-      )}
-      {status === "overdue" && due && (
-        <Text size="sm" variant="danger">
-          Overdue · was due {formatDate(due)}
-        </Text>
-      )}
-      {status === "upcoming" && due && (
-        <Text size="sm">Next due {formatDate(due)}</Text>
-      )}
-      {last && (
-        <Text size="xs" variant="subtle">
-          Last done {formatDate(last)}
-        </Text>
-      )}
-    </Stack>
+    <Text size="sm" variant="subtle">
+      —
+    </Text>
   );
 }
 
@@ -77,6 +72,7 @@ export default function Tasks() {
   } = useChores();
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [logDates, setLogDates] = useState<Record<string, string>>({});
 
@@ -100,6 +96,20 @@ export default function Tasks() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function toggleExpand(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      setEditingId(null);
+    } else {
+      setExpandedId(id);
+    }
+  }
+
+  function startEdit(id: string) {
+    setEditingId(id);
+    setExpandedId(id);
   }
 
   function handleLog(id: string) {
@@ -142,120 +152,187 @@ export default function Tasks() {
       {chores.length === 0 && !creating ? (
         <Text variant="muted">No chores yet. Click "New chore" to add one.</Text>
       ) : (
-        <ul className={styles.list}>
-          {sorted.map((chore) => (
-            <li key={chore.id}>
-              <Card>
-                {editingId === chore.id ? (
-                  <ChoreForm
-                    initial={chore}
-                    submitting={submitting}
-                    onSubmit={(values) => handleUpdate(chore.id, values)}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <Stack gap="sm">
-                    <Heading level={2}>{chore.name}</Heading>
-                    <Text variant="muted" size="sm">
-                      every {chore.frequencyValue}{" "}
-                      {unitLabel(chore.frequencyValue, chore.frequencyUnit)}
-                      {chore.typicalTimeMinutes != null
-                        ? ` · ~${chore.typicalTimeMinutes}m`
-                        : ""}
-                    </Text>
-                    {(chore.room || chore.floor) && (
-                      <Inline gap="xs" wrap>
-                        {chore.room && <Badge>{chore.room}</Badge>}
-                        {chore.floor && <Badge>{chore.floor}</Badge>}
-                      </Inline>
-                    )}
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.expandCol} aria-label="Expand" />
+                <th>Chore</th>
+                <th>Frequency</th>
+                <th>Time</th>
+                <th>Room</th>
+                <th>Floor</th>
+                <th>Due</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((chore) => {
+                const isExpanded =
+                  expandedId === chore.id || editingId === chore.id;
+                const isEditing = editingId === chore.id;
+                const last = lastPerformed(chore);
+                const completions = [...chore.completions].sort(
+                  (a, b) =>
+                    new Date(b.performedAt).getTime() -
+                    new Date(a.performedAt).getTime(),
+                );
 
-                    <DueLine chore={chore} />
-
-                    <Inline gap="sm" wrap>
-                      <Button size="sm" onClick={() => logCompletion(chore.id)}>
-                        Mark done
-                      </Button>
-                      <Inline gap="2xs">
-                        <Input
-                          className={styles.dateInput}
-                          type="date"
-                          value={logDates[chore.id] ?? ""}
-                          onChange={(e) =>
-                            setLogDates((prev) => ({
-                              ...prev,
-                              [chore.id]: e.target.value,
-                            }))
+                return (
+                  <Fragment key={chore.id}>
+                    <tr className={styles.row}>
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.expandButton}
+                          aria-expanded={isExpanded}
+                          aria-label={
+                            isExpanded ? "Collapse details" : "Expand details"
                           }
-                        />
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={!logDates[chore.id]}
-                          onClick={() => handleLog(chore.id)}
+                          onClick={() => toggleExpand(chore.id)}
                         >
-                          Log
-                        </Button>
-                      </Inline>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingId(chore.id)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => deleteChore(chore.id)}
-                      >
-                        Delete
-                      </Button>
-                    </Inline>
+                          {isExpanded ? (
+                            <ChevronDown size={16} aria-hidden />
+                          ) : (
+                            <ChevronRight size={16} aria-hidden />
+                          )}
+                        </button>
+                      </td>
+                      <td className={styles.nameCell}>{chore.name}</td>
+                      <td>
+                        {chore.frequencyValue}{" "}
+                        {unitLabel(chore.frequencyValue, chore.frequencyUnit)}
+                      </td>
+                      <td>
+                        {chore.typicalTimeMinutes != null ? (
+                          `${chore.typicalTimeMinutes}m`
+                        ) : (
+                          <Empty />
+                        )}
+                      </td>
+                      <td>{chore.room ?? <Empty />}</td>
+                      <td>{chore.floor ?? <Empty />}</td>
+                      <td>
+                        <DueCell chore={chore} />
+                      </td>
+                      <td className={styles.actionsCell}>
+                        <Inline gap="2xs">
+                          <Button
+                            size="sm"
+                            onClick={() => logCompletion(chore.id)}
+                          >
+                            Mark done
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEdit(chore.id)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => deleteChore(chore.id)}
+                          >
+                            Delete
+                          </Button>
+                        </Inline>
+                      </td>
+                    </tr>
 
-                    <details>
-                      <summary className={styles.summary}>
-                        History ({chore.completions.length})
-                      </summary>
-                      {chore.completions.length === 0 ? (
-                        <Text variant="subtle" size="sm">
-                          No completions logged yet.
-                        </Text>
-                      ) : (
-                        <ul className={styles.historyList}>
-                          {[...chore.completions]
-                            .sort(
-                              (a, b) =>
-                                new Date(b.performedAt).getTime() -
-                                new Date(a.performedAt).getTime(),
-                            )
-                            .map((completion) => (
-                              <li key={completion.id}>
-                                <Inline justify="between">
-                                  <Text size="sm">
-                                    {formatDate(completion.performedAt)}
-                                  </Text>
+                    {isExpanded && (
+                      <tr className={styles.detailRow}>
+                        <td className={styles.detailCell} colSpan={COLUMN_COUNT}>
+                          {isEditing ? (
+                            <ChoreForm
+                              initial={chore}
+                              submitting={submitting}
+                              onSubmit={(values) =>
+                                handleUpdate(chore.id, values)
+                              }
+                              onCancel={() => setEditingId(null)}
+                            />
+                          ) : (
+                            <Stack gap="md">
+                              <Text size="sm" variant="muted">
+                                {last
+                                  ? `Last done ${formatDate(last)}`
+                                  : "Never done yet"}
+                              </Text>
+
+                              <Stack gap="3xs">
+                                <Text as="label" size="xs" variant="muted">
+                                  Log a past completion
+                                </Text>
+                                <Inline gap="2xs">
+                                  <Input
+                                    className={styles.dateInput}
+                                    type="date"
+                                    value={logDates[chore.id] ?? ""}
+                                    onChange={(e) =>
+                                      setLogDates((prev) => ({
+                                        ...prev,
+                                        [chore.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
                                   <Button
                                     size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      deleteCompletion(chore.id, completion.id)
-                                    }
+                                    variant="secondary"
+                                    disabled={!logDates[chore.id]}
+                                    onClick={() => handleLog(chore.id)}
                                   >
-                                    Delete
+                                    Log
                                   </Button>
                                 </Inline>
-                              </li>
-                            ))}
-                        </ul>
-                      )}
-                    </details>
-                  </Stack>
-                )}
-              </Card>
-            </li>
-          ))}
-        </ul>
+                              </Stack>
+
+                              <Stack gap="2xs">
+                                <Text size="xs" variant="subtle">
+                                  History ({completions.length})
+                                </Text>
+                                {completions.length === 0 ? (
+                                  <Text size="sm" variant="subtle">
+                                    No completions logged yet.
+                                  </Text>
+                                ) : (
+                                  <ul className={styles.historyList}>
+                                    {completions.map((completion) => (
+                                      <li key={completion.id}>
+                                        <Inline justify="between">
+                                          <Text size="sm">
+                                            {formatDate(completion.performedAt)}
+                                          </Text>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() =>
+                                              deleteCompletion(
+                                                chore.id,
+                                                completion.id,
+                                              )
+                                            }
+                                          >
+                                            Delete
+                                          </Button>
+                                        </Inline>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </Stack>
+                            </Stack>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </Stack>
   );

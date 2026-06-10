@@ -3,6 +3,7 @@ import chatRouter from "./routes/chat";
 import choresRouter from "./routes/chores";
 import pantryRouter from "./routes/pantry";
 import recipesRouter from "./routes/recipes";
+import schedulesRouter from "./routes/schedules";
 
 if (!process.env.DB_PATH)
   throw new Error("DB_PATH environment variable is not set");
@@ -15,6 +16,7 @@ app.use("/api/chat", chatRouter);
 app.use("/api/chores", choresRouter);
 app.use("/api/pantry", pantryRouter);
 app.use("/api/recipes", recipesRouter);
+app.use("/api/schedules", schedulesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
