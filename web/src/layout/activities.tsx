@@ -16,13 +16,12 @@ export type Activity = {
 
 export const activities: Activity[] = [
   {
-    id: "cookbook",
-    label: "Cookbook",
-    icon: ChefHat,
+    id: "schedule",
+    label: "Schedule",
+    icon: CalendarDays,
     navItems: [
-      { label: "Chat", path: "/", end: true },
-      { label: "Recipes", path: "/recipes" },
-      { label: "Pantry", path: "/pantry" },
+      { label: "Create", path: "/schedule", end: true },
+      { label: "Saved", path: "/schedule/saved" },
     ],
   },
   {
@@ -32,12 +31,13 @@ export const activities: Activity[] = [
     navItems: [{ label: "Tasks", path: "/chores/tasks" }],
   },
   {
-    id: "schedule",
-    label: "Schedule",
-    icon: CalendarDays,
+    id: "cookbook",
+    label: "Cookbook",
+    icon: ChefHat,
     navItems: [
-      { label: "Create", path: "/schedule", end: true },
-      { label: "Saved", path: "/schedule/saved" },
+      { label: "Chat", path: "/", end: true },
+      { label: "Recipes", path: "/recipes" },
+      { label: "Pantry", path: "/pantry" },
     ],
   },
 ];
