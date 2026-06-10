@@ -1,6 +1,7 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, PanelRight, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../theme/useTheme";
+import { usePanel } from "../panel/usePanel";
 import { cn } from "../ui/cn";
 import { activities, type Activity } from "./activities";
 import styles from "./ActivityBar.module.css";
@@ -12,6 +13,7 @@ type ActivityBarProps = {
 export function ActivityBar({ activeActivity }: ActivityBarProps) {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
+  const { open, toggleOpen } = usePanel();
 
   return (
     <nav className={styles.activityBar} aria-label="Activities">
@@ -34,7 +36,17 @@ export function ActivityBar({ activeActivity }: ActivityBarProps) {
       })}
       <button
         type="button"
-        className={cn(styles.item, styles.themeToggle)}
+        className={cn(styles.item, styles.panelToggle, open && styles.active)}
+        aria-label={open ? "Hide panel" : "Show panel"}
+        aria-pressed={open}
+        title={open ? "Hide panel" : "Show panel"}
+        onClick={toggleOpen}
+      >
+        <PanelRight size={22} strokeWidth={2} aria-hidden />
+      </button>
+      <button
+        type="button"
+        className={cn(styles.item)}
         aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         title={theme === "dark" ? "Light mode" : "Dark mode"}
         onClick={toggle}

@@ -1,1 +1,1 @@
-export type ChatMode = "new-recipe" | "pantry-recipe";
+export type ChatMode = "new-recipe" | "pantry-recipe" | "general";

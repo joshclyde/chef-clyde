@@ -12,6 +12,12 @@ const NEW_RECIPE_SYSTEM_PROMPT =
   "When asked for a recipe, provide clear ingredients with measurements and step-by-step cooking instructions. " +
   "You can also help with ingredient substitutions, scaling, and cooking tips.";
 
+const GENERAL_SYSTEM_PROMPT =
+  "You are Chef Clyde, a friendly and knowledgeable kitchen assistant. " +
+  "Help the user with whatever they're working on — cooking questions, meal ideas, " +
+  "techniques, planning, or general kitchen advice. " +
+  "Be concise and practical, and when you give a recipe include clear measurements and steps.";
+
 function buildPantrySystemPrompt(pantry: string): string {
   const pantrySection = pantry.trim()
     ? `Here are the ingredients currently in their pantry:\n\n${pantry.trim()}`
@@ -46,6 +52,8 @@ export async function generateChatResponse(
   if (mode === "pantry-recipe") {
     const pantry = readPantry();
     systemPrompt = buildPantrySystemPrompt(pantry);
+  } else if (mode === "general") {
+    systemPrompt = GENERAL_SYSTEM_PROMPT;
   } else {
     systemPrompt = NEW_RECIPE_SYSTEM_PROMPT;
   }

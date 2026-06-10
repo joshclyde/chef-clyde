@@ -3,12 +3,12 @@ export type Message = {
   content: string;
 };
 
-export type ChatMode = "new-recipe" | "pantry-recipe";
+export type ChatMode = "new-recipe" | "pantry-recipe" | "general";
 
-export const MODE_CONFIG: Record<
-  ChatMode,
-  { label: string; hint: string; placeholder: string }
-> = {
+export type ModeInfo = { label: string; hint: string; placeholder: string };
+
+/** Metadata for the recipe modes the Cookbook chat exposes as toggle buttons. */
+export const MODE_CONFIG: Record<"new-recipe" | "pantry-recipe", ModeInfo> = {
   "new-recipe": {
     label: "New Recipe Creator",
     hint: "Plan your meals — I'll create recipes you can shop for.",

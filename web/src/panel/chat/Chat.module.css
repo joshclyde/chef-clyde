@@ -1,0 +1,94 @@
+/* ----- chat view layout (fills the panel body) ----- */
+.chatView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.footer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: var(--space-md) var(--space-lg);
+}
+
+/* ----- empty state ----- */
+.intro {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+.modeToggle {
+  margin-bottom: var(--space-2xs);
+}
+.modeButton {
+  border-radius: var(--radius-pill);
+}
+.hint {
+  line-height: var(--line-height-relaxed);
+}
+
+/* ----- message list ----- */
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.message {
+  display: flex;
+}
+.message.user {
+  justify-content: flex-end;
+}
+.message.assistant {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-2xl);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+  font-size: var(--font-size-md);
+}
+.user .bubble {
+  background: var(--color-action-primary-bg);
+  color: var(--color-action-primary-fg);
+  border-bottom-right-radius: var(--radius-sm);
+}
+.assistant .bubble {
+  background: var(--color-bg-muted);
+  color: var(--color-text-strong);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.loading {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* ----- composer ----- */
+.inputRow {
+  width: 100%;
+}
+.inputField {
+  flex: 1;
+}
+
+/* ----- save actions ----- */
+.saveRow {
+  padding-top: var(--space-2xs);
+}
+.dateInput {
+  max-width: 170px;
+}

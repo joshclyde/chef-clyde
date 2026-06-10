@@ -127,7 +127,7 @@ export default function ScheduleSaved() {
 
       {sorted.length === 0 ? (
         <Text variant="muted">
-          No saved schedules yet. Generate one on the Create page and save it.
+          No saved schedules yet. Generate one in the Chat panel and save it.
         </Text>
       ) : (
         <Stack gap="md">

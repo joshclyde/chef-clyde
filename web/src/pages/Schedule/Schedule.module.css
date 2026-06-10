@@ -2,17 +2,6 @@
   max-width: 800px;
 }
 
-/* ----- create (chat) ----- */
-.inputRow {
-  width: 100%;
-}
-.inputField {
-  flex: 1;
-}
-.saveRow {
-  padding: var(--space-md) 0;
-  border-top: 1px solid var(--color-border-default);
-}
 .dateInput {
   max-width: 170px;
 }
