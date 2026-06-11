@@ -1,10 +1,18 @@
+/**
+ * Outcome of a task. `pending` is the default; the other three are terminal
+ * states the user sets explicitly. `future` means "still do this, just later";
+ * `wontDo` means "drop it". Replaces the old `completed: boolean`.
+ */
+export type TaskStatus = "pending" | "completed" | "future" | "wontDo";
+
 /** A single time-blocked item parsed from a schedule's free-text content. */
 export type ScheduleTask = {
   id: string;
   startTime: string; // 24h "HH:MM", e.g. "07:30" — drives time-of-day styling
   endTime: string | null; // 24h "HH:MM" or null when the block is open-ended
   label: string;
-  completed: boolean;
+  status: TaskStatus;
+  notes?: string; // free-text context the user attaches to the task
 };
 
 export type Schedule = {

@@ -3,8 +3,8 @@ import type { ScheduleTask } from "../types/schedule";
 
 const anthropic = new Anthropic();
 
-/** The task fields the model produces; id + completed are added server-side. */
-export type ParsedTask = Omit<ScheduleTask, "id" | "completed">;
+/** The task fields the model produces; id + status are added server-side. */
+export type ParsedTask = Omit<ScheduleTask, "id" | "status" | "notes">;
 
 const PARSE_SYSTEM_PROMPT = `You are a schedule data extractor. Your only job is to read a free-text daily schedule and output a single valid JSON object that matches the schema below. Output ONLY the raw JSON — no markdown fences, no explanation, no prose before or after.
 

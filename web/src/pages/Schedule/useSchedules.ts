@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 
+export type TaskStatus = "pending" | "completed" | "future" | "wontDo";
+
 export type ScheduleTask = {
   id: string;
   startTime: string; // 24h "HH:MM"
   endTime: string | null; // 24h "HH:MM" or null when open-ended
   label: string;
-  completed: boolean;
+  status: TaskStatus;
+  notes?: string;
 };
 
 export type Schedule = {
@@ -83,38 +86,46 @@ export function useSchedules() {
     return data.schedule;
   }
 
-  /** Toggle a task's completion. Optimistic; reverts the local state on failure. */
-  async function setTaskCompleted(
+  /**
+   * Patch a task's status and/or notes. Optimistic: applies the change locally,
+   * then reconciles with the server response, reverting to the prior task on
+   * failure.
+   */
+  async function updateTask(
     id: string,
     taskId: string,
-    completed: boolean,
+    patch: { status?: TaskStatus; notes?: string },
   ) {
-    const apply = (value: boolean) =>
+    const prevTask = schedules
+      .find((s) => s.id === id)
+      ?.tasks?.find((t) => t.id === taskId);
+
+    const replace = (next: Partial<ScheduleTask>) =>
       setSchedules((prev) =>
         prev.map((s) =>
           s.id === id
             ? {
                 ...s,
                 tasks: s.tasks?.map((t) =>
-                  t.id === taskId ? { ...t, completed: value } : t,
+                  t.id === taskId ? { ...t, ...next } : t,
                 ),
               }
             : s,
         ),
       );
 
-    apply(completed);
+    replace(patch);
     try {
       const res = await fetch(`/api/schedules/${id}/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed }),
+        body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error("Failed to update task");
       const data = (await res.json()) as { schedule: Schedule };
       setSchedules((prev) => prev.map((s) => (s.id === id ? data.schedule : s)));
     } catch (err) {
-      apply(!completed); // revert
+      if (prevTask) replace(prevTask); // revert
       throw err;
     }
   }
@@ -127,6 +138,6 @@ export function useSchedules() {
     updateSchedule,
     deleteSchedule,
     parseTasks,
-    setTaskCompleted,
+    updateTask,
   };
 }

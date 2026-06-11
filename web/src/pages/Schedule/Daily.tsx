@@ -1,9 +1,14 @@
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
-import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
+import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { Button, Card, Heading, Inline, Stack, Text, Textarea } from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
-import { useSchedules, type Schedule } from "./useSchedules";
+import {
+  useSchedules,
+  type Schedule,
+  type ScheduleTask,
+  type TaskStatus,
+} from "./useSchedules";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
 import styles from "./Schedule.module.css";
 
@@ -67,26 +72,90 @@ function UnparsedSchedule({
   );
 }
 
+/** A task's expandable detail area: free-text notes + outcome controls. */
+function TaskDetail({
+  task,
+  onUpdate,
+}: {
+  task: ScheduleTask;
+  onUpdate: (taskId: string, patch: { status?: TaskStatus; notes?: string }) => void;
+}) {
+  // Local draft so typing stays smooth; we persist on blur.
+  const [notes, setNotes] = useState(task.notes ?? "");
+
+  function saveNotes() {
+    if (notes === (task.notes ?? "")) return; // nothing changed
+    onUpdate(task.id, { notes });
+  }
+
+  // Clicking the active outcome again clears it back to pending.
+  function setStatus(next: Exclude<TaskStatus, "pending">) {
+    onUpdate(task.id, { status: task.status === next ? "pending" : next });
+  }
+
+  return (
+    <div className={styles.taskDetail}>
+      <Stack gap="3xs">
+        <Text as="label" size="xs" variant="muted">
+          Notes
+        </Text>
+        <Textarea
+          rows={3}
+          placeholder="Add any notes for this task..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          onBlur={saveNotes}
+        />
+      </Stack>
+      <Inline gap="2xs">
+        <Button
+          size="sm"
+          variant={task.status === "future" ? "primary" : "secondary"}
+          onClick={() => setStatus("future")}
+        >
+          Future
+        </Button>
+        <Button
+          size="sm"
+          variant={task.status === "wontDo" ? "danger" : "secondary"}
+          onClick={() => setStatus("wontDo")}
+        >
+          Won't do
+        </Button>
+      </Inline>
+    </div>
+  );
+}
+
 /** Interactive, time-aware checklist of the day's tasks. */
 function TaskList({
   schedule,
-  onToggle,
+  onUpdate,
   onParse,
 }: {
   schedule: Schedule;
-  onToggle: (id: string, taskId: string, completed: boolean) => Promise<void>;
+  onUpdate: (
+    id: string,
+    taskId: string,
+    patch: { status?: TaskStatus; notes?: string },
+  ) => Promise<void>;
   onParse: (id: string) => Promise<Schedule>;
 }) {
   const now = useNow();
   const [reparsing, setReparsing] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tasks = schedule.tasks ?? [];
-  const completed = tasks.filter((t) => t.completed).length;
+  // A task is "resolved" once the user gives it any terminal outcome.
+  const resolved = tasks.filter((t) => t.status !== "pending").length;
 
-  async function toggle(taskId: string, value: boolean) {
+  async function update(
+    taskId: string,
+    patch: { status?: TaskStatus; notes?: string },
+  ) {
     setError(null);
     try {
-      await onToggle(schedule.id, taskId, value);
+      await onUpdate(schedule.id, taskId, patch);
     } catch {
       setError("Failed to update task. Please try again.");
     }
@@ -111,7 +180,7 @@ function TaskList({
           <Heading level={2}>Today's schedule</Heading>
           <Inline gap="sm">
             <Text variant="muted" size="sm">
-              {completed}/{tasks.length} done
+              {resolved}/{tasks.length} resolved
             </Text>
             <Button
               size="sm"
@@ -132,23 +201,49 @@ function TaskList({
         <Stack gap="2xs">
           {tasks.map((task, i) => {
             const status = taskStatus(tasks, i, now);
+            const expanded = expandedId === task.id;
             return (
-              <label
+              <div
                 key={task.id}
                 className={cn(styles.taskRow, styles[status])}
               >
-                <input
-                  type="checkbox"
-                  className={styles.taskCheckbox}
-                  checked={task.completed}
-                  onChange={(e) => toggle(task.id, e.target.checked)}
-                />
-                <span className={styles.taskTime}>{formatTimeRange(task)}</span>
-                <span className={styles.taskLabel}>{task.label}</span>
-                {status === "current" && (
-                  <span className={styles.nowBadge}>Now</span>
-                )}
-              </label>
+                <div className={styles.taskMain}>
+                  <input
+                    type="checkbox"
+                    className={styles.taskCheckbox}
+                    checked={task.status === "completed"}
+                    aria-label={`Mark "${task.label}" complete`}
+                    onChange={(e) =>
+                      update(task.id, {
+                        status: e.target.checked ? "completed" : "pending",
+                      })
+                    }
+                  />
+                  <span className={styles.taskTime}>
+                    {formatTimeRange(task)}
+                  </span>
+                  <span className={styles.taskLabel}>{task.label}</span>
+                  {status === "current" && (
+                    <span className={styles.nowBadge}>Now</span>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.expandButton}
+                    aria-expanded={expanded}
+                    aria-label={expanded ? "Collapse task" : "Expand task"}
+                    onClick={() =>
+                      setExpandedId(expanded ? null : task.id)
+                    }
+                  >
+                    {expanded ? (
+                      <ChevronDown size={18} aria-hidden />
+                    ) : (
+                      <ChevronRight size={18} aria-hidden />
+                    )}
+                  </button>
+                </div>
+                {expanded && <TaskDetail task={task} onUpdate={update} />}
+              </div>
             );
           })}
         </Stack>
@@ -158,8 +253,7 @@ function TaskList({
 }
 
 export default function ScheduleDaily() {
-  const { schedules, loading, error, parseTasks, setTaskCompleted } =
-    useSchedules();
+  const { schedules, loading, error, parseTasks, updateTask } = useSchedules();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
 
@@ -197,7 +291,7 @@ export default function ScheduleDaily() {
       ) : schedule.tasks && schedule.tasks.length > 0 ? (
         <TaskList
           schedule={schedule}
-          onToggle={setTaskCompleted}
+          onUpdate={updateTask}
           onParse={parseTasks}
         />
       ) : (

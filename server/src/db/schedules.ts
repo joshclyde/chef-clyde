@@ -1,6 +1,24 @@
 import fs from "fs";
 import path from "path";
-import type { Schedule } from "../types/schedule";
+import type { Schedule, ScheduleTask } from "../types/schedule";
+
+/**
+ * Migrate a stored task to the current shape. Older files used a
+ * `completed: boolean` field; map it onto the newer `status` string and drop
+ * the legacy key so reads always return a uniform shape.
+ */
+function normalizeTask(task: ScheduleTask & { completed?: boolean }): ScheduleTask {
+  const { completed, ...rest } = task;
+  return {
+    ...rest,
+    status: rest.status ?? (completed ? "completed" : "pending"),
+  };
+}
+
+function normalizeSchedule(schedule: Schedule): Schedule {
+  if (schedule.tasks) schedule.tasks = schedule.tasks.map(normalizeTask);
+  return schedule;
+}
 
 export function getSchedulesDir(): string {
   const dir = path.join(process.env.DB_PATH!, "schedules");
@@ -19,15 +37,19 @@ export function readAllSchedules(): Schedule[] {
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith(".json"))
-    .map(
-      (f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Schedule,
+    .map((f) =>
+      normalizeSchedule(
+        JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Schedule,
+      ),
     );
 }
 
 export function readSchedule(id: string): Schedule | null {
   const filePath = path.join(getSchedulesDir(), `${id}.json`);
   if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, "utf-8")) as Schedule;
+  return normalizeSchedule(
+    JSON.parse(fs.readFileSync(filePath, "utf-8")) as Schedule,
+  );
 }
 
 export function writeSchedule(schedule: Schedule): void {

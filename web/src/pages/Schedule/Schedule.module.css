@@ -18,19 +18,48 @@
 /* ----- daily task list ----- */
 .taskRow {
   position: relative;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  transition: background var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+}
+.taskMain {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-surface);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--easing-standard),
-    border-color var(--duration-fast) var(--easing-standard);
 }
 .taskRow:hover {
   background: var(--color-bg-subtle);
+}
+
+.expandButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xs);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard);
+}
+.expandButton:hover {
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+}
+
+.taskDetail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .taskCheckbox {
@@ -70,7 +99,7 @@
   border-color: var(--color-action-primary-bg);
   background: var(--color-bg-subtle);
 }
-.taskRow.current::before {
+.taskRow.current .taskMain::before {
   content: "";
   position: absolute;
   left: -1px;
@@ -107,5 +136,27 @@
 }
 .taskRow.past .taskLabel,
 .taskRow.past .taskTime {
+  color: var(--color-text-subtle);
+}
+
+/* future — deliberately deferred; still intended, so keep the label readable */
+.taskRow.future {
+  border-color: var(--color-action-primary-bg);
+  border-style: dashed;
+}
+.taskRow.future .taskLabel {
+  color: var(--color-text-default);
+  font-style: italic;
+}
+
+/* wontDo — dropped; de-emphasized like completed but struck through */
+.taskRow.wontDo {
+  background: var(--color-bg-subtle);
+}
+.taskRow.wontDo .taskLabel {
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+.taskRow.wontDo .taskTime {
   color: var(--color-text-subtle);
 }

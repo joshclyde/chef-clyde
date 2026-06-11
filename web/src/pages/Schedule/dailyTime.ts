@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 import type { ScheduleTask } from "./useSchedules";
 
-export type TaskStatus = "completed" | "current" | "past" | "upcoming";
+/**
+ * The visual state used to style a task row. Terminal persisted statuses
+ * (`completed` / `future` / `wontDo`) take precedence; otherwise the row is
+ * classified by where the clock sits relative to its time block.
+ */
+export type RowStatus =
+  | "completed"
+  | "future"
+  | "wontDo"
+  | "current"
+  | "past"
+  | "upcoming";
 
 /** A clock that re-renders on an interval so time-of-day styling stays live. */
 export function useNow(intervalMs = 60_000): Date {
@@ -33,17 +44,18 @@ function effectiveEnd(tasks: ScheduleTask[], index: number): number {
 }
 
 /**
- * Classify a task relative to the current time. Completed always wins; otherwise
- * a task is `current` while now is within its block, `past` once its block has
- * ended (i.e. missed), and `upcoming` before it starts.
+ * Classify a task for styling. A terminal status the user set (completed /
+ * future / wontDo) always wins; otherwise a pending task is `current` while now
+ * is within its block, `past` once its block has ended (i.e. missed), and
+ * `upcoming` before it starts.
  */
 export function taskStatus(
   tasks: ScheduleTask[],
   index: number,
   now: Date,
-): TaskStatus {
+): RowStatus {
   const task = tasks[index];
-  if (task.completed) return "completed";
+  if (task.status !== "pending") return task.status;
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const start = toMinutes(task.startTime);
   if (nowMin < start) return "upcoming";

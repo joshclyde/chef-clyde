@@ -2,7 +2,7 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { Schedule } from "../types/schedule";
+import type { Schedule, TaskStatus } from "../types/schedule";
 import {
   getSchedulesDir,
   getSoftDeleteDir,
@@ -140,7 +140,7 @@ router.post("/:id/parse", async (req, res) => {
     tasks: result.tasks.map((task) => ({
       ...task,
       id: crypto.randomUUID(),
-      completed: false,
+      status: "pending" as const,
     })),
     updatedAt: new Date().toISOString(),
   };
@@ -148,13 +148,31 @@ router.post("/:id/parse", async (req, res) => {
   res.status(200).json({ schedule: updated });
 });
 
-// Toggle a single task's completion state.
+const TASK_STATUSES: TaskStatus[] = [
+  "pending",
+  "completed",
+  "future",
+  "wontDo",
+];
+
+// Update a single task's status and/or notes. Both fields are optional, but at
+// least one must be present.
 router.patch("/:id/tasks/:taskId", (req, res) => {
   const { id, taskId } = req.params;
-  const { completed } = req.body as { completed?: unknown };
+  const { status, notes } = req.body as { status?: unknown; notes?: unknown };
 
-  if (typeof completed !== "boolean") {
-    res.status(400).json({ error: "completed (boolean) is required" });
+  if (status !== undefined && !TASK_STATUSES.includes(status as TaskStatus)) {
+    res.status(400).json({
+      error: `status must be one of: ${TASK_STATUSES.join(", ")}`,
+    });
+    return;
+  }
+  if (notes !== undefined && typeof notes !== "string") {
+    res.status(400).json({ error: "notes must be a string" });
+    return;
+  }
+  if (status === undefined && notes === undefined) {
+    res.status(400).json({ error: "status or notes is required" });
     return;
   }
 
@@ -170,7 +188,8 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     return;
   }
 
-  task.completed = completed;
+  if (status !== undefined) task.status = status as TaskStatus;
+  if (notes !== undefined) task.notes = notes as string;
   schedule.updatedAt = new Date().toISOString();
   writeSchedule(schedule);
   res.status(200).json({ schedule });
