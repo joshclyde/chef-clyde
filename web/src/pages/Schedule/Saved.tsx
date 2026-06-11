@@ -127,11 +127,13 @@ function CollapsibleText({ content }: { content: string }) {
 
 function ScheduleCard({
   schedule,
+  isToday,
   onUpdate,
   onDelete,
   onParse,
 }: {
   schedule: Schedule;
+  isToday: boolean;
   onUpdate: (id: string, date: string, content: string) => Promise<void>;
   onDelete: (id: string) => void;
   onParse: (id: string) => Promise<Schedule>;
@@ -177,7 +179,7 @@ function ScheduleCard({
   }
 
   return (
-    <Card>
+    <Card className={cn(isToday && styles.todayCard)}>
       <Stack gap="md">
         {editing ? (
           <>
@@ -259,6 +261,7 @@ export default function ScheduleSaved() {
   const { schedules, loading, error, createSchedule, updateSchedule, deleteSchedule, parseTasks } =
     useSchedules();
   const [creating, setCreating] = useState(false);
+  const today = todayLocal();
 
   const sorted = [...schedules].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -311,6 +314,7 @@ export default function ScheduleSaved() {
             <ScheduleCard
               key={schedule.id}
               schedule={schedule}
+              isToday={schedule.date === today}
               onUpdate={handleUpdate}
               onDelete={deleteSchedule}
               onParse={parseTasks}
