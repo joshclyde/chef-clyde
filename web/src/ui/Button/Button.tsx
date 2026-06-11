@@ -7,7 +7,8 @@ type ButtonVariant =
   | "secondary"
   | "danger"
   | "success"
-  | "ghost";
+  | "ghost"
+  | "ai";
 type ButtonSize = "sm" | "md";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

@@ -73,3 +73,40 @@
 .ghost:hover:not(:disabled) {
   background: var(--color-action-ghost-bg-hover);
 }
+
+/* AI — blue→green gradient + soft glow. The signature for "this runs the AI". */
+.ai {
+  background: var(--gradient-ai);
+  color: var(--color-ai-fg);
+  border-color: transparent;
+  box-shadow: 0 1px 2px var(--color-ai-glow);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.ai:hover:not(:disabled) {
+  box-shadow: 0 2px 12px var(--color-ai-glow);
+  filter: brightness(1.05);
+}
+
+/* Animated only when the user opted in AND the OS allows motion. The larger
+   background-size gives the gradient room to flow; the static/reduced-motion
+   case keeps 100% so the button shows the full spectrum (no washed-out edge). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-ai-motion="on"] .ai {
+    background-size: 200% 200%;
+    animation: ai-flow 6s ease infinite;
+  }
+}
+
+/* Keyframes are defined locally (per module) so CSS Modules hashes the
+   definition and the reference above to the same scoped name. */
+@keyframes ai-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

@@ -46,12 +46,24 @@
 
 .message {
   display: flex;
+  gap: var(--space-xs);
+  align-items: flex-start;
 }
 .message.user {
   justify-content: flex-end;
 }
 .message.assistant {
   justify-content: flex-start;
+}
+
+/* iridescent sparkle marking an assistant/AI message */
+.aiMark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: var(--space-xs);
+  color: var(--color-ai-accent);
 }
 
 .bubble {
@@ -68,13 +80,35 @@
   border-bottom-right-radius: var(--radius-sm);
 }
 .assistant .bubble {
-  background: var(--color-bg-muted);
+  background: var(--gradient-ai-soft), var(--color-bg-muted);
   color: var(--color-text-strong);
+  border: 1px solid var(--color-ai-tint-border);
   border-bottom-left-radius: var(--radius-sm);
 }
-.loading {
-  opacity: 0.6;
+
+/* "Thinking…" — iridescent gradient text instead of a tinted bubble */
+.assistant .bubble.loading {
+  background: var(--gradient-ai);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  border-color: transparent;
   font-style: italic;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-ai-motion="on"] .bubble.loading {
+    background-size: 200% auto;
+    animation: ai-shimmer 2.5s linear infinite;
+  }
+}
+/* local keyframes so CSS Modules scopes definition + reference together */
+@keyframes ai-shimmer {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -200% 50%;
+  }
 }
 
 /* ----- composer ----- */

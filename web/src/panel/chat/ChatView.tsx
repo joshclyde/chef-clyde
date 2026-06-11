@@ -37,7 +37,7 @@ export function ChatView({ config }: { config: ChatConfig }) {
                   <Button
                     key={m.id}
                     size="sm"
-                    variant={mode === m.id ? "primary" : "secondary"}
+                    variant={mode === m.id ? "ai" : "secondary"}
                     className={styles.modeButton}
                     onClick={() => setMode(m.id)}
                   >

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
@@ -45,7 +46,13 @@ function UnparsedSchedule({
       <Stack gap="md">
         <Inline justify="between">
           <Heading level={2}>Today's schedule</Heading>
-          <Button size="sm" onClick={generate} disabled={parsing}>
+          <Button
+            size="sm"
+            variant="ai"
+            onClick={generate}
+            disabled={parsing}
+          >
+            <Sparkles size={16} strokeWidth={2} aria-hidden />
             {parsing ? "Generating..." : "Generate task list"}
           </Button>
         </Inline>
@@ -108,10 +115,11 @@ function TaskList({
             </Text>
             <Button
               size="sm"
-              variant="ghost"
+              variant="ai"
               onClick={reparse}
               disabled={reparsing}
             >
+              <Sparkles size={16} strokeWidth={2} aria-hidden />
               {reparsing ? "Regenerating..." : "Re-generate"}
             </Button>
           </Inline>

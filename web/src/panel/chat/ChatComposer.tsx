@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { Button, Inline, Textarea } from "../../ui";
 import styles from "./Chat.module.css";
 
@@ -29,7 +30,12 @@ export function ChatComposer({
         disabled={loading}
         rows={2}
       />
-      <Button onClick={onSubmit} disabled={loading || !input.trim()}>
+      <Button
+        variant="ai"
+        onClick={onSubmit}
+        disabled={loading || !input.trim()}
+      >
+        <Sparkles size={16} strokeWidth={2} aria-hidden />
         Send
       </Button>
     </Inline>

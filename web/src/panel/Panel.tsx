@@ -30,7 +30,11 @@ export function Panel() {
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                className={cn(styles.tab, isActive && styles.tabActive)}
+                className={cn(
+                  styles.tab,
+                  tab.id === "chat" && styles.aiTab,
+                  isActive && styles.tabActive,
+                )}
                 onClick={() => setActiveTab(tab.id)}
               >
                 <Icon size={16} strokeWidth={2} aria-hidden />

@@ -85,6 +85,41 @@
   border-bottom-color: var(--color-action-primary-bg);
 }
 
+/* the Chat tab is an AI surface: iridescent gradient underline */
+.aiTab {
+  position: relative;
+}
+.aiTab.tabActive {
+  border-bottom-color: transparent;
+}
+.aiTab.tabActive::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--gradient-ai);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-ai-motion="on"] .aiTab.tabActive::after {
+    background-size: 200% auto;
+    animation: ai-flow 6s ease infinite;
+  }
+}
+/* local keyframes so CSS Modules scopes definition + reference together */
+@keyframes ai-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .controls {
   display: flex;
   gap: var(--space-3xs);

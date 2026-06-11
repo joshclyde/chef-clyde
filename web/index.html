@@ -17,6 +17,11 @@
               : "light";
           }
           document.documentElement.setAttribute("data-theme", theme);
+
+          // Same idea for AI motion: avoid a flash of the wrong motion state.
+          var motion = localStorage.getItem("chef-clyde-ai-motion");
+          if (motion !== "on" && motion !== "off") motion = "on";
+          document.documentElement.setAttribute("data-ai-motion", motion);
         } catch (e) {}
       })();
     </script>

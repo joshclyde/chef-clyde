@@ -1,7 +1,17 @@
 import { useRef, useEffect } from "react";
+import { Sparkles } from "lucide-react";
 import { type Message } from "./types";
 import { cn } from "../../ui/cn";
 import styles from "./Chat.module.css";
+
+/** Small iridescent sparkle that marks a message as coming from the AI. */
+function AiMark() {
+  return (
+    <span className={styles.aiMark} aria-hidden>
+      <Sparkles size={14} strokeWidth={2} />
+    </span>
+  );
+}
 
 type Props = {
   messages: Message[];
@@ -19,12 +29,14 @@ export function ChatMessages({ messages, loading }: Props) {
     <div className={styles.messages}>
       {messages.map((msg, i) => (
         <div key={i} className={cn(styles.message, styles[msg.role])}>
+          {msg.role === "assistant" && <AiMark />}
           <div className={styles.bubble}>{msg.content}</div>
         </div>
       ))}
       {loading && (
         <div className={cn(styles.message, styles.assistant)}>
-          <div className={cn(styles.bubble, styles.loading)}>Thinking...</div>
+          <AiMark />
+          <div className={cn(styles.bubble, styles.loading)}>Thinking…</div>
         </div>
       )}
       <div ref={bottomRef} />

@@ -1,6 +1,7 @@
-import { Moon, PanelRight, Sun } from "lucide-react";
+import { Moon, PanelRight, Sparkles, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../theme/useTheme";
+import { useAiMotion } from "../ai/useAiMotion";
 import { usePanel } from "../panel/usePanel";
 import { cn } from "../ui/cn";
 import { activities, type Activity } from "./activities";
@@ -13,6 +14,7 @@ type ActivityBarProps = {
 export function ActivityBar({ activeActivity }: ActivityBarProps) {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
+  const { motion, toggle: toggleMotion } = useAiMotion();
   const { open, toggleOpen } = usePanel();
 
   return (
@@ -43,6 +45,18 @@ export function ActivityBar({ activeActivity }: ActivityBarProps) {
         onClick={toggleOpen}
       >
         <PanelRight size={22} strokeWidth={2} aria-hidden />
+      </button>
+      <button
+        type="button"
+        className={cn(styles.item, motion === "on" && styles.active)}
+        aria-label={
+          motion === "on" ? "Turn off AI motion" : "Turn on AI motion"
+        }
+        aria-pressed={motion === "on"}
+        title={motion === "on" ? "AI motion: on" : "AI motion: off"}
+        onClick={toggleMotion}
+      >
+        <Sparkles size={22} strokeWidth={2} aria-hidden />
       </button>
       <button
         type="button"
