@@ -15,6 +15,24 @@
   width: 100%;
 }
 
+.textToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  align-self: flex-start;
+  padding: var(--space-3xs) 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+.textToggle:hover {
+  color: var(--color-text-default);
+}
+
 /* ----- daily task list ----- */
 .taskRow {
   position: relative;
