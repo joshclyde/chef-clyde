@@ -1,7 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { readAllChores } from "../db/chores";
 import { readScheduleInstructions } from "../db/scheduleInstructions";
+import { readAllSchedules } from "../db/schedules";
 import type { Chore, FrequencyUnit } from "../types/chore";
+import type { TaskStatus } from "../types/schedule";
 
 const anthropic = new Anthropic();
 
@@ -37,6 +39,16 @@ function lastPerformed(chore: Chore): Date | null {
 
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Local "YYYY-MM-DD" for a date. The "en-CA" locale renders ISO order in the
+ * local timezone — the exact shape schedules are keyed by on the web (see
+ * web/src/lib/date.ts) — so it avoids the UTC off-by-one that `isoDate` would
+ * introduce when comparing against locally-keyed schedule dates.
+ */
+function localIsoDate(date: Date): string {
+  return date.toLocaleDateString("en-CA");
 }
 
 /**
@@ -77,11 +89,77 @@ function buildChoresContext(): string {
   return `The user's chores and their readiness:\n${lines.join("\n")}`;
 }
 
+/** Human-readable outcome for each task status, used in the history summary. */
+const STATUS_WORD: Record<TaskStatus, string> = {
+  completed: "done",
+  wontDo: "skipped",
+  future: "deferred",
+  pending: "pending",
+};
+
+/**
+ * Summarize the user's tasks over the last 7 days (today + the 6 prior days)
+ * so the model knows what was actually done, skipped, deferred, or left
+ * pending — and can plan accordingly instead of re-suggesting finished work.
+ * Schedules with no parsed tasks carry no outcome signal and are skipped.
+ */
+export function buildRecentTaskHistoryContext(): string {
+  // The 7 local dates in scope, keyed the same way schedules are stored.
+  const window = new Set<string>();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    window.add(localIsoDate(d));
+  }
+
+  const today = localIsoDate(new Date());
+  const yesterday = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return localIsoDate(d);
+  })();
+
+  const recent = readAllSchedules()
+    .filter((s) => window.has(s.date) && s.tasks && s.tasks.length > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (recent.length === 0) {
+    return "No task history is recorded for the last 7 days.";
+  }
+
+  const sections = recent.map((schedule) => {
+    let tag: string;
+    if (schedule.date === today) tag = "today";
+    else if (schedule.date === yesterday) tag = "yesterday";
+    else {
+      // Parse as local midnight so the weekday isn't shifted by UTC.
+      tag = new Date(`${schedule.date}T00:00`).toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+    }
+
+    const lines = schedule.tasks!.map((task) => {
+      const note = task.notes?.trim();
+      const suffix = note ? ` — note: ${note}` : "";
+      return `- [${STATUS_WORD[task.status]}] ${task.label}${suffix}`;
+    });
+
+    return `${schedule.date} (${tag}):\n${lines.join("\n")}`;
+  });
+
+  return (
+    "The user's task history for the last 7 days (use it to avoid re-suggesting " +
+    "things already done, respect what they skipped, and resurface anything left " +
+    "pending or deferred):\n" +
+    sections.join("\n\n")
+  );
+}
+
 export async function generateScheduleResponse(
   messages: { role: "user" | "assistant"; content: string }[],
 ): Promise<string> {
   const today = isoDate(new Date());
-  let systemPrompt = `${SCHEDULE_SYSTEM_PROMPT}\n\nToday's date is ${today}.\n\n${buildChoresContext()}`;
+  let systemPrompt = `${SCHEDULE_SYSTEM_PROMPT}\n\nToday's date is ${today}.\n\n${buildChoresContext()}\n\n${buildRecentTaskHistoryContext()}`;
 
   // Standing, user-authored instructions that apply to every generation (e.g.
   // "sleep in until 9:00 AM every Saturday"). Appended only when non-empty.
