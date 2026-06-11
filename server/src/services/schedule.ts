@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { readAllChores } from "../db/chores";
+import { readScheduleInstructions } from "../db/scheduleInstructions";
 import type { Chore, FrequencyUnit } from "../types/chore";
 
 const anthropic = new Anthropic();
@@ -80,7 +81,14 @@ export async function generateScheduleResponse(
   messages: { role: "user" | "assistant"; content: string }[],
 ): Promise<string> {
   const today = isoDate(new Date());
-  const systemPrompt = `${SCHEDULE_SYSTEM_PROMPT}\n\nToday's date is ${today}.\n\n${buildChoresContext()}`;
+  let systemPrompt = `${SCHEDULE_SYSTEM_PROMPT}\n\nToday's date is ${today}.\n\n${buildChoresContext()}`;
+
+  // Standing, user-authored instructions that apply to every generation (e.g.
+  // "sleep in until 9:00 AM every Saturday"). Appended only when non-empty.
+  const instructions = readScheduleInstructions().trim();
+  if (instructions) {
+    systemPrompt += `\n\nThe user's standing scheduling instructions (apply these every time):\n${instructions}`;
+  }
 
   const response = await anthropic.messages.create({
     model: "claude-opus-4-8",

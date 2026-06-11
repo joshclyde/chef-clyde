@@ -22,6 +22,7 @@ export const activities: Activity[] = [
     navItems: [
       { label: "Daily", path: "/schedule/daily" },
       { label: "Saved", path: "/schedule/saved" },
+      { label: "Instructions", path: "/schedule/instructions" },
     ],
   },
   {
