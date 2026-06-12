@@ -78,6 +78,63 @@ export function weeklyMinutesByFloor(chores: Chore[]): BreakdownRow[] {
   );
 }
 
+export type FrequencyGroupChore = {
+  chore: Chore;
+  /** Weekly contribution; null when the chore has no time estimate. */
+  minutesPerWeek: number | null;
+};
+
+export type FrequencyGroup = {
+  label: string;
+  /** Sum over timed chores only; untimed ones are listed but not counted. */
+  minutesPerWeek: number;
+  timedCount: number;
+  chores: FrequencyGroupChore[];
+};
+
+type FrequencyBucket = { label: string; minDays: number; maxDays: number };
+
+/** Cadence buckets over the normalized frequency (1 week = 7 days, 1 month = 30). */
+const FREQUENCY_BUCKETS: FrequencyBucket[] = [
+  { label: "Daily", minDays: 1, maxDays: 1 },
+  { label: "Every 2–6 days", minDays: 2, maxDays: 6 },
+  { label: "Weekly / Bi-weekly", minDays: 7, maxDays: 14 },
+  { label: "Every 15–31 days", minDays: 15, maxDays: 31 },
+  { label: "31+ days", minDays: 32, maxDays: Infinity },
+];
+
+/** Non-empty cadence groups, most frequent first; chores by weekly share, untimed last. */
+export function frequencyGroups(chores: Chore[]): FrequencyGroup[] {
+  const groups: FrequencyGroup[] = FREQUENCY_BUCKETS.map(({ label }) => ({
+    label,
+    minutesPerWeek: 0,
+    timedCount: 0,
+    chores: [],
+  }));
+  for (const chore of chores) {
+    const days = frequencyDays(chore);
+    const index = FREQUENCY_BUCKETS.findIndex(
+      (b) => days >= b.minDays && days <= b.maxDays,
+    );
+    const group = groups[Math.max(index, 0)];
+    const perDay = choreMinutesPerDay(chore);
+    const minutesPerWeek = perDay == null ? null : perDay * 7;
+    group.chores.push({ chore, minutesPerWeek });
+    if (minutesPerWeek != null) {
+      group.minutesPerWeek += minutesPerWeek;
+      group.timedCount += 1;
+    }
+  }
+  for (const group of groups) {
+    group.chores.sort(
+      (a, b) =>
+        (b.minutesPerWeek ?? -1) - (a.minutesPerWeek ?? -1) ||
+        a.chore.name.localeCompare(b.chore.name),
+    );
+  }
+  return groups.filter((group) => group.chores.length > 0);
+}
+
 /** "45m" under an hour, "6h 30m" above ("7h" when even). Rounds for display only. */
 export function formatMinutes(minutes: number): string {
   if (minutes > 0 && minutes < 0.5) return "<1m";

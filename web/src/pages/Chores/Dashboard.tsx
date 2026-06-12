@@ -1,4 +1,5 @@
 import { Heading, Stack, Text } from "../../ui";
+import { FrequencyBreakdownView } from "./FrequencyBreakdownView";
 import { TimeCommitmentView } from "./TimeCommitmentView";
 import { useChores } from "./useChores";
 import styles from "./Dashboard.module.css";
@@ -25,7 +26,10 @@ export default function Dashboard() {
           No chores yet. Add chores in Tasks to see time estimates.
         </Text>
       ) : (
-        <TimeCommitmentView chores={chores} />
+        <>
+          <TimeCommitmentView chores={chores} />
+          <FrequencyBreakdownView chores={chores} />
+        </>
       )}
     </Stack>
   );

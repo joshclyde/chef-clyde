@@ -14,3 +14,50 @@
   gap: var(--space-md);
   align-items: start;
 }
+
+/* ----- frequency groups ----- */
+.group + .group {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.groupToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  width: 100%;
+  padding: var(--space-xs) var(--space-3xs);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupToggle:hover {
+  background: var(--color-bg-subtle);
+}
+
+.groupToggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
+}
+
+.groupChevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.groupTotal {
+  margin-left: auto;
+}
+
+.groupChores {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3xs) var(--space-3xs) var(--space-sm) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
