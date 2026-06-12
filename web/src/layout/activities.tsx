@@ -29,7 +29,10 @@ export const activities: Activity[] = [
     id: "chores",
     label: "Chores",
     icon: BrushCleaning,
-    navItems: [{ label: "Tasks", path: "/chores/tasks" }],
+    navItems: [
+      { label: "Dashboard", path: "/chores/dashboard" },
+      { label: "Tasks", path: "/chores/tasks" },
+    ],
   },
   {
     id: "cookbook",

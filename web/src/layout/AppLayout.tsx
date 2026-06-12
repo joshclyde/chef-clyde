@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Pantry from "../pages/Pantry";
 import Recipes from "../pages/Recipes";
+import Dashboard from "../pages/Chores/Dashboard";
 import Tasks from "../pages/Chores/Tasks";
 import ScheduleDaily from "../pages/Schedule/Daily";
 import ScheduleInstructions from "../pages/Schedule/Instructions";
@@ -27,7 +28,8 @@ export function AppLayout() {
             <Route path="/" element={<Navigate to="/recipes" replace />} />
             <Route path="/pantry" element={<Pantry />} />
             <Route path="/recipes" element={<Recipes />} />
-            <Route path="/chores" element={<Navigate to="/chores/tasks" replace />} />
+            <Route path="/chores" element={<Navigate to="/chores/dashboard" replace />} />
+            <Route path="/chores/dashboard" element={<Dashboard />} />
             <Route path="/chores/tasks" element={<Tasks />} />
             <Route path="/schedule" element={<Navigate to="/schedule/daily" replace />} />
             <Route path="/schedule/daily" element={<ScheduleDaily />} />
