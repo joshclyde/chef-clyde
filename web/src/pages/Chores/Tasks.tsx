@@ -1,10 +1,18 @@
 import { Fragment, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  ChevronsUpDown,
+} from "lucide-react";
 import { Button, Card, Heading, Inline, Input, Stack, Text } from "../../ui";
 import { ChoreForm } from "./ChoreForm";
+import { FLOORS } from "./constants";
 import {
   dueSortKey,
   dueStatus,
+  frequencyDays,
   lastPerformed,
   nextDue,
   useChores,
@@ -15,6 +23,42 @@ import {
 import styles from "./Tasks.module.css";
 
 const COLUMN_COUNT = 8;
+
+type SortColumn = "name" | "frequency" | "time" | "room" | "floor" | "due";
+type SortDirection = "asc" | "desc";
+
+/** Per-column key extractor; `null` always sorts last regardless of direction. */
+const sortKeys: Record<SortColumn, (chore: Chore) => string | number | null> = {
+  name: (c) => c.name.toLowerCase(),
+  frequency: (c) => frequencyDays(c),
+  time: (c) => c.typicalTimeMinutes ?? null,
+  room: (c) => c.room?.toLowerCase() ?? null,
+  floor: (c) => {
+    if (!c.floor) return null;
+    const index = FLOORS.indexOf(c.floor as (typeof FLOORS)[number]);
+    return index === -1 ? null : index;
+  },
+  due: (c) => dueSortKey(c),
+};
+
+function compareChores(
+  a: Chore,
+  b: Chore,
+  column: SortColumn,
+  direction: SortDirection,
+): number {
+  const ka = sortKeys[column](a);
+  const kb = sortKeys[column](b);
+  // Empty values always sort last, no matter the direction.
+  if (ka === null && kb === null) return 0;
+  if (ka === null) return 1;
+  if (kb === null) return -1;
+  const base =
+    typeof ka === "number" && typeof kb === "number"
+      ? ka - kb
+      : String(ka).localeCompare(String(kb));
+  return direction === "asc" ? base : -base;
+}
 
 function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString(undefined, {
@@ -59,6 +103,38 @@ function Empty() {
   );
 }
 
+function SortableHeader({
+  column,
+  label,
+  sort,
+  onSort,
+}: {
+  column: SortColumn;
+  label: string;
+  sort: { column: SortColumn; direction: SortDirection };
+  onSort: (column: SortColumn) => void;
+}) {
+  const active = sort.column === column;
+  const Icon = !active ? ChevronsUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <th aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        className={styles.sortButton}
+        data-active={active || undefined}
+        onClick={() => onSort(column)}
+      >
+        {label}
+        <Icon
+          size={14}
+          className={active ? styles.sortIcon : styles.sortIconInactive}
+          aria-hidden
+        />
+      </button>
+    </th>
+  );
+}
+
 export default function Tasks() {
   const {
     chores,
@@ -75,8 +151,22 @@ export default function Tasks() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [logDates, setLogDates] = useState<Record<string, string>>({});
+  const [sort, setSort] = useState<{
+    column: SortColumn;
+    direction: SortDirection;
+  }>({ column: "due", direction: "asc" });
 
-  const sorted = [...chores].sort((a, b) => dueSortKey(a) - dueSortKey(b));
+  const sorted = [...chores].sort((a, b) =>
+    compareChores(a, b, sort.column, sort.direction),
+  );
+
+  function handleSort(column: SortColumn) {
+    setSort((prev) =>
+      prev.column === column
+        ? { column, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { column, direction: "asc" },
+    );
+  }
 
   async function handleCreate(values: ChoreInput) {
     setSubmitting(true);
@@ -157,12 +247,42 @@ export default function Tasks() {
             <thead>
               <tr>
                 <th className={styles.expandCol} aria-label="Expand" />
-                <th>Chore</th>
-                <th>Frequency</th>
-                <th>Time</th>
-                <th>Room</th>
-                <th>Floor</th>
-                <th>Due</th>
+                <SortableHeader
+                  column="name"
+                  label="Chore"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  column="frequency"
+                  label="Frequency"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  column="time"
+                  label="Time"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  column="room"
+                  label="Room"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  column="floor"
+                  label="Floor"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  column="due"
+                  label="Due"
+                  sort={sort}
+                  onSort={handleSort}
+                />
                 <th>Actions</th>
               </tr>
             </thead>

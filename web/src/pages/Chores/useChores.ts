@@ -46,6 +46,16 @@ function addFrequency(date: Date, value: number, unit: FrequencyUnit): Date {
   return d;
 }
 
+/** Frequency expressed in days, so chores with different units sort sensibly. */
+export function frequencyDays(chore: Chore): number {
+  const perUnit: Record<FrequencyUnit, number> = {
+    days: 1,
+    weeks: 7,
+    months: 30,
+  };
+  return chore.frequencyValue * perUnit[chore.frequencyUnit];
+}
+
 /** Most recent completion date, or null if the chore has never been done. */
 export function lastPerformed(chore: Chore): Date | null {
   if (chore.completions.length === 0) return null;
