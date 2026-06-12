@@ -107,6 +107,14 @@
   color: var(--color-text-default);
 }
 
+/* marks a task linked to a chore */
+.choreIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
 .nowBadge {
   flex-shrink: 0;
   padding: var(--space-3xs) var(--space-xs);

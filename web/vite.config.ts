@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api": "http://localhost:3001",
+      // API_PROXY lets a verification instance target an isolated API server
+      "/api": process.env.API_PROXY ?? "http://localhost:3001",
     },
   },
 })

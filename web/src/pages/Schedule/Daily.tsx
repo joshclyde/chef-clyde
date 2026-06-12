@@ -1,12 +1,23 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
-import { Button, Card, Heading, Inline, Stack, Text, Textarea } from "../../ui";
+import { BrushCleaning, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import {
+  Button,
+  Card,
+  Heading,
+  Inline,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+} from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
+import { useChores, type Chore } from "../Chores/useChores";
 import {
   useSchedules,
   type Schedule,
   type ScheduleTask,
+  type TaskPatch,
   type TaskStatus,
 } from "./useSchedules";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
@@ -72,13 +83,15 @@ function UnparsedSchedule({
   );
 }
 
-/** A task's expandable detail area: free-text notes + outcome controls. */
+/** A task's expandable detail area: free-text notes + chore link + outcome controls. */
 function TaskDetail({
   task,
+  chores,
   onUpdate,
 }: {
   task: ScheduleTask;
-  onUpdate: (taskId: string, patch: { status?: TaskStatus; notes?: string }) => void;
+  chores: Chore[];
+  onUpdate: (taskId: string, patch: TaskPatch) => void;
 }) {
   // Local draft so typing stays smooth; we persist on blur.
   const [notes, setNotes] = useState(task.notes ?? "");
@@ -107,6 +120,33 @@ function TaskDetail({
           onBlur={saveNotes}
         />
       </Stack>
+      <Stack gap="3xs">
+        <Text as="label" size="xs" variant="muted">
+          Linked chore
+        </Text>
+        <Select
+          value={task.choreId ?? ""}
+          aria-label="Linked chore"
+          onChange={(e) =>
+            onUpdate(task.id, {
+              choreId: e.target.value === "" ? null : e.target.value,
+            })
+          }
+        >
+          <option value="">No linked chore</option>
+          {/* keep the select truthful while chores load or if the chore was deleted */}
+          {task.choreId && !chores.some((c) => c.id === task.choreId) && (
+            <option value={task.choreId}>Linked chore (unavailable)</option>
+          )}
+          {[...chores]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+        </Select>
+      </Stack>
       <Inline gap="2xs">
         <Button
           size="sm"
@@ -130,15 +170,13 @@ function TaskDetail({
 /** Interactive, time-aware checklist of the day's tasks. */
 function TaskList({
   schedule,
+  chores,
   onUpdate,
   onParse,
 }: {
   schedule: Schedule;
-  onUpdate: (
-    id: string,
-    taskId: string,
-    patch: { status?: TaskStatus; notes?: string },
-  ) => Promise<void>;
+  chores: Chore[];
+  onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
   onParse: (id: string) => Promise<Schedule>;
 }) {
   const now = useNow();
@@ -149,10 +187,7 @@ function TaskList({
   // A task is "resolved" once the user gives it any terminal outcome.
   const resolved = tasks.filter((t) => t.status !== "pending").length;
 
-  async function update(
-    taskId: string,
-    patch: { status?: TaskStatus; notes?: string },
-  ) {
+  async function update(taskId: string, patch: TaskPatch) {
     setError(null);
     try {
       await onUpdate(schedule.id, taskId, patch);
@@ -223,6 +258,22 @@ function TaskList({
                     {formatTimeRange(task)}
                   </span>
                   <span className={styles.taskLabel}>{task.label}</span>
+                  {task.choreId && (() => {
+                    const chore = chores.find((c) => c.id === task.choreId);
+                    const label = chore
+                      ? `Linked chore: ${chore.name}`
+                      : "Linked chore";
+                    return (
+                      <span
+                        className={styles.choreIcon}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                      >
+                        <BrushCleaning size={16} aria-hidden />
+                      </span>
+                    );
+                  })()}
                   {status === "current" && (
                     <span className={styles.nowBadge}>Now</span>
                   )}
@@ -242,7 +293,9 @@ function TaskList({
                     )}
                   </button>
                 </div>
-                {expanded && <TaskDetail task={task} onUpdate={update} />}
+                {expanded && (
+                  <TaskDetail task={task} chores={chores} onUpdate={update} />
+                )}
               </div>
             );
           })}
@@ -254,6 +307,7 @@ function TaskList({
 
 export default function ScheduleDaily() {
   const { schedules, loading, error, parseTasks, updateTask } = useSchedules();
+  const { chores } = useChores();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
 
@@ -291,6 +345,7 @@ export default function ScheduleDaily() {
       ) : schedule.tasks && schedule.tasks.length > 0 ? (
         <TaskList
           schedule={schedule}
+          chores={chores}
           onUpdate={updateTask}
           onParse={parseTasks}
         />

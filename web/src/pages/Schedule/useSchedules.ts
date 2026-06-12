@@ -9,6 +9,8 @@ export type ScheduleTask = {
   label: string;
   status: TaskStatus;
   notes?: string;
+  choreId?: string; // the chore this task performs, when linked
+  choreCompletionId?: string; // completion logged when completed (server-managed)
 };
 
 export type Schedule = {
@@ -24,6 +26,13 @@ export type Schedule = {
 export type ScheduleInput = {
   date: string;
   content: string;
+};
+
+/** Fields accepted by the task PATCH endpoint. `choreId: null` clears the link. */
+export type TaskPatch = {
+  status?: TaskStatus;
+  notes?: string;
+  choreId?: string | null;
 };
 
 export function useSchedules() {
@@ -87,34 +96,34 @@ export function useSchedules() {
   }
 
   /**
-   * Patch a task's status and/or notes. Optimistic: applies the change locally,
-   * then reconciles with the server response, reverting to the prior task on
+   * Patch a task's status, notes, and/or chore link. Optimistic: applies the
+   * change locally, then reconciles with the server response (which carries
+   * server-managed fields like choreCompletionId), reverting the whole task on
    * failure.
    */
-  async function updateTask(
-    id: string,
-    taskId: string,
-    patch: { status?: TaskStatus; notes?: string },
-  ) {
+  async function updateTask(id: string, taskId: string, patch: TaskPatch) {
     const prevTask = schedules
       .find((s) => s.id === id)
       ?.tasks?.find((t) => t.id === taskId);
 
-    const replace = (next: Partial<ScheduleTask>) =>
+    const apply = (update: (t: ScheduleTask) => ScheduleTask) =>
       setSchedules((prev) =>
         prev.map((s) =>
           s.id === id
             ? {
                 ...s,
-                tasks: s.tasks?.map((t) =>
-                  t.id === taskId ? { ...t, ...next } : t,
-                ),
+                tasks: s.tasks?.map((t) => (t.id === taskId ? update(t) : t)),
               }
             : s,
         ),
       );
 
-    replace(patch);
+    // choreId is tri-state in the patch (absent = untouched, null = clear),
+    // but plain optional on the task — only map it when present.
+    const { choreId, ...rest } = patch;
+    const optimistic: Partial<ScheduleTask> =
+      choreId === undefined ? rest : { ...rest, choreId: choreId ?? undefined };
+    apply((t) => ({ ...t, ...optimistic }));
     try {
       const res = await fetch(`/api/schedules/${id}/tasks/${taskId}`, {
         method: "PATCH",
@@ -125,7 +134,9 @@ export function useSchedules() {
       const data = (await res.json()) as { schedule: Schedule };
       setSchedules((prev) => prev.map((s) => (s.id === id ? data.schedule : s)));
     } catch (err) {
-      if (prevTask) replace(prevTask); // revert
+      // Restore the full prior task: a merge would leave behind optional keys
+      // the optimistic update added.
+      if (prevTask) apply(() => prevTask);
       throw err;
     }
   }

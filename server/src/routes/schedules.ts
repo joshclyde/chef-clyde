@@ -2,7 +2,8 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { Schedule, TaskStatus } from "../types/schedule";
+import type { Schedule, ScheduleTask, TaskStatus } from "../types/schedule";
+import type { Completion } from "../types/chore";
 import {
   getSchedulesDir,
   getSoftDeleteDir,
@@ -10,6 +11,7 @@ import {
   readSchedule,
   writeSchedule,
 } from "../db/schedules";
+import { readAllChores, readChore, writeChore } from "../db/chores";
 import { generateScheduleResponse } from "../services/schedule";
 import { parseScheduleTasks } from "../services/scheduleParser";
 
@@ -128,7 +130,7 @@ router.post("/:id/parse", async (req, res) => {
     return;
   }
 
-  const result = await parseScheduleTasks(schedule.content);
+  const result = await parseScheduleTasks(schedule.content, readAllChores());
   if ("error" in result) {
     const status = result.error === "No tasks found in this schedule" ? 422 : 500;
     res.status(status).json({ error: result.error });
@@ -155,11 +157,58 @@ const TASK_STATUSES: TaskStatus[] = [
   "wontDo",
 ];
 
-// Update a single task's status and/or notes. Both fields are optional, but at
-// least one must be present.
+/**
+ * Remove the chore completion this task previously logged. Best-effort: the
+ * chore or completion may have been deleted from the Chores page in the
+ * meantime, so a miss is not an error. Mutates the task; caller persists the
+ * schedule.
+ */
+function removeLinkedCompletion(task: ScheduleTask): void {
+  const completionId = task.choreCompletionId;
+  if (!completionId) return;
+  const chore = task.choreId ? readChore(task.choreId) : null;
+  if (chore) {
+    const remaining = chore.completions.filter((c) => c.id !== completionId);
+    if (remaining.length !== chore.completions.length) {
+      chore.completions = remaining;
+      chore.updatedAt = new Date().toISOString();
+      writeChore(chore);
+    }
+  }
+  delete task.choreCompletionId;
+}
+
+/**
+ * Log a completion on the task's linked chore and remember its id so
+ * unchecking can undo it. If the chore was deleted since linking, drop the
+ * stale link instead of failing the task update.
+ */
+function logLinkedCompletion(task: ScheduleTask): void {
+  if (!task.choreId || task.choreCompletionId) return;
+  const chore = readChore(task.choreId);
+  if (!chore) {
+    delete task.choreId;
+    return;
+  }
+  const completion: Completion = {
+    id: crypto.randomUUID(),
+    performedAt: new Date().toISOString(),
+  };
+  chore.completions = [...chore.completions, completion];
+  chore.updatedAt = new Date().toISOString();
+  writeChore(chore);
+  task.choreCompletionId = completion.id;
+}
+
+// Update a single task's status, notes, and/or chore link. All fields are
+// optional, but at least one must be present. `choreId: null` clears the link.
 router.patch("/:id/tasks/:taskId", (req, res) => {
   const { id, taskId } = req.params;
-  const { status, notes } = req.body as { status?: unknown; notes?: unknown };
+  const { status, notes, choreId } = req.body as {
+    status?: unknown;
+    notes?: unknown;
+    choreId?: unknown;
+  };
 
   if (status !== undefined && !TASK_STATUSES.includes(status as TaskStatus)) {
     res.status(400).json({
@@ -171,8 +220,12 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     res.status(400).json({ error: "notes must be a string" });
     return;
   }
-  if (status === undefined && notes === undefined) {
-    res.status(400).json({ error: "status or notes is required" });
+  if (choreId !== undefined && choreId !== null && typeof choreId !== "string") {
+    res.status(400).json({ error: "choreId must be a string or null" });
+    return;
+  }
+  if (status === undefined && notes === undefined && choreId === undefined) {
+    res.status(400).json({ error: "status, notes, or choreId is required" });
     return;
   }
 
@@ -188,8 +241,30 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     return;
   }
 
-  if (status !== undefined) task.status = status as TaskStatus;
+  if (typeof choreId === "string" && !readChore(choreId)) {
+    res.status(400).json({ error: "Chore not found" });
+    return;
+  }
+
   if (notes !== undefined) task.notes = notes as string;
+
+  if (choreId !== undefined) {
+    const next = choreId === null ? undefined : (choreId as string);
+    if (task.choreId !== next) {
+      // Re-linking: undo the completion the old link created before switching.
+      removeLinkedCompletion(task);
+      if (next === undefined) delete task.choreId;
+      else task.choreId = next;
+    }
+  }
+
+  if (status !== undefined) task.status = status as TaskStatus;
+
+  // Invariant: a completed linked task owns exactly one chore completion;
+  // anything else owns none.
+  if (task.status === "completed") logLinkedCompletion(task);
+  else removeLinkedCompletion(task);
+
   schedule.updatedAt = new Date().toISOString();
   writeSchedule(schedule);
   res.status(200).json({ schedule });

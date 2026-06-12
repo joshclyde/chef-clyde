@@ -13,6 +13,8 @@ export type ScheduleTask = {
   label: string;
   status: TaskStatus;
   notes?: string; // free-text context the user attaches to the task
+  choreId?: string; // the chore this task performs, when linked
+  choreCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
 };
 
 export type Schedule = {

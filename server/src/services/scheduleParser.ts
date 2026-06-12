@@ -1,10 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ScheduleTask } from "../types/schedule";
+import type { Chore } from "../types/chore";
 
 const anthropic = new Anthropic();
 
 /** The task fields the model produces; id + status are added server-side. */
-export type ParsedTask = Omit<ScheduleTask, "id" | "status" | "notes">;
+export type ParsedTask = Omit<
+  ScheduleTask,
+  "id" | "status" | "notes" | "choreCompletionId"
+>;
 
 const PARSE_SYSTEM_PROMPT = `You are a schedule data extractor. Your only job is to read a free-text daily schedule and output a single valid JSON object that matches the schema below. Output ONLY the raw JSON — no markdown fences, no explanation, no prose before or after.
 
@@ -18,9 +22,22 @@ If no tasks can be found, output exactly this JSON:
 Schema:
 {
   "tasks": [
-    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string }
+    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string }
   ]
 }`;
+
+/**
+ * Append the user's chores so the model can link tasks that perform one.
+ * Kept out of the base prompt so an empty chore list adds no noise.
+ */
+function buildSystemPrompt(chores: Chore[]): string {
+  if (chores.length === 0) return PARSE_SYSTEM_PROMPT;
+  const list = chores.map((c) => `- ${c.id} :: ${c.name}`).join("\n");
+  return (
+    PARSE_SYSTEM_PROMPT +
+    `\n\nThe user tracks recurring household chores. When a task is clearly an instance of one of the chores below, add an optional "choreId" field with that chore's exact id. Match on meaning, not exact wording (e.g. "Clean the shower (overdue)" is the chore "Clean the shower"). If no chore matches, omit "choreId". Never invent ids.\n\nChores (id :: name):\n${list}`
+  );
+}
 
 const PARSE_USER_MESSAGE =
   "Extract the structured task list from the schedule above and return it as JSON matching the schema in your instructions.";
@@ -40,17 +57,26 @@ const TIME_PATTERN = /^\d{2}:\d{2}$/;
 
 export async function parseScheduleTasks(
   content: string,
+  chores: Chore[],
 ): Promise<ParseSuccess | ParseError> {
   let rawText: string;
 
   if (process.env.MOCK_AI === "true") {
-    rawText = JSON.stringify({ tasks: MOCK_TASKS });
+    // Deterministic stand-in for the model's chore matching: link any mock
+    // task whose label mentions a chore by name.
+    const mockTasks = MOCK_TASKS.map((t) => {
+      const match = chores.find((c) =>
+        t.label.toLowerCase().includes(c.name.toLowerCase()),
+      );
+      return match ? { ...t, choreId: match.id } : t;
+    });
+    rawText = JSON.stringify({ tasks: mockTasks });
   } else {
     try {
       const response = await anthropic.messages.create({
         model: "claude-opus-4-8",
         max_tokens: 4096,
-        system: PARSE_SYSTEM_PROMPT,
+        system: buildSystemPrompt(chores),
         messages: [
           { role: "user", content },
           { role: "user", content: PARSE_USER_MESSAGE },
@@ -97,12 +123,24 @@ export async function parseScheduleTasks(
       ((t as ParsedTask).endTime === null ||
         (typeof (t as ParsedTask).endTime === "string" &&
           TIME_PATTERN.test((t as ParsedTask).endTime as string))) &&
-      typeof (t as ParsedTask).label === "string",
+      typeof (t as ParsedTask).label === "string" &&
+      // the model may emit choreId: null; the sanitize step below drops it
+      ((t as { choreId?: unknown }).choreId == null ||
+        typeof (t as { choreId?: unknown }).choreId === "string"),
   );
   if (!valid) {
     console.error("Schedule parse returned malformed tasks:", parsed);
     return { error: "Parsed tasks have an unexpected shape" };
   }
 
-  return { tasks: tasks as ParsedTask[] };
+  // Only keep chore links that point at real chores — drop nulls and any id
+  // the model invented.
+  const validChoreIds = new Set(chores.map((c) => c.id));
+  return {
+    tasks: (tasks as ParsedTask[]).map(({ choreId, ...rest }) =>
+      typeof choreId === "string" && validChoreIds.has(choreId)
+        ? { ...rest, choreId }
+        : rest,
+    ),
+  };
 }

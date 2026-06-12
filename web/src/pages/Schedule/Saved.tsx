@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { BrushCleaning, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { Button, Card, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
@@ -95,6 +95,16 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
           <div className={styles.taskMain}>
             <span className={styles.taskTime}>{formatTimeRange(task)}</span>
             <span className={styles.taskLabel}>{task.label}</span>
+            {task.choreId && (
+              <span
+                className={styles.choreIcon}
+                role="img"
+                aria-label="Linked to a chore"
+                title="Linked to a chore"
+              >
+                <BrushCleaning size={14} aria-hidden />
+              </span>
+            )}
           </div>
         </div>
       ))}
