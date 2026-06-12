@@ -1,0 +1,21 @@
+.wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* reserve room at the bottom for the floating button + drop native resize, since
+   the button owns the bottom-right corner. the .wrapper .field descendant
+   selector reliably wins over the base .textarea { resize: vertical } rule. */
+.wrapper .field {
+  display: block;
+  padding-bottom: calc(var(--space-sm) + 2.25rem);
+  resize: none;
+}
+
+/* square icon button tucked into the corner */
+.submit {
+  position: absolute;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  padding: var(--space-sm);
+}

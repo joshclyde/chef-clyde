@@ -11,7 +11,7 @@ import styles from "./Chat.module.css";
  * Mount with a `key` per activity so switching activities starts a fresh thread.
  */
 export function ChatView({ config }: { config: ChatConfig }) {
-  const { messages, mode, setMode, input, setInput, loading, submit, handleKeyDown } =
+  const { messages, mode, setMode, input, setInput, loading, submit } =
     usePanelChat(config);
 
   const hasMessages = messages.length > 0;
@@ -58,7 +58,6 @@ export function ChatView({ config }: { config: ChatConfig }) {
           placeholder={placeholder}
           loading={loading}
           onInputChange={setInput}
-          onKeyDown={handleKeyDown}
           onSubmit={submit}
         />
       </div>

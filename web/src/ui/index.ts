@@ -2,6 +2,7 @@ export { Button } from "./Button/Button";
 export { Input } from "./Input/Input";
 export { Select } from "./Select/Select";
 export { Textarea } from "./Textarea/Textarea";
+export { TextareaWithSubmit } from "./TextareaWithSubmit/TextareaWithSubmit";
 export { Card } from "./Card/Card";
 export { Badge } from "./Badge/Badge";
 export { Text } from "./Text/Text";

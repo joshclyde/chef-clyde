@@ -46,13 +46,6 @@ export function usePanelChat(config: ChatConfig) {
       .finally(() => setLoading(false));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      submit();
-    }
-  };
-
   return {
     messages,
     mode,
@@ -61,6 +54,5 @@ export function usePanelChat(config: ChatConfig) {
     setInput,
     loading,
     submit,
-    handleKeyDown,
   };
 }
