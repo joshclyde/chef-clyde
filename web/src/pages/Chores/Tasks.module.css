@@ -69,8 +69,25 @@
   white-space: nowrap;
 }
 
-.row:hover {
+.row {
   background: var(--color-bg-subtle);
+}
+
+.row:hover {
+  background: var(--color-bg-muted);
+}
+
+/* ----- inline editable row ----- */
+.editRow td {
+  vertical-align: middle;
+}
+
+.editCell {
+  vertical-align: middle;
+}
+
+.rowSelect {
+  max-width: 150px;
 }
 
 .nameCell {
@@ -104,6 +121,41 @@
   box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
 }
 
+/* Compact icon button for editing a row. Fixed size + non-shrinking icon so it
+   doesn't collapse inside the narrow (width:1%) actions cell. */
+.editButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+}
+
+.editButton svg {
+  flex-shrink: 0;
+}
+
+.editButton:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+  border-color: var(--color-border-strong);
+}
+
+.editButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
+}
+
 .actionsCell {
   width: 1%;
 }
@@ -114,7 +166,7 @@
 
 .table tbody td.detailCell {
   padding: var(--space-md) var(--space-md) var(--space-lg);
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-muted);
 }
 
 .historyList {

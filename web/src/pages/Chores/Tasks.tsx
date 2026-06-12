@@ -5,9 +5,10 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
+  Pencil,
 } from "lucide-react";
-import { Button, Card, Heading, Inline, Input, Stack, Text } from "../../ui";
-import { ChoreForm } from "./ChoreForm";
+import { Button, Heading, Inline, Input, Stack, Text } from "../../ui";
+import { ChoreRowEditor } from "./ChoreRowEditor";
 import { FLOORS } from "./constants";
 import {
   dueSortKey,
@@ -199,7 +200,6 @@ export default function Tasks() {
 
   function startEdit(id: string) {
     setEditingId(id);
-    setExpandedId(id);
   }
 
   function handleLog(id: string) {
@@ -228,16 +228,6 @@ export default function Tasks() {
         )}
       </Inline>
       {error && <Text variant="danger">{error}</Text>}
-
-      {creating && (
-        <Card>
-          <ChoreForm
-            submitting={submitting}
-            onSubmit={handleCreate}
-            onCancel={() => setCreating(false)}
-          />
-        </Card>
-      )}
 
       {chores.length === 0 && !creating ? (
         <Text variant="muted">No chores yet. Click "New chore" to add one.</Text>
@@ -283,14 +273,31 @@ export default function Tasks() {
                   sort={sort}
                   onSort={handleSort}
                 />
-                <th>Actions</th>
+                <th className={styles.actionsCell} aria-label="Edit" />
               </tr>
             </thead>
             <tbody>
+              {creating && (
+                <ChoreRowEditor
+                  submitting={submitting}
+                  onSubmit={handleCreate}
+                  onCancel={() => setCreating(false)}
+                />
+              )}
               {sorted.map((chore) => {
-                const isExpanded =
-                  expandedId === chore.id || editingId === chore.id;
-                const isEditing = editingId === chore.id;
+                if (editingId === chore.id) {
+                  return (
+                    <ChoreRowEditor
+                      key={chore.id}
+                      initial={chore}
+                      submitting={submitting}
+                      onSubmit={(values) => handleUpdate(chore.id, values)}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  );
+                }
+
+                const isExpanded = expandedId === chore.id;
                 const last = lastPerformed(chore);
                 const completions = [...chore.completions].sort(
                   (a, b) =>
@@ -336,114 +343,105 @@ export default function Tasks() {
                         <DueCell chore={chore} />
                       </td>
                       <td className={styles.actionsCell}>
-                        <Inline gap="2xs">
-                          <Button
-                            size="sm"
-                            onClick={() => logCompletion(chore.id)}
-                          >
-                            Mark done
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEdit(chore.id)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => deleteChore(chore.id)}
-                          >
-                            Delete
-                          </Button>
-                        </Inline>
+                        <button
+                          type="button"
+                          className={styles.editButton}
+                          aria-label="Edit chore"
+                          onClick={() => startEdit(chore.id)}
+                        >
+                          <Pencil size={16} aria-hidden />
+                        </button>
                       </td>
                     </tr>
 
                     {isExpanded && (
                       <tr className={styles.detailRow}>
                         <td className={styles.detailCell} colSpan={COLUMN_COUNT}>
-                          {isEditing ? (
-                            <ChoreForm
-                              initial={chore}
-                              submitting={submitting}
-                              onSubmit={(values) =>
-                                handleUpdate(chore.id, values)
-                              }
-                              onCancel={() => setEditingId(null)}
-                            />
-                          ) : (
-                            <Stack gap="md">
-                              <Text size="sm" variant="muted">
-                                {last
-                                  ? `Last done ${formatDate(last)}`
-                                  : "Never done yet"}
+                          <Stack gap="md">
+                            <Inline gap="2xs">
+                              <Button
+                                size="sm"
+                                onClick={() => logCompletion(chore.id)}
+                              >
+                                Mark done
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                onClick={() => deleteChore(chore.id)}
+                              >
+                                Delete
+                              </Button>
+                            </Inline>
+
+                            <Text size="sm" variant="muted">
+                              {last
+                                ? `Last done ${formatDate(last)}`
+                                : "Never done yet"}
+                            </Text>
+
+                            <Stack gap="3xs">
+                              <Text as="label" size="xs" variant="muted">
+                                Log a past completion
                               </Text>
-
-                              <Stack gap="3xs">
-                                <Text as="label" size="xs" variant="muted">
-                                  Log a past completion
-                                </Text>
-                                <Inline gap="2xs">
-                                  <Input
-                                    className={styles.dateInput}
-                                    type="date"
-                                    value={logDates[chore.id] ?? ""}
-                                    onChange={(e) =>
-                                      setLogDates((prev) => ({
-                                        ...prev,
-                                        [chore.id]: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    disabled={!logDates[chore.id]}
-                                    onClick={() => handleLog(chore.id)}
-                                  >
-                                    Log
-                                  </Button>
-                                </Inline>
-                              </Stack>
-
-                              <Stack gap="2xs">
-                                <Text size="xs" variant="subtle">
-                                  History ({completions.length})
-                                </Text>
-                                {completions.length === 0 ? (
-                                  <Text size="sm" variant="subtle">
-                                    No completions logged yet.
-                                  </Text>
-                                ) : (
-                                  <ul className={styles.historyList}>
-                                    {completions.map((completion) => (
-                                      <li key={completion.id}>
-                                        <Inline justify="between">
-                                          <Text size="sm">
-                                            {formatDate(completion.performedAt)}
-                                          </Text>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                              deleteCompletion(
-                                                chore.id,
-                                                completion.id,
-                                              )
-                                            }
-                                          >
-                                            Delete
-                                          </Button>
-                                        </Inline>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </Stack>
+                              <Inline gap="2xs">
+                                <Input
+                                  className={styles.dateInput}
+                                  type="date"
+                                  value={logDates[chore.id] ?? ""}
+                                  onChange={(e) =>
+                                    setLogDates((prev) => ({
+                                      ...prev,
+                                      [chore.id]: e.target.value,
+                                    }))
+                                  }
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={!logDates[chore.id]}
+                                  onClick={() => handleLog(chore.id)}
+                                >
+                                  Log
+                                </Button>
+                              </Inline>
                             </Stack>
-                          )}
+
+                            <Stack gap="2xs">
+                              <Text size="xs" variant="subtle">
+                                History ({completions.length})
+                              </Text>
+                              {completions.length === 0 ? (
+                                <Text size="sm" variant="subtle">
+                                  No completions logged yet.
+                                </Text>
+                              ) : (
+                                <ul className={styles.historyList}>
+                                  {completions.map((completion) => (
+                                    <li key={completion.id}>
+                                      <Inline justify="between">
+                                        <Text size="sm">
+                                          {formatDate(completion.performedAt)}
+                                        </Text>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() =>
+                                            deleteCompletion(
+                                              chore.id,
+                                              completion.id,
+                                            )
+                                          }
+                                        >
+                                          Delete
+                                        </Button>
+                                      </Inline>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </Stack>
+                          </Stack>
                         </td>
                       </tr>
                     )}
