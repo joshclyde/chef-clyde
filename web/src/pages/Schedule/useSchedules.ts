@@ -16,7 +16,7 @@ export type ScheduleTask = {
 export type Schedule = {
   id: string;
   date: string; // "YYYY-MM-DD"
-  content: string;
+  dayContext: string; // the user's one-off notes for this day
   tasks?: ScheduleTask[];
   createdAt: string;
   updatedAt: string;
@@ -25,7 +25,7 @@ export type Schedule = {
 /** The user-editable fields sent to the create/update endpoints. */
 export type ScheduleInput = {
   date: string;
-  content: string;
+  dayContext: string;
 };
 
 /** Fields accepted by the task PATCH endpoint. `choreId: null` clears the link. */
@@ -83,9 +83,12 @@ export function useSchedules() {
     setSchedules((prev) => prev.filter((s) => s.id !== id));
   }
 
-  /** Send a schedule's text to the AI parser and store the returned task list. */
-  async function parseTasks(id: string) {
-    const res = await fetch(`/api/schedules/${id}/parse`, { method: "POST" });
+  /**
+   * Generate the day's task list from all of its inputs (day notes, chores,
+   * standing instructions, recent history) in one step, and store the result.
+   */
+  async function generateTasks(id: string) {
+    const res = await fetch(`/api/schedules/${id}/generate`, { method: "POST" });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
       throw new Error(data?.error ?? "Failed to generate task list");
@@ -93,6 +96,21 @@ export function useSchedules() {
     const data = (await res.json()) as { schedule: Schedule };
     setSchedules((prev) => prev.map((s) => (s.id === id ? data.schedule : s)));
     return data.schedule;
+  }
+
+  /**
+   * Fetch the exact prompt the generator would send for a day's notes, without
+   * running the model — powers the "what the AI will see" preview.
+   */
+  async function previewPrompt(date: string, dayContext: string) {
+    const res = await fetch("/api/schedules/preview-prompt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, dayContext }),
+    });
+    if (!res.ok) throw new Error("Failed to load prompt preview");
+    const data = (await res.json()) as { prompt: string };
+    return data.prompt;
   }
 
   /**
@@ -148,7 +166,8 @@ export function useSchedules() {
     createSchedule,
     updateSchedule,
     deleteSchedule,
-    parseTasks,
+    generateTasks,
+    previewPrompt,
     updateTask,
   };
 }

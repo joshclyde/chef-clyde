@@ -1,19 +1,25 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { readAllChores } from "../db/chores";
 import { readScheduleInstructions } from "../db/scheduleInstructions";
 import { readAllSchedules } from "../db/schedules";
 import type { Chore, FrequencyUnit } from "../types/chore";
 import type { TaskStatus } from "../types/schedule";
+import {
+  buildChoreLinkingInstructions,
+  MOCK_TASKS,
+  TASK_JSON_SCHEMA,
+  validateTasks,
+  type ParseError,
+  type ParseSuccess,
+} from "./scheduleParser";
 
 const anthropic = new Anthropic();
 
 const SCHEDULE_SYSTEM_PROMPT =
   "You are a planning assistant for Chef Clyde that builds realistic, time-blocked daily schedules. " +
-  "Produce a clear schedule for a single day using concrete time blocks (e.g. \"9:00–9:30\"). " +
+  "Plan a single day using concrete time blocks (e.g. \"9:00–9:30\"). " +
   "Balance the user's stated goals with their household chores. " +
   "Prioritize chores that are overdue or due now, and spread the rest sensibly. " +
-  "Respect each chore's typical time estimate when given, and avoid over-packing the day. " +
-  "Output the schedule as plain text suitable for saving as-is.";
+  "Respect each chore's typical time estimate when given, and avoid over-packing the day.";
 
 function addFrequency(date: Date, value: number, unit: FrequencyUnit): Date {
   const d = new Date(date);
@@ -56,8 +62,7 @@ function localIsoDate(date: Date): string {
  * estimate, and — most importantly — whether it is ready to be performed
  * (overdue / due now / upcoming), so the model can prioritize the day.
  */
-function buildChoresContext(): string {
-  const chores = readAllChores();
+function buildChoresContext(chores: Chore[]): string {
   if (chores.length === 0) {
     return "The user has no chores recorded.";
   }
@@ -155,27 +160,92 @@ export function buildRecentTaskHistoryContext(): string {
   );
 }
 
-export async function generateScheduleResponse(
-  messages: { role: "user" | "assistant"; content: string }[],
-): Promise<string> {
-  const today = isoDate(new Date());
-  let systemPrompt = `${SCHEDULE_SYSTEM_PROMPT}\n\nToday's date is ${today}.\n\n${buildChoresContext()}\n\n${buildRecentTaskHistoryContext()}`;
+export type SchedulePromptInput = {
+  date: string; // the day being planned, "YYYY-MM-DD"
+  dayContext: string; // the user's one-off notes for that day
+  chores: Chore[];
+};
+
+/**
+ * Assemble the full system prompt + user message that turn all of a day's
+ * inputs — chores, recent history, standing instructions, and the user's
+ * one-off notes — into a structured task list in a single model call. Exposed
+ * on its own so the UI can show the user exactly what will be sent.
+ */
+export function buildSchedulePrompt({
+  date,
+  dayContext,
+  chores,
+}: SchedulePromptInput): { system: string; userMessage: string } {
+  const sections: string[] = [
+    SCHEDULE_SYSTEM_PROMPT,
+    `Today's date is ${isoDate(new Date())}. You are planning the schedule for ${date}.`,
+    buildChoresContext(chores),
+    buildRecentTaskHistoryContext(),
+  ];
 
   // Standing, user-authored instructions that apply to every generation (e.g.
   // "sleep in until 9:00 AM every Saturday"). Appended only when non-empty.
   const instructions = readScheduleInstructions().trim();
   if (instructions) {
-    systemPrompt += `\n\nThe user's standing scheduling instructions (apply these every time):\n${instructions}`;
+    sections.push(
+      `The user's standing scheduling instructions (apply these every time):\n${instructions}`,
+    );
   }
 
-  const response = await anthropic.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 8096,
-    thinking: { type: "adaptive" },
-    system: systemPrompt,
-    messages,
-  });
+  const notes = dayContext.trim();
+  sections.push(
+    notes
+      ? `The user's notes for this specific day (one-off context to honor):\n${notes}`
+      : "The user added no extra notes for this day.",
+  );
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  return textBlock?.text ?? "";
+  const linking = buildChoreLinkingInstructions(chores);
+  if (linking) sections.push(linking);
+
+  sections.push(TASK_JSON_SCHEMA);
+
+  return {
+    system: sections.join("\n\n"),
+    userMessage: `Generate the time-blocked task list for ${date} as JSON matching the schema in your instructions.`,
+  };
+}
+
+/**
+ * Single-call generation: plan the day and emit the structured task list at
+ * once, replacing the old generate-then-parse two-step.
+ */
+export async function generateScheduleTasks(
+  input: SchedulePromptInput,
+): Promise<ParseSuccess | ParseError> {
+  if (process.env.MOCK_AI === "true") {
+    // Link any mock task whose label mentions a chore by name, mirroring how
+    // the model would attach choreIds.
+    const tasks = MOCK_TASKS.map((t) => {
+      const match = input.chores.find((c) =>
+        t.label.toLowerCase().includes(c.name.toLowerCase()),
+      );
+      return match ? { ...t, choreId: match.id } : t;
+    });
+    return { tasks };
+  }
+
+  const { system, userMessage } = buildSchedulePrompt(input);
+  let rawText: string;
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 8096,
+      thinking: { type: "adaptive" },
+      system,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    const textBlock = response.content.find((b) => b.type === "text");
+    rawText = textBlock?.text ?? "";
+  } catch (error) {
+    console.error("Schedule generation Anthropic error:", error);
+    return { error: "Failed to generate the task list" };
+  }
+
+  return validateTasks(rawText, input.chores);
 }

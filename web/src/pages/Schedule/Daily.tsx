@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrushCleaning, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { BrushCleaning, ChevronDown, ChevronRight } from "lucide-react";
 import {
   Button,
   Card,
@@ -20,6 +20,7 @@ import {
   type TaskPatch,
   type TaskStatus,
 } from "./useSchedules";
+import { ScheduleGenerator } from "./ScheduleGenerator";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
 import styles from "./Schedule.module.css";
 
@@ -32,55 +33,6 @@ function formatDate(date: string) {
     month: "long",
     day: "numeric",
   });
-}
-
-/** Schedule exists but hasn't been parsed: show the raw text + a parse button. */
-function UnparsedSchedule({
-  schedule,
-  onParse,
-}: {
-  schedule: Schedule;
-  onParse: (id: string) => Promise<Schedule>;
-}) {
-  const [parsing, setParsing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function generate() {
-    setParsing(true);
-    setError(null);
-    try {
-      await onParse(schedule.id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to generate task list");
-    } finally {
-      setParsing(false);
-    }
-  }
-
-  return (
-    <Card>
-      <Stack gap="md">
-        <Inline justify="between">
-          <Heading level={2}>Today's schedule</Heading>
-          <Button
-            size="sm"
-            variant="ai"
-            onClick={generate}
-            disabled={parsing}
-          >
-            <Sparkles size={16} strokeWidth={2} aria-hidden />
-            {parsing ? "Generating..." : "Generate task list"}
-          </Button>
-        </Inline>
-        {error && (
-          <Text variant="danger" size="sm">
-            {error}
-          </Text>
-        )}
-        <Text className={styles.content}>{schedule.content}</Text>
-      </Stack>
-    </Card>
-  );
 }
 
 /** A task's expandable detail area: free-text notes + chore link + outcome controls. */
@@ -172,15 +124,12 @@ function TaskList({
   schedule,
   chores,
   onUpdate,
-  onParse,
 }: {
   schedule: Schedule;
   chores: Chore[];
   onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
-  onParse: (id: string) => Promise<Schedule>;
 }) {
   const now = useNow();
-  const [reparsing, setReparsing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tasks = schedule.tasks ?? [];
@@ -196,37 +145,14 @@ function TaskList({
     }
   }
 
-  async function reparse() {
-    setReparsing(true);
-    setError(null);
-    try {
-      await onParse(schedule.id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to regenerate tasks");
-    } finally {
-      setReparsing(false);
-    }
-  }
-
   return (
     <Card>
       <Stack gap="md">
         <Inline justify="between">
           <Heading level={2}>Today's schedule</Heading>
-          <Inline gap="sm">
-            <Text variant="muted" size="sm">
-              {resolved}/{tasks.length} resolved
-            </Text>
-            <Button
-              size="sm"
-              variant="ai"
-              onClick={reparse}
-              disabled={reparsing}
-            >
-              <Sparkles size={16} strokeWidth={2} aria-hidden />
-              {reparsing ? "Regenerating..." : "Re-generate"}
-            </Button>
-          </Inline>
+          <Text variant="muted" size="sm">
+            {resolved}/{tasks.length} resolved
+          </Text>
         </Inline>
         {error && (
           <Text variant="danger" size="sm">
@@ -306,10 +232,19 @@ function TaskList({
 }
 
 export default function ScheduleDaily() {
-  const { schedules, loading, error, parseTasks, updateTask } = useSchedules();
+  const {
+    schedules,
+    loading,
+    error,
+    createSchedule,
+    generateTasks,
+    previewPrompt,
+    updateTask,
+  } = useSchedules();
   const { chores } = useChores();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
+  const hasTasks = (schedule?.tasks?.length ?? 0) > 0;
 
   const header = (
     <Stack gap="2xs">
@@ -332,26 +267,21 @@ export default function ScheduleDaily() {
       {header}
       {error && <Text variant="danger">{error}</Text>}
 
-      {!schedule ? (
-        <Card>
-          <Stack gap="xs">
-            <Heading level={2}>No schedule for today</Heading>
-            <Text variant="muted">
-              Generate a schedule in the Chat panel and save it for today to see
-              it here as an interactive checklist.
-            </Text>
-          </Stack>
-        </Card>
-      ) : schedule.tasks && schedule.tasks.length > 0 ? (
-        <TaskList
-          schedule={schedule}
-          chores={chores}
-          onUpdate={updateTask}
-          onParse={parseTasks}
-        />
-      ) : (
-        <UnparsedSchedule schedule={schedule} onParse={parseTasks} />
+      {hasTasks && schedule && (
+        <TaskList schedule={schedule} chores={chores} onUpdate={updateTask} />
       )}
+
+      <Card>
+        <ScheduleGenerator
+          heading={hasTasks ? "Day context & inputs" : "Plan today"}
+          initialDate={today}
+          schedule={schedule}
+          schedules={schedules}
+          onSave={(date, dayContext) => createSchedule({ date, dayContext })}
+          onGenerate={generateTasks}
+          previewPrompt={previewPrompt}
+        />
+      </Card>
     </Stack>
   );
 }

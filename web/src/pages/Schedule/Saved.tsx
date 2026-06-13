@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { BrushCleaning, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
-import { Button, Card, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
+import { BrushCleaning, ChevronDown, ChevronRight } from "lucide-react";
+import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
 import {
@@ -8,6 +8,7 @@ import {
   type Schedule,
   type ScheduleTask,
 } from "./useSchedules";
+import { ScheduleGenerator } from "./ScheduleGenerator";
 import { formatTimeRange } from "./dailyTime";
 import styles from "./Schedule.module.css";
 
@@ -20,60 +21,6 @@ function formatDate(date: string) {
     month: "long",
     day: "numeric",
   });
-}
-
-/** Inline form to create a new schedule for a date. Mirrors the edit form. */
-function NewScheduleCard({
-  onCreate,
-  onClose,
-}: {
-  onCreate: (date: string, content: string) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [date, setDate] = useState(todayLocal());
-  const [content, setContent] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function save() {
-    if (!content.trim()) return;
-    setSubmitting(true);
-    try {
-      await onCreate(date, content);
-      onClose();
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <Card>
-      <Stack gap="md">
-        <Heading level={2}>New schedule</Heading>
-        <Input
-          className={styles.dateInput}
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          aria-label="Schedule date"
-        />
-        <Textarea
-          className={styles.editField}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={12}
-          placeholder="Write the schedule for this day..."
-        />
-        <Inline gap="2xs">
-          <Button size="sm" onClick={save} disabled={submitting || !content.trim()}>
-            {submitting ? "Saving..." : "Save"}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-        </Inline>
-      </Stack>
-    </Card>
-  );
 }
 
 /** Read-only summary of a schedule's parsed tasks, styled by persisted status. */
@@ -112,8 +59,8 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
   );
 }
 
-/** Collapsible (closed by default) wrapper around a schedule's raw text. */
-function CollapsibleText({ content }: { content: string }) {
+/** Collapsible (closed by default) wrapper around a labeled text blob. */
+function CollapsibleText({ label, content }: { label: string; content: string }) {
   const [open, setOpen] = useState(false);
   return (
     <Stack gap="2xs">
@@ -128,9 +75,11 @@ function CollapsibleText({ content }: { content: string }) {
         ) : (
           <ChevronRight size={16} aria-hidden />
         )}
-        Schedule text
+        {label}
       </button>
-      {open && <Text className={styles.content}>{content}</Text>}
+      {open && (
+        <Text className={styles.content}>{content || "No notes for this day."}</Text>
+      )}
     </Stack>
   );
 }
@@ -138,129 +87,68 @@ function CollapsibleText({ content }: { content: string }) {
 function ScheduleCard({
   schedule,
   isToday,
-  onUpdate,
+  schedules,
+  onSave,
+  onGenerate,
+  previewPrompt,
   onDelete,
-  onParse,
 }: {
   schedule: Schedule;
   isToday: boolean;
-  onUpdate: (id: string, date: string, content: string) => Promise<void>;
+  schedules: Schedule[];
+  onSave: (date: string, dayContext: string) => Promise<Schedule>;
+  onGenerate: (id: string) => Promise<Schedule>;
+  previewPrompt: (date: string, dayContext: string) => Promise<string>;
   onDelete: (id: string) => void;
-  onParse: (id: string) => Promise<Schedule>;
 }) {
   const [editing, setEditing] = useState(false);
-  const [date, setDate] = useState(schedule.date);
-  const [content, setContent] = useState(schedule.content);
-  const [submitting, setSubmitting] = useState(false);
-  const [parsing, setParsing] = useState(false);
-  const [parseError, setParseError] = useState<string | null>(null);
-
   const hasTasks = (schedule.tasks?.length ?? 0) > 0;
 
-  function startEdit() {
-    setDate(schedule.date);
-    setContent(schedule.content);
-    setEditing(true);
-  }
-
-  async function save() {
-    if (!content.trim()) return;
-    setSubmitting(true);
-    try {
-      await onUpdate(schedule.id, date, content);
-      setEditing(false);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function generate() {
-    setParsing(true);
-    setParseError(null);
-    try {
-      await onParse(schedule.id);
-    } catch (e) {
-      setParseError(
-        e instanceof Error ? e.message : "Failed to generate task list",
-      );
-    } finally {
-      setParsing(false);
-    }
+  if (editing) {
+    return (
+      <Card className={cn(isToday && styles.todayCard)}>
+        <ScheduleGenerator
+          heading={formatDate(schedule.date)}
+          initialDate={schedule.date}
+          schedule={schedule}
+          schedules={schedules}
+          onSave={onSave}
+          onGenerate={onGenerate}
+          previewPrompt={previewPrompt}
+          onClose={() => setEditing(false)}
+        />
+      </Card>
+    );
   }
 
   return (
     <Card className={cn(isToday && styles.todayCard)}>
       <Stack gap="md">
-        {editing ? (
+        <Inline justify="between">
+          <Heading level={2}>{formatDate(schedule.date)}</Heading>
+          <Inline gap="2xs">
+            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => onDelete(schedule.id)}
+            >
+              Delete
+            </Button>
+          </Inline>
+        </Inline>
+        {hasTasks ? (
           <>
-            <Input
-              className={styles.dateInput}
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              aria-label="Schedule date"
-            />
-            <Textarea
-              className={styles.editField}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={12}
-            />
-            <Inline gap="2xs">
-              <Button size="sm" onClick={save} disabled={submitting || !content.trim()}>
-                {submitting ? "Saving..." : "Save"}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setEditing(false)}
-              >
-                Cancel
-              </Button>
-            </Inline>
+            <SavedTaskList tasks={schedule.tasks ?? []} />
+            <CollapsibleText label="Day context" content={schedule.dayContext} />
           </>
         ) : (
-          <>
-            <Inline justify="between">
-              <Heading level={2}>{formatDate(schedule.date)}</Heading>
-              <Inline gap="2xs">
-                {!hasTasks && (
-                  <Button
-                    size="sm"
-                    variant="ai"
-                    onClick={generate}
-                    disabled={parsing}
-                  >
-                    <Sparkles size={16} strokeWidth={2} aria-hidden />
-                    {parsing ? "Generating..." : "Generate task list"}
-                  </Button>
-                )}
-                <Button size="sm" variant="ghost" onClick={startEdit}>
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => onDelete(schedule.id)}
-                >
-                  Delete
-                </Button>
-              </Inline>
-            </Inline>
-            {parseError && (
-              <Text variant="danger" size="sm">
-                {parseError}
-              </Text>
-            )}
-            {hasTasks ? (
-              <>
-                <SavedTaskList tasks={schedule.tasks ?? []} />
-                <CollapsibleText content={schedule.content} />
-              </>
-            ) : (
-              <Text className={styles.content}>{schedule.content}</Text>
-            )}
-          </>
+          <Text className={styles.content}>
+            {schedule.dayContext ||
+              "No day context yet. Use Edit to add notes and generate a task list."}
+          </Text>
         )}
       </Stack>
     </Card>
@@ -268,20 +156,22 @@ function ScheduleCard({
 }
 
 export default function ScheduleSaved() {
-  const { schedules, loading, error, createSchedule, updateSchedule, deleteSchedule, parseTasks } =
-    useSchedules();
+  const {
+    schedules,
+    loading,
+    error,
+    createSchedule,
+    deleteSchedule,
+    generateTasks,
+    previewPrompt,
+  } = useSchedules();
   const [creating, setCreating] = useState(false);
   const today = todayLocal();
 
   const sorted = [...schedules].sort((a, b) => b.date.localeCompare(a.date));
 
-  async function handleUpdate(id: string, date: string, content: string) {
-    await updateSchedule(id, { date, content });
-  }
-
-  async function handleCreate(date: string, content: string) {
-    await createSchedule({ date, content });
-  }
+  const onSave = (date: string, dayContext: string) =>
+    createSchedule({ date, dayContext });
 
   const header = (
     <Inline justify="between">
@@ -308,16 +198,23 @@ export default function ScheduleSaved() {
 
       <Stack gap="md">
         {creating && (
-          <NewScheduleCard
-            onCreate={handleCreate}
-            onClose={() => setCreating(false)}
-          />
+          <Card>
+            <ScheduleGenerator
+              heading="New schedule"
+              initialDate={today}
+              allowDateEdit
+              schedules={schedules}
+              onSave={onSave}
+              onGenerate={generateTasks}
+              previewPrompt={previewPrompt}
+              onClose={() => setCreating(false)}
+            />
+          </Card>
         )}
 
         {sorted.length === 0 && !creating ? (
           <Text variant="muted">
-            No saved schedules yet. Use the New schedule button, or generate one
-            in the Chat panel and save it.
+            No saved schedules yet. Use the New schedule button to plan a day.
           </Text>
         ) : (
           sorted.map((schedule) => (
@@ -325,9 +222,11 @@ export default function ScheduleSaved() {
               key={schedule.id}
               schedule={schedule}
               isToday={schedule.date === today}
-              onUpdate={handleUpdate}
+              schedules={schedules}
+              onSave={onSave}
+              onGenerate={generateTasks}
+              previewPrompt={previewPrompt}
               onDelete={deleteSchedule}
-              onParse={parseTasks}
             />
           ))
         )}

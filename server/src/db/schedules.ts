@@ -15,9 +15,15 @@ function normalizeTask(task: ScheduleTask & { completed?: boolean }): ScheduleTa
   };
 }
 
-function normalizeSchedule(schedule: Schedule): Schedule {
+function normalizeSchedule(
+  schedule: Schedule & { content?: string },
+): Schedule {
   if (schedule.tasks) schedule.tasks = schedule.tasks.map(normalizeTask);
-  return schedule;
+  // Legacy files stored the user's text under `content`; the field is now
+  // `dayContext`. Carry it over (and drop the old key) when it hasn't been
+  // migrated yet — the next write persists the new shape.
+  const { content, ...rest } = schedule;
+  return { ...rest, dayContext: rest.dayContext ?? content ?? "" };
 }
 
 export function getSchedulesDir(): string {

@@ -12,53 +12,56 @@ import {
   writeSchedule,
 } from "../db/schedules";
 import { readAllChores, readChore, writeChore } from "../db/chores";
-import { generateScheduleResponse } from "../services/schedule";
-import { parseScheduleTasks } from "../services/scheduleParser";
+import {
+  buildSchedulePrompt,
+  generateScheduleTasks,
+} from "../services/schedule";
 
 const router = express.Router();
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-const MOCK_SCHEDULE =
-  "Mocked daily schedule.\n\n" +
-  "8:00–8:30 — Morning coffee and planning\n" +
-  "9:00–9:45 — Clean the shower (overdue)\n" +
-  "12:00–13:00 — Lunch\n" +
-  "16:00–16:05 — Scoop attic litter (due now)\n" +
-  "18:00–19:00 — Dinner";
-
 router.get("/", (_req, res) => {
   res.json({ schedules: readAllSchedules() });
 });
 
-router.post("/generate", async (req, res) => {
-  const { messages } = req.body as {
-    messages: { role: "user" | "assistant"; content: string }[];
+// Preview the exact prompt the generator will send, without calling the model,
+// so the UI can show the user everything that feeds the task list.
+router.post("/preview-prompt", (req, res) => {
+  const { date, dayContext } = req.body as {
+    date?: unknown;
+    dayContext?: unknown;
   };
-
-  if (process.env.MOCK_AI === "true") {
-    res.json({ content: MOCK_SCHEDULE });
+  if (typeof date !== "string" || !DATE_PATTERN.test(date)) {
+    res.status(400).json({ error: "date is required (YYYY-MM-DD format)" });
+    return;
+  }
+  if (typeof dayContext !== "string") {
+    res.status(400).json({ error: "dayContext must be a string" });
     return;
   }
 
-  try {
-    const content = await generateScheduleResponse(messages);
-    res.json({ content });
-  } catch (error) {
-    console.error("Schedule generation error:", error);
-    res.status(500).json({ error: "Failed to generate schedule" });
-  }
+  const { system, userMessage } = buildSchedulePrompt({
+    date,
+    dayContext,
+    chores: readAllChores(),
+  });
+  res.json({ prompt: `${system}\n\n────────\nRequest: ${userMessage}` });
 });
 
 router.post("/", (req, res) => {
-  const { date, content } = req.body as { date?: unknown; content?: unknown };
+  const { date, dayContext } = req.body as {
+    date?: unknown;
+    dayContext?: unknown;
+  };
 
   if (typeof date !== "string" || !DATE_PATTERN.test(date)) {
     res.status(400).json({ error: "date is required (YYYY-MM-DD format)" });
     return;
   }
-  if (typeof content !== "string" || content.trim() === "") {
-    res.status(400).json({ error: "content is required" });
+  // dayContext is the user's one-off notes for the day and may be empty.
+  if (typeof dayContext !== "string") {
+    res.status(400).json({ error: "dayContext must be a string" });
     return;
   }
 
@@ -69,7 +72,7 @@ router.post("/", (req, res) => {
   if (existing) {
     const updated: Schedule = {
       ...existing,
-      content: content.trim(),
+      dayContext: dayContext.trim(),
       updatedAt: now,
     };
     writeSchedule(updated);
@@ -80,7 +83,7 @@ router.post("/", (req, res) => {
   const schedule: Schedule = {
     id: crypto.randomUUID(),
     date,
-    content: content.trim(),
+    dayContext: dayContext.trim(),
     createdAt: now,
     updatedAt: now,
   };
@@ -90,7 +93,10 @@ router.post("/", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const { id } = req.params;
-  const { date, content } = req.body as { date?: unknown; content?: unknown };
+  const { date, dayContext } = req.body as {
+    date?: unknown;
+    dayContext?: unknown;
+  };
 
   const schedule = readSchedule(id);
   if (!schedule) {
@@ -101,28 +107,27 @@ router.put("/:id", (req, res) => {
     res.status(400).json({ error: "date is required (YYYY-MM-DD format)" });
     return;
   }
-  if (typeof content !== "string" || content.trim() === "") {
-    res.status(400).json({ error: "content is required" });
+  if (typeof dayContext !== "string") {
+    res.status(400).json({ error: "dayContext must be a string" });
     return;
   }
 
-  const trimmed = content.trim();
+  // Editing day-notes no longer derives tasks, so an existing task list stays
+  // put until the user explicitly re-generates.
   const updated: Schedule = {
     ...schedule,
     date,
-    content: trimmed,
+    dayContext: dayContext.trim(),
     updatedAt: new Date().toISOString(),
   };
-  // The parsed tasks were derived from the old text — drop them when the
-  // content changes so a stale task list can't linger. The user re-parses.
-  if (trimmed !== schedule.content) delete updated.tasks;
   writeSchedule(updated);
   res.status(200).json({ schedule: updated });
 });
 
-// Parse a saved schedule's free text into a structured, ordered task list and
-// persist it onto the schedule. Mirrors the recipe-extraction route.
-router.post("/:id/parse", async (req, res) => {
+// Generate the day's structured task list from all of its inputs (day notes,
+// chores, standing instructions, recent history) in a single model call and
+// persist it onto the schedule.
+router.post("/:id/generate", async (req, res) => {
   const { id } = req.params;
   const schedule = readSchedule(id);
   if (!schedule) {
@@ -130,7 +135,11 @@ router.post("/:id/parse", async (req, res) => {
     return;
   }
 
-  const result = await parseScheduleTasks(schedule.content, readAllChores());
+  const result = await generateScheduleTasks({
+    date: schedule.date,
+    dayContext: schedule.dayContext,
+    chores: readAllChores(),
+  });
   if ("error" in result) {
     const status = result.error === "No tasks found in this schedule" ? 422 : 500;
     res.status(status).json({ error: result.error });

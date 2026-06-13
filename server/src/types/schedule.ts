@@ -5,7 +5,7 @@
  */
 export type TaskStatus = "pending" | "completed" | "future" | "wontDo";
 
-/** A single time-blocked item parsed from a schedule's free-text content. */
+/** A single time-blocked item produced when a day's task list is generated. */
 export type ScheduleTask = {
   id: string;
   startTime: string; // 24h "HH:MM", e.g. "07:30" — drives time-of-day styling
@@ -20,8 +20,8 @@ export type ScheduleTask = {
 export type Schedule = {
   id: string;
   date: string; // "YYYY-MM-DD" — the day the schedule is for
-  content: string; // the schedule text (the AI's input for task parsing)
-  tasks?: ScheduleTask[]; // structured tasks, present once the content is parsed
+  dayContext: string; // the user's one-off notes for this day, fed into the generator
+  tasks?: ScheduleTask[]; // structured tasks, present once the day has been generated
   createdAt: string;
   updatedAt: string;
 };

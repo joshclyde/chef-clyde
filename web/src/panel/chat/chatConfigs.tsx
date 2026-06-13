@@ -1,7 +1,6 @@
 import { type ComponentType } from "react";
 import { type ChatMode, type Message, MODE_CONFIG } from "./types";
 import { SaveRecipeAction } from "./SaveRecipeAction";
-import { SaveScheduleAction } from "./SaveScheduleAction";
 
 export type ModeOption = {
   id: ChatMode;
@@ -43,17 +42,6 @@ const COOKBOOK_CONFIG: ChatConfig = {
   SaveAction: SaveRecipeAction,
 };
 
-const SCHEDULE_CONFIG: ChatConfig = {
-  endpoint: "/api/schedules/generate",
-  buildBody: (messages) => ({ messages }),
-  defaultMode: "general",
-  emptyHint:
-    "Describe your day and I'll build a time-blocked schedule around your chores and what's due.",
-  placeholder: "e.g. Plan a productive Saturday with some downtime",
-  continuePlaceholder: "Refine the schedule...",
-  SaveAction: SaveScheduleAction,
-};
-
 const DEFAULT_CONFIG: ChatConfig = {
   endpoint: "/api/chat",
   buildBody: (messages) => ({ messages, mode: "general" }),
@@ -65,7 +53,6 @@ const DEFAULT_CONFIG: ChatConfig = {
 
 const CONFIG_BY_ACTIVITY: Record<string, ChatConfig> = {
   cookbook: COOKBOOK_CONFIG,
-  schedule: SCHEDULE_CONFIG,
 };
 
 /** Resolve the chat experience for an activity, falling back to a generic assistant. */

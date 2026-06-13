@@ -38,6 +38,43 @@
   color: var(--color-text-default);
 }
 
+/* ----- generator: prompt-input visibility ----- */
+/* The "what Clyde will use" panel grouping every data point fed to the model. */
+.contextPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+.contextRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.groupTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.promptPreview {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-default);
+}
+
 /* ----- daily task list ----- */
 .taskRow {
   position: relative;
