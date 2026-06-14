@@ -173,9 +173,12 @@ function TaskList({
   const now = useNow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // When on, hide tasks the user has already resolved and show only pending ones.
+  const [onlyUnresolved, setOnlyUnresolved] = useState(false);
   const tasks = schedule.tasks ?? [];
   // A task is "resolved" once the user gives it any terminal outcome.
   const resolved = tasks.filter((t) => t.status !== "pending").length;
+  const allResolved = tasks.length > 0 && resolved === tasks.length;
 
   async function update(taskId: string, patch: TaskPatch) {
     setError(null);
@@ -191,9 +194,19 @@ function TaskList({
       <Stack gap="md">
         <Inline justify="between">
           <Heading level={2}>Today's schedule</Heading>
-          <Text variant="muted" size="sm">
-            {resolved}/{tasks.length} resolved
-          </Text>
+          <Inline gap="sm">
+            <Text variant="muted" size="sm">
+              {resolved}/{tasks.length} resolved
+            </Text>
+            <Button
+              size="sm"
+              variant={onlyUnresolved ? "primary" : "secondary"}
+              aria-pressed={onlyUnresolved}
+              onClick={() => setOnlyUnresolved((v) => !v)}
+            >
+              Only unresolved
+            </Button>
+          </Inline>
         </Inline>
         {error && (
           <Text variant="danger" size="sm">
@@ -201,7 +214,15 @@ function TaskList({
           </Text>
         )}
         <Stack gap="2xs">
+          {onlyUnresolved && allResolved && (
+            <Text variant="muted" size="sm">
+              No unresolved tasks — everything's resolved for today.
+            </Text>
+          )}
           {tasks.map((task, i) => {
+            // Filter by rendering, not by slicing the array, so the original
+            // index still feeds taskStatus its full chronological context.
+            if (onlyUnresolved && task.status !== "pending") return null;
             const status = taskStatus(tasks, i, now);
             const expanded = expandedId === task.id;
             return (
