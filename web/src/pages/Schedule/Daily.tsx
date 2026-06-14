@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { BrushCleaning, ChevronDown, ChevronRight, ListTodo } from "lucide-react";
+import {
+  BrushCleaning,
+  ChevronDown,
+  ChevronRight,
+  Gamepad2,
+  ListTodo,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -14,6 +20,7 @@ import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
 import { useChores, type Chore } from "../Chores/useChores";
 import { useTodos, type Todo } from "../Todos/useTodos";
+import { useHobbies, type Hobby } from "../Hobbies/useHobbies";
 import {
   useSchedules,
   type Schedule,
@@ -154,11 +161,13 @@ function TaskList({
   schedule,
   chores,
   todos,
+  hobbies,
   onUpdate,
 }: {
   schedule: Schedule;
   chores: Chore[];
   todos: Todo[];
+  hobbies: Hobby[];
   onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
 }) {
   const now = useNow();
@@ -248,6 +257,28 @@ function TaskList({
                       </span>
                     );
                   })()}
+                  {task.hobbyTaskId && (() => {
+                    const hobby = hobbies.find((h) =>
+                      h.tasks.some((t) => t.id === task.hobbyTaskId),
+                    );
+                    const hobbyTask = hobby?.tasks.find(
+                      (t) => t.id === task.hobbyTaskId,
+                    );
+                    const label =
+                      hobby && hobbyTask
+                        ? `From your hobbies: ${hobby.name} — ${hobbyTask.label}`
+                        : "From your hobbies";
+                    return (
+                      <span
+                        className={styles.hobbyIcon}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                      >
+                        <Gamepad2 size={16} aria-hidden />
+                      </span>
+                    );
+                  })()}
                   {status === "current" && (
                     <span className={styles.nowBadge}>Now</span>
                   )}
@@ -296,6 +327,7 @@ export default function ScheduleDaily() {
   } = useSchedules();
   const { chores } = useChores();
   const { todos } = useTodos();
+  const { hobbies } = useHobbies();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
   const hasTasks = (schedule?.tasks?.length ?? 0) > 0;
@@ -326,6 +358,7 @@ export default function ScheduleDaily() {
           schedule={schedule}
           chores={chores}
           todos={todos}
+          hobbies={hobbies}
           onUpdate={updateTask}
         />
       )}

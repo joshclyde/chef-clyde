@@ -2,6 +2,7 @@ import {
   BrushCleaning,
   CalendarDays,
   ChefHat,
+  Gamepad2,
   ListTodo,
   type LucideIcon,
 } from "lucide-react";
@@ -33,6 +34,15 @@ export const activities: Activity[] = [
     navItems: [
       { label: "Dashboard", path: "/chores/dashboard" },
       { label: "Tasks", path: "/chores/tasks" },
+    ],
+  },
+  {
+    id: "hobbies",
+    label: "Hobbies",
+    icon: Gamepad2,
+    navItems: [
+      { label: "Dashboard", path: "/hobbies/dashboard" },
+      { label: "List", path: "/hobbies/list" },
     ],
   },
   {

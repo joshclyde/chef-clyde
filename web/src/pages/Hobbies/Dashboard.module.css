@@ -1,0 +1,77 @@
+.page {
+  max-width: 1000px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  max-width: 320px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+
+/* ----- 7-day grid ----- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2xs);
+}
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: repeat(7, minmax(96px, 1fr));
+    overflow-x: auto;
+  }
+}
+
+.gridDay {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-height: 96px;
+  padding: var(--space-2xs);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+.gridToday {
+  border-color: var(--color-action-primary-bg);
+  background: var(--color-bg-subtle);
+}
+
+.gridItems {
+  flex: 1;
+}
+
+.chip {
+  display: block;
+  padding: var(--space-3xs) var(--space-2xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Events are concrete commitments — give them the AI accent treatment. */
+.chip.event {
+  background: var(--gradient-ai-soft, var(--color-bg-muted));
+  color: var(--color-text-strong);
+}
+.chip.weekly {
+  background: var(--color-bg-muted);
+}
+.chip.frequency {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+}
