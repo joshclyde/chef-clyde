@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrushCleaning, ChevronDown, ChevronRight } from "lucide-react";
+import { BrushCleaning, ChevronDown, ChevronRight, ListTodo } from "lucide-react";
 import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
@@ -50,6 +50,16 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
                 title="Linked to a chore"
               >
                 <BrushCleaning size={14} aria-hidden />
+              </span>
+            )}
+            {task.todoId && (
+              <span
+                className={styles.todoIcon}
+                role="img"
+                aria-label="From your to-dos"
+                title="From your to-dos"
+              >
+                <ListTodo size={14} aria-hidden />
               </span>
             )}
           </div>
