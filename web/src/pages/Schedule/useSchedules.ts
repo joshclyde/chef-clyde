@@ -13,6 +13,8 @@ export type ScheduleTask = {
   choreCompletionId?: string; // completion logged when completed (server-managed)
   todoId?: string; // the one-off to-do this task fulfills, when linked
   todoCompletionAt?: string; // completedAt written onto the to-do (server-managed)
+  hobbyTaskId?: string; // the hobby task this performs, when linked
+  hobbyTaskCompletionId?: string; // completion logged when completed (server-managed)
 };
 
 export type Schedule = {

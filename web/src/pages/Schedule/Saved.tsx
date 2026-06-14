@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { BrushCleaning, ChevronDown, ChevronRight, ListTodo } from "lucide-react";
+import {
+  BrushCleaning,
+  ChevronDown,
+  ChevronRight,
+  Gamepad2,
+  ListTodo,
+} from "lucide-react";
 import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
@@ -60,6 +66,16 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
                 title="From your to-dos"
               >
                 <ListTodo size={14} aria-hidden />
+              </span>
+            )}
+            {task.hobbyTaskId && (
+              <span
+                className={styles.hobbyIcon}
+                role="img"
+                aria-label="From your hobbies"
+                title="From your hobbies"
+              >
+                <Gamepad2 size={14} aria-hidden />
               </span>
             )}
           </div>
