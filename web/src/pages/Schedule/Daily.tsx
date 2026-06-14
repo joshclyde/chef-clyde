@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrushCleaning, ChevronDown, ChevronRight } from "lucide-react";
+import { BrushCleaning, ChevronDown, ChevronRight, ListTodo } from "lucide-react";
 import {
   Button,
   Card,
@@ -13,6 +13,7 @@ import {
 import { cn } from "../../ui/cn";
 import { todayLocal } from "../../lib/date";
 import { useChores, type Chore } from "../Chores/useChores";
+import { useTodos, type Todo } from "../Todos/useTodos";
 import {
   useSchedules,
   type Schedule,
@@ -35,14 +36,16 @@ function formatDate(date: string) {
   });
 }
 
-/** A task's expandable detail area: free-text notes + chore link + outcome controls. */
+/** A task's expandable detail area: free-text notes + chore/to-do links + outcome controls. */
 function TaskDetail({
   task,
   chores,
+  todos,
   onUpdate,
 }: {
   task: ScheduleTask;
   chores: Chore[];
+  todos: Todo[];
   onUpdate: (taskId: string, patch: TaskPatch) => void;
 }) {
   // Local draft so typing stays smooth; we persist on blur.
@@ -99,6 +102,33 @@ function TaskDetail({
             ))}
         </Select>
       </Stack>
+      <Stack gap="3xs">
+        <Text as="label" size="xs" variant="muted">
+          Linked to-do
+        </Text>
+        <Select
+          value={task.todoId ?? ""}
+          aria-label="Linked to-do"
+          onChange={(e) =>
+            onUpdate(task.id, {
+              todoId: e.target.value === "" ? null : e.target.value,
+            })
+          }
+        >
+          <option value="">No linked to-do</option>
+          {/* keep the select truthful if the to-do was completed or deleted */}
+          {task.todoId && !todos.some((t) => t.id === task.todoId) && (
+            <option value={task.todoId}>Linked to-do (unavailable)</option>
+          )}
+          {[...todos]
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+              </option>
+            ))}
+        </Select>
+      </Stack>
       <Inline gap="2xs">
         <Button
           size="sm"
@@ -123,10 +153,12 @@ function TaskDetail({
 function TaskList({
   schedule,
   chores,
+  todos,
   onUpdate,
 }: {
   schedule: Schedule;
   chores: Chore[];
+  todos: Todo[];
   onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
 }) {
   const now = useNow();
@@ -200,6 +232,22 @@ function TaskList({
                       </span>
                     );
                   })()}
+                  {task.todoId && (() => {
+                    const todo = todos.find((t) => t.id === task.todoId);
+                    const label = todo
+                      ? `From your to-dos: ${todo.title}`
+                      : "From your to-dos";
+                    return (
+                      <span
+                        className={styles.todoIcon}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                      >
+                        <ListTodo size={16} aria-hidden />
+                      </span>
+                    );
+                  })()}
                   {status === "current" && (
                     <span className={styles.nowBadge}>Now</span>
                   )}
@@ -220,7 +268,12 @@ function TaskList({
                   </button>
                 </div>
                 {expanded && (
-                  <TaskDetail task={task} chores={chores} onUpdate={update} />
+                  <TaskDetail
+                    task={task}
+                    chores={chores}
+                    todos={todos}
+                    onUpdate={update}
+                  />
                 )}
               </div>
             );
@@ -242,6 +295,7 @@ export default function ScheduleDaily() {
     updateTask,
   } = useSchedules();
   const { chores } = useChores();
+  const { todos } = useTodos();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
   const hasTasks = (schedule?.tasks?.length ?? 0) > 0;
@@ -268,7 +322,12 @@ export default function ScheduleDaily() {
       {error && <Text variant="danger">{error}</Text>}
 
       {hasTasks && schedule && (
-        <TaskList schedule={schedule} chores={chores} onUpdate={updateTask} />
+        <TaskList
+          schedule={schedule}
+          chores={chores}
+          todos={todos}
+          onUpdate={updateTask}
+        />
       )}
 
       <Card>

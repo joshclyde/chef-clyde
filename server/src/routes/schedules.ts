@@ -12,10 +12,16 @@ import {
   writeSchedule,
 } from "../db/schedules";
 import { readAllChores, readChore, writeChore } from "../db/chores";
+import { readAllTodos, readTodo, writeTodo } from "../db/todos";
 import {
   buildSchedulePrompt,
   generateScheduleTasks,
 } from "../services/schedule";
+
+/** All open (not-yet-completed) to-dos — what the generator considers. */
+function openTodos() {
+  return readAllTodos().filter((t) => !t.completedAt);
+}
 
 const router = express.Router();
 
@@ -45,6 +51,7 @@ router.post("/preview-prompt", (req, res) => {
     date,
     dayContext,
     chores: readAllChores(),
+    todos: openTodos(),
   });
   res.json({ prompt: `${system}\n\n────────\nRequest: ${userMessage}` });
 });
@@ -139,6 +146,7 @@ router.post("/:id/generate", async (req, res) => {
     date: schedule.date,
     dayContext: schedule.dayContext,
     chores: readAllChores(),
+    todos: openTodos(),
   });
   if ("error" in result) {
     const status = result.error === "No tasks found in this schedule" ? 422 : 500;
@@ -209,14 +217,54 @@ function logLinkedCompletion(task: ScheduleTask): void {
   task.choreCompletionId = completion.id;
 }
 
+/**
+ * Clear the completion this task wrote onto its linked to-do. Only undoes a
+ * completion we created (tracked via todoCompletionAt) so we never clobber one
+ * the user set on the To-Dos page. Best-effort: the to-do may have been deleted.
+ * Mutates the task; caller persists the schedule.
+ */
+function clearLinkedTodo(task: ScheduleTask): void {
+  const completedAt = task.todoCompletionAt;
+  if (!completedAt) return;
+  const todo = task.todoId ? readTodo(task.todoId) : null;
+  if (todo && todo.completedAt === completedAt) {
+    delete todo.completedAt;
+    todo.updatedAt = new Date().toISOString();
+    writeTodo(todo);
+  }
+  delete task.todoCompletionAt;
+}
+
+/**
+ * Mark the task's linked to-do done and remember the timestamp so unchecking
+ * can undo it. Skips a to-do already completed elsewhere (so it stays owned by
+ * whoever finished it). If the to-do was deleted since linking, drop the stale
+ * link instead of failing the task update.
+ */
+function completeLinkedTodo(task: ScheduleTask): void {
+  if (!task.todoId || task.todoCompletionAt) return;
+  const todo = readTodo(task.todoId);
+  if (!todo) {
+    delete task.todoId;
+    return;
+  }
+  if (todo.completedAt) return; // already done elsewhere; don't claim ownership
+  const now = new Date().toISOString();
+  todo.completedAt = now;
+  todo.updatedAt = now;
+  writeTodo(todo);
+  task.todoCompletionAt = now;
+}
+
 // Update a single task's status, notes, and/or chore link. All fields are
 // optional, but at least one must be present. `choreId: null` clears the link.
 router.patch("/:id/tasks/:taskId", (req, res) => {
   const { id, taskId } = req.params;
-  const { status, notes, choreId } = req.body as {
+  const { status, notes, choreId, todoId } = req.body as {
     status?: unknown;
     notes?: unknown;
     choreId?: unknown;
+    todoId?: unknown;
   };
 
   if (status !== undefined && !TASK_STATUSES.includes(status as TaskStatus)) {
@@ -233,8 +281,19 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     res.status(400).json({ error: "choreId must be a string or null" });
     return;
   }
-  if (status === undefined && notes === undefined && choreId === undefined) {
-    res.status(400).json({ error: "status, notes, or choreId is required" });
+  if (todoId !== undefined && todoId !== null && typeof todoId !== "string") {
+    res.status(400).json({ error: "todoId must be a string or null" });
+    return;
+  }
+  if (
+    status === undefined &&
+    notes === undefined &&
+    choreId === undefined &&
+    todoId === undefined
+  ) {
+    res
+      .status(400)
+      .json({ error: "status, notes, choreId, or todoId is required" });
     return;
   }
 
@@ -254,6 +313,10 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     res.status(400).json({ error: "Chore not found" });
     return;
   }
+  if (typeof todoId === "string" && !readTodo(todoId)) {
+    res.status(400).json({ error: "Todo not found" });
+    return;
+  }
 
   if (notes !== undefined) task.notes = notes as string;
 
@@ -267,12 +330,27 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     }
   }
 
+  if (todoId !== undefined) {
+    const next = todoId === null ? undefined : (todoId as string);
+    if (task.todoId !== next) {
+      // Re-linking: undo the completion the old link created before switching.
+      clearLinkedTodo(task);
+      if (next === undefined) delete task.todoId;
+      else task.todoId = next;
+    }
+  }
+
   if (status !== undefined) task.status = status as TaskStatus;
 
-  // Invariant: a completed linked task owns exactly one chore completion;
-  // anything else owns none.
-  if (task.status === "completed") logLinkedCompletion(task);
-  else removeLinkedCompletion(task);
+  // Invariant: a completed linked task owns exactly one chore completion and at
+  // most one to-do completion; anything else owns none.
+  if (task.status === "completed") {
+    logLinkedCompletion(task);
+    completeLinkedTodo(task);
+  } else {
+    removeLinkedCompletion(task);
+    clearLinkedTodo(task);
+  }
 
   schedule.updatedAt = new Date().toISOString();
   writeSchedule(schedule);

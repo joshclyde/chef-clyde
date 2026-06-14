@@ -3,6 +3,7 @@ import Pantry from "../pages/Pantry";
 import Recipes from "../pages/Recipes";
 import Dashboard from "../pages/Chores/Dashboard";
 import Tasks from "../pages/Chores/Tasks";
+import Todos from "../pages/Todos/Todos";
 import ScheduleDaily from "../pages/Schedule/Daily";
 import ScheduleInstructions from "../pages/Schedule/Instructions";
 import ScheduleSaved from "../pages/Schedule/Saved";
@@ -31,6 +32,7 @@ export function AppLayout() {
             <Route path="/chores" element={<Navigate to="/chores/dashboard" replace />} />
             <Route path="/chores/dashboard" element={<Dashboard />} />
             <Route path="/chores/tasks" element={<Tasks />} />
+            <Route path="/todos" element={<Todos />} />
             <Route path="/schedule" element={<Navigate to="/schedule/daily" replace />} />
             <Route path="/schedule/daily" element={<ScheduleDaily />} />
             <Route path="/schedule/saved" element={<ScheduleSaved />} />

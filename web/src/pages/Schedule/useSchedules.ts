@@ -11,6 +11,8 @@ export type ScheduleTask = {
   notes?: string;
   choreId?: string; // the chore this task performs, when linked
   choreCompletionId?: string; // completion logged when completed (server-managed)
+  todoId?: string; // the one-off to-do this task fulfills, when linked
+  todoCompletionAt?: string; // completedAt written onto the to-do (server-managed)
 };
 
 export type Schedule = {
@@ -28,11 +30,15 @@ export type ScheduleInput = {
   dayContext: string;
 };
 
-/** Fields accepted by the task PATCH endpoint. `choreId: null` clears the link. */
+/**
+ * Fields accepted by the task PATCH endpoint. `choreId`/`todoId: null` clears
+ * the respective link.
+ */
 export type TaskPatch = {
   status?: TaskStatus;
   notes?: string;
   choreId?: string | null;
+  todoId?: string | null;
 };
 
 export function useSchedules() {
@@ -136,11 +142,12 @@ export function useSchedules() {
         ),
       );
 
-    // choreId is tri-state in the patch (absent = untouched, null = clear),
-    // but plain optional on the task — only map it when present.
-    const { choreId, ...rest } = patch;
-    const optimistic: Partial<ScheduleTask> =
-      choreId === undefined ? rest : { ...rest, choreId: choreId ?? undefined };
+    // choreId/todoId are tri-state in the patch (absent = untouched, null =
+    // clear), but plain optional on the task — only map them when present.
+    const { choreId, todoId, ...rest } = patch;
+    const optimistic: Partial<ScheduleTask> = { ...rest };
+    if (choreId !== undefined) optimistic.choreId = choreId ?? undefined;
+    if (todoId !== undefined) optimistic.todoId = todoId ?? undefined;
     apply((t) => ({ ...t, ...optimistic }));
     try {
       const res = await fetch(`/api/schedules/${id}/tasks/${taskId}`, {

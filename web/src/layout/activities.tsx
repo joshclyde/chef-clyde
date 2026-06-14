@@ -2,6 +2,7 @@ import {
   BrushCleaning,
   CalendarDays,
   ChefHat,
+  ListTodo,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,12 @@ export const activities: Activity[] = [
       { label: "Dashboard", path: "/chores/dashboard" },
       { label: "Tasks", path: "/chores/tasks" },
     ],
+  },
+  {
+    id: "todos",
+    label: "To-Dos",
+    icon: ListTodo,
+    navItems: [{ label: "All", path: "/todos" }],
   },
   {
     id: "cookbook",

@@ -9,6 +9,12 @@ import {
   dueSortKey,
   type Chore,
 } from "../Chores/useChores";
+import {
+  useTodos,
+  dueStatus as todoDueStatus,
+  dueSortKey as todoDueSortKey,
+  type Todo,
+} from "../Todos/useTodos";
 import type { Schedule } from "./useSchedules";
 import styles from "./Schedule.module.css";
 
@@ -27,6 +33,12 @@ function shortDate(date: Date | null) {
   return date
     ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
     : "—";
+}
+
+/** Parse a "YYYY-MM-DD" string into a local Date (no timezone shift). */
+function parseLocalDate(date: string): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 /** A labeled group inside the "what Clyde will use" panel. */
@@ -94,6 +106,66 @@ function ChoresContext({ chores }: { chores: Chore[] }) {
             <div key={chore.id} className={styles.contextRow}>
               <Text size="sm">{chore.name}</Text>
               <DueBadge chore={chore} />
+            </div>
+          ))}
+        </Stack>
+      )}
+    </ContextGroup>
+  );
+}
+
+/** A to-do's readiness, mirroring the Chores due styling. */
+function TodoDueBadge({ todo }: { todo: Todo }) {
+  const status = todoDueStatus(todo);
+  if (status === "overdue") {
+    return (
+      <Text size="xs" variant="danger">
+        Overdue
+      </Text>
+    );
+  }
+  if (status === "today") {
+    return (
+      <Text size="xs" variant="strong">
+        Due today
+      </Text>
+    );
+  }
+  if (status === "upcoming") {
+    return (
+      <Text size="xs" variant="muted">
+        Due {shortDate(todo.dueDate ? parseLocalDate(todo.dueDate) : null)}
+      </Text>
+    );
+  }
+  return (
+    <Text size="xs" variant="muted">
+      No due date
+    </Text>
+  );
+}
+
+/** The open to-dos being considered, sorted most-due-first, like the prompt. */
+function TodosContext({ todos }: { todos: Todo[] }) {
+  const open = useMemo(
+    () =>
+      todos
+        .filter((t) => !t.completedAt)
+        .sort((a, b) => todoDueSortKey(a) - todoDueSortKey(b)),
+    [todos],
+  );
+  return (
+    <ContextGroup title={`To-dos being considered (${open.length})`}>
+      {open.length === 0 ? (
+        <Text size="sm" variant="muted">
+          No open to-dos.
+        </Text>
+      ) : (
+        <Stack gap="3xs">
+          {open.map((todo) => (
+            <div key={todo.id} className={styles.contextRow}>
+              <Text size="sm">{todo.title}</Text>
+              <TodoDueBadge todo={todo} />
             </div>
           ))}
         </Stack>
@@ -262,6 +334,7 @@ export function ScheduleGenerator({
   onClose?: () => void;
 }) {
   const { chores } = useChores();
+  const { todos } = useTodos();
   const [date, setDate] = useState(initialDate);
   const [draft, setDraft] = useState(schedule?.dayContext ?? "");
   const [busy, setBusy] = useState<null | "save" | "generate">(null);
@@ -328,6 +401,7 @@ export function ScheduleGenerator({
           What Clyde will use to plan this day
         </Text>
         <ChoresContext chores={chores} />
+        <TodosContext todos={todos} />
         <InstructionsContext />
         <HistoryContext schedules={schedules} />
       </div>

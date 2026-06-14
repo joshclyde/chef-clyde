@@ -1,10 +1,11 @@
 import type { ScheduleTask } from "../types/schedule";
 import type { Chore } from "../types/chore";
+import type { Todo } from "../types/todo";
 
 /** The task fields the model produces; id + status are added server-side. */
 export type ParsedTask = Omit<
   ScheduleTask,
-  "id" | "status" | "notes" | "choreCompletionId"
+  "id" | "status" | "notes" | "choreCompletionId" | "todoCompletionAt"
 >;
 
 export type ParseSuccess = { tasks: ParsedTask[] };
@@ -21,10 +22,12 @@ Produce one task per concrete time-blocked activity, in chronological order. Tim
 If no tasks can be produced, output exactly this JSON:
 {"error": "no_tasks_found"}
 
+"choreId" and "todoId" are optional links explained below the schema; include at most one of them on a task, and only when it clearly applies.
+
 Schema:
 {
   "tasks": [
-    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string }
+    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string }
   ]
 }`;
 
@@ -38,6 +41,24 @@ export function buildChoreLinkingInstructions(chores: Chore[]): string {
   const list = chores.map((c) => `- ${c.id} :: ${c.name}`).join("\n");
   return (
     `The user tracks recurring household chores. When a task is clearly an instance of one of the chores below, add an optional "choreId" field with that chore's exact id. Match on meaning, not exact wording (e.g. "Clean the shower (overdue)" is the chore "Clean the shower"). If no chore matches, omit "choreId". Never invent ids.\n\nChores (id :: name):\n${list}`
+  );
+}
+
+/**
+ * To-do-linking guidance appended to the prompt so the model can attach a
+ * todoId to any task that fulfills one of the user's one-off to-dos. Empty when
+ * the user has no open to-dos, so it adds no noise.
+ */
+export function buildTodoLinkingInstructions(todos: Todo[]): string {
+  if (todos.length === 0) return "";
+  const list = todos
+    .map((t) => {
+      const due = t.dueDate ? `due ${t.dueDate}` : "no due date";
+      return `- ${t.id} :: ${t.title} (${due})`;
+    })
+    .join("\n");
+  return (
+    `The user also keeps one-off to-dos (separate from recurring chores). When a task fulfills one of the to-dos below, add an optional "todoId" field with that to-do's exact id. Match on meaning, not exact wording. If no to-do matches, omit "todoId". Never invent ids.\n\nTo-dos (id :: title):\n${list}`
   );
 }
 
@@ -59,6 +80,7 @@ const TIME_PATTERN = /^\d{2}:\d{2}$/;
 export function validateTasks(
   rawText: string,
   chores: Chore[],
+  todos: Todo[],
 ): ParseSuccess | ParseError {
   let parsed: unknown;
   try {
@@ -93,23 +115,31 @@ export function validateTasks(
         (typeof (t as ParsedTask).endTime === "string" &&
           TIME_PATTERN.test((t as ParsedTask).endTime as string))) &&
       typeof (t as ParsedTask).label === "string" &&
-      // the model may emit choreId: null; the sanitize step below drops it
+      // the model may emit choreId/todoId: null; the sanitize step below drops it
       ((t as { choreId?: unknown }).choreId == null ||
-        typeof (t as { choreId?: unknown }).choreId === "string"),
+        typeof (t as { choreId?: unknown }).choreId === "string") &&
+      ((t as { todoId?: unknown }).todoId == null ||
+        typeof (t as { todoId?: unknown }).todoId === "string"),
   );
   if (!valid) {
     console.error("Schedule generation returned malformed tasks:", parsed);
     return { error: "Generated tasks have an unexpected shape" };
   }
 
-  // Only keep chore links that point at real chores — drop nulls and any id
+  // Only keep links that point at real chores/to-dos — drop nulls and any id
   // the model invented.
   const validChoreIds = new Set(chores.map((c) => c.id));
+  const validTodoIds = new Set(todos.map((t) => t.id));
   return {
-    tasks: (tasks as ParsedTask[]).map(({ choreId, ...rest }) =>
-      typeof choreId === "string" && validChoreIds.has(choreId)
-        ? { ...rest, choreId }
-        : rest,
-    ),
+    tasks: (tasks as ParsedTask[]).map(({ choreId, todoId, ...rest }) => {
+      const task: ParsedTask = { ...rest };
+      if (typeof choreId === "string" && validChoreIds.has(choreId)) {
+        task.choreId = choreId;
+      }
+      if (typeof todoId === "string" && validTodoIds.has(todoId)) {
+        task.todoId = todoId;
+      }
+      return task;
+    }),
   };
 }

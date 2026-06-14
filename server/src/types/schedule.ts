@@ -15,6 +15,8 @@ export type ScheduleTask = {
   notes?: string; // free-text context the user attaches to the task
   choreId?: string; // the chore this task performs, when linked
   choreCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
+  todoId?: string; // the one-off to-do this task fulfills, when linked
+  todoCompletionAt?: string; // completedAt this task wrote onto the to-do; kept so unchecking can undo it
 };
 
 export type Schedule = {

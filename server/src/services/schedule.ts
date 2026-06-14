@@ -3,8 +3,10 @@ import { readScheduleInstructions } from "../db/scheduleInstructions";
 import { readAllSchedules } from "../db/schedules";
 import type { Chore, FrequencyUnit } from "../types/chore";
 import type { TaskStatus } from "../types/schedule";
+import type { Todo } from "../types/todo";
 import {
   buildChoreLinkingInstructions,
+  buildTodoLinkingInstructions,
   MOCK_TASKS,
   TASK_JSON_SCHEMA,
   validateTasks,
@@ -17,8 +19,10 @@ const anthropic = new Anthropic();
 const SCHEDULE_SYSTEM_PROMPT =
   "You are a planning assistant for Chef Clyde that builds realistic, time-blocked daily schedules. " +
   "Plan a single day using concrete time blocks (e.g. \"9:00–9:30\"). " +
-  "Balance the user's stated goals with their household chores. " +
+  "Balance the user's stated goals with their household chores and one-off to-dos. " +
   "Prioritize chores that are overdue or due now, and spread the rest sensibly. " +
+  "Honor the user's one-off to-dos, especially any that are overdue or due today; " +
+  "undated to-dos can be woven in when there is room. " +
   "Respect each chore's typical time estimate when given, and avoid over-packing the day.";
 
 function addFrequency(date: Date, value: number, unit: FrequencyUnit): Date {
@@ -94,6 +98,35 @@ function buildChoresContext(chores: Chore[]): string {
   return `The user's chores and their readiness:\n${lines.join("\n")}`;
 }
 
+/**
+ * Format every open to-do as a single line describing its deadline (or lack of
+ * one) and any user note, so the model knows which one-off tasks to weave in
+ * and how urgent each is. Callers pass only open (not-yet-completed) to-dos.
+ */
+function buildTodosContext(todos: Todo[]): string {
+  if (todos.length === 0) {
+    return "The user has no open one-off to-dos.";
+  }
+
+  const today = localIsoDate(new Date());
+  const lines = todos.map((todo) => {
+    const parts = [todo.title];
+    if (!todo.dueDate) {
+      parts.push("no due date");
+    } else if (todo.dueDate < today) {
+      parts.push(`due ${todo.dueDate} (OVERDUE)`);
+    } else if (todo.dueDate === today) {
+      parts.push("due today");
+    } else {
+      parts.push(`due ${todo.dueDate} (upcoming)`);
+    }
+    if (todo.notes) parts.push(`notes: ${todo.notes}`);
+    return `- ${parts.join("; ")}`;
+  });
+
+  return `The user's one-off to-dos and their deadlines:\n${lines.join("\n")}`;
+}
+
 /** Human-readable outcome for each task status, used in the history summary. */
 const STATUS_WORD: Record<TaskStatus, string> = {
   completed: "done",
@@ -164,6 +197,7 @@ export type SchedulePromptInput = {
   date: string; // the day being planned, "YYYY-MM-DD"
   dayContext: string; // the user's one-off notes for that day
   chores: Chore[];
+  todos: Todo[]; // the user's open one-off to-dos
 };
 
 /**
@@ -176,11 +210,13 @@ export function buildSchedulePrompt({
   date,
   dayContext,
   chores,
+  todos,
 }: SchedulePromptInput): { system: string; userMessage: string } {
   const sections: string[] = [
     SCHEDULE_SYSTEM_PROMPT,
     `Today's date is ${isoDate(new Date())}. You are planning the schedule for ${date}.`,
     buildChoresContext(chores),
+    buildTodosContext(todos),
     buildRecentTaskHistoryContext(),
   ];
 
@@ -200,8 +236,11 @@ export function buildSchedulePrompt({
       : "The user added no extra notes for this day.",
   );
 
-  const linking = buildChoreLinkingInstructions(chores);
-  if (linking) sections.push(linking);
+  const choreLinking = buildChoreLinkingInstructions(chores);
+  if (choreLinking) sections.push(choreLinking);
+
+  const todoLinking = buildTodoLinkingInstructions(todos);
+  if (todoLinking) sections.push(todoLinking);
 
   sections.push(TASK_JSON_SCHEMA);
 
@@ -219,13 +258,18 @@ export async function generateScheduleTasks(
   input: SchedulePromptInput,
 ): Promise<ParseSuccess | ParseError> {
   if (process.env.MOCK_AI === "true") {
-    // Link any mock task whose label mentions a chore by name, mirroring how
-    // the model would attach choreIds.
+    // Link any mock task whose label mentions a chore by name or a to-do by
+    // title, mirroring how the model would attach choreIds/todoIds.
     const tasks = MOCK_TASKS.map((t) => {
-      const match = input.chores.find((c) =>
-        t.label.toLowerCase().includes(c.name.toLowerCase()),
+      const label = t.label.toLowerCase();
+      const chore = input.chores.find((c) =>
+        label.includes(c.name.toLowerCase()),
       );
-      return match ? { ...t, choreId: match.id } : t;
+      if (chore) return { ...t, choreId: chore.id };
+      const todo = input.todos.find((td) =>
+        label.includes(td.title.toLowerCase()),
+      );
+      return todo ? { ...t, todoId: todo.id } : t;
     });
     return { tasks };
   }
@@ -247,5 +291,5 @@ export async function generateScheduleTasks(
     return { error: "Failed to generate the task list" };
   }
 
-  return validateTasks(rawText, input.chores);
+  return validateTasks(rawText, input.chores, input.todos);
 }
