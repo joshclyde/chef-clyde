@@ -1,11 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { readScheduleInstructions } from "../db/scheduleInstructions";
 import { readAllSchedules } from "../db/schedules";
-import type { Chore, FrequencyUnit } from "../types/chore";
+import type { Chore, Completion, FrequencyUnit } from "../types/chore";
 import type { TaskStatus } from "../types/schedule";
 import type { Todo } from "../types/todo";
+import type { DayOfWeek, Hobby } from "../types/hobby";
 import {
   buildChoreLinkingInstructions,
+  buildHobbyLinkingInstructions,
   buildTodoLinkingInstructions,
   MOCK_TASKS,
   TASK_JSON_SCHEMA,
@@ -19,11 +21,15 @@ const anthropic = new Anthropic();
 const SCHEDULE_SYSTEM_PROMPT =
   "You are a planning assistant for Chef Clyde that builds realistic, time-blocked daily schedules. " +
   "Plan a single day using concrete time blocks (e.g. \"9:00–9:30\"). " +
-  "Balance the user's stated goals with their household chores and one-off to-dos. " +
+  "Balance the user's stated goals with their household chores, one-off to-dos, and hobbies. " +
+  "Any FIXED COMMITMENTS are booked at specific times and are non-negotiable: place them at exactly " +
+  "their stated times and build everything else around them. " +
   "Prioritize chores that are overdue or due now, and spread the rest sensibly. " +
   "Honor the user's one-off to-dos, especially any that are overdue or due today; " +
   "undated to-dos can be woven in when there is room. " +
-  "Respect each chore's typical time estimate when given, and avoid over-packing the day.";
+  "Weave in the user's hobby activities the day calls for — weekly hobby tasks on their day, " +
+  "cadence-based ones when they're due, and loose hobby ideas when there is room. " +
+  "Respect each item's typical time estimate when given, and avoid over-packing the day.";
 
 function addFrequency(date: Date, value: number, unit: FrequencyUnit): Date {
   const d = new Date(date);
@@ -127,6 +133,116 @@ function buildTodosContext(todos: Todo[]): string {
   return `The user's one-off to-dos and their deadlines:\n${lines.join("\n")}`;
 }
 
+const DAY_NAMES: DayOfWeek[] = [
+  "Sun",
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+];
+
+/** The weekday of a "YYYY-MM-DD" string, parsed locally (no UTC shift). */
+function weekdayOf(date: string): DayOfWeek {
+  const [y, m, d] = date.split("-").map(Number);
+  return DAY_NAMES[new Date(y, m - 1, d).getDay()];
+}
+
+/** Most recent completion date among a list, or null if there are none. */
+function latestCompletion(completions: Completion[]): Date | null {
+  if (completions.length === 0) return null;
+  const latest = Math.max(
+    ...completions.map((c) => new Date(c.performedAt).getTime()),
+  );
+  return new Date(latest);
+}
+
+/**
+ * Hobby tasks of kind "event" that fall on the planned day. These are booked at
+ * specific times and must be honored exactly, so they get their own emphatic
+ * section at the top of the prompt. Empty when nothing is booked that day.
+ */
+function buildFixedCommitmentsContext(hobbies: Hobby[], date: string): string {
+  const lines: string[] = [];
+  for (const hobby of hobbies) {
+    for (const task of hobby.tasks) {
+      const occ = task.occurrence;
+      if (occ.kind !== "event" || occ.date !== date) continue;
+      const time =
+        occ.startTime && occ.endTime
+          ? `${occ.startTime}–${occ.endTime}`
+          : occ.startTime
+            ? `at ${occ.startTime}`
+            : "time unspecified";
+      lines.push(`- ${hobby.name} — ${task.label}: ${time}`);
+    }
+  }
+  if (lines.length === 0) return "";
+  return (
+    "FIXED COMMITMENTS for this day — booked at specific times. Schedule each at " +
+    "EXACTLY the stated time; never move, resize, shorten, or drop them, and build " +
+    `the rest of the day around them:\n${lines.join("\n")}`
+  );
+}
+
+/**
+ * Format the user's hobby tasks the planned day should consider: weekly tasks
+ * landing on this weekday, cadence (frequency) tasks with their readiness, and
+ * loose one-offs that are still open. Event tasks are handled separately by
+ * `buildFixedCommitmentsContext`, so they're skipped here.
+ */
+function buildHobbiesContext(hobbies: Hobby[], date: string): string {
+  const today = weekdayOf(date);
+  const lines: string[] = [];
+
+  for (const hobby of hobbies) {
+    for (const task of hobby.tasks) {
+      const occ = task.occurrence;
+      const prefix = `${hobby.name} — ${task.label}`;
+      const dur =
+        task.typicalTimeMinutes != null
+          ? ` (~${task.typicalTimeMinutes} min)`
+          : "";
+
+      if (occ.kind === "weekly") {
+        if (!occ.days.includes(today)) continue;
+        const tod =
+          occ.timeOfDay && occ.timeOfDay !== "any"
+            ? ` around ${occ.timeOfDay}`
+            : "";
+        lines.push(
+          `- ${prefix}${dur}: recurs on ${occ.days.join("/")} — do it today${tod}.`,
+        );
+      } else if (occ.kind === "frequency") {
+        const last = latestCompletion(task.completions);
+        if (!last) {
+          lines.push(
+            `- ${prefix}${dur}: every ${occ.value} ${occ.unit}; never done — DUE NOW.`,
+          );
+        } else {
+          const due = addFrequency(last, occ.value, occ.unit);
+          const status =
+            startOfDay(due) < startOfDay(new Date()) ? "OVERDUE" : "upcoming";
+          lines.push(
+            `- ${prefix}${dur}: every ${occ.value} ${occ.unit}; last done ${isoDate(last)}; next due ${isoDate(due)} (${status}).`,
+          );
+        }
+      } else if (occ.kind === "oneoff") {
+        if (task.completions.length > 0) continue; // already done
+        lines.push(
+          `- ${prefix}${dur}: loose idea, no fixed time — weave in when there's room.`,
+        );
+      }
+    }
+  }
+
+  if (lines.length === 0) {
+    return "The user has no hobby activities to consider today.";
+  }
+  return `The user's hobbies and what to consider today:\n${lines.join("\n")}`;
+}
+
 /** Human-readable outcome for each task status, used in the history summary. */
 const STATUS_WORD: Record<TaskStatus, string> = {
   completed: "done",
@@ -198,6 +314,7 @@ export type SchedulePromptInput = {
   dayContext: string; // the user's one-off notes for that day
   chores: Chore[];
   todos: Todo[]; // the user's open one-off to-dos
+  hobbies: Hobby[]; // the user's hobbies and their tasks
 };
 
 /**
@@ -211,14 +328,23 @@ export function buildSchedulePrompt({
   dayContext,
   chores,
   todos,
+  hobbies,
 }: SchedulePromptInput): { system: string; userMessage: string } {
   const sections: string[] = [
     SCHEDULE_SYSTEM_PROMPT,
     `Today's date is ${isoDate(new Date())}. You are planning the schedule for ${date}.`,
+  ];
+
+  // Fixed commitments lead the prompt when present — they're non-negotiable.
+  const fixedCommitments = buildFixedCommitmentsContext(hobbies, date);
+  if (fixedCommitments) sections.push(fixedCommitments);
+
+  sections.push(
     buildChoresContext(chores),
     buildTodosContext(todos),
+    buildHobbiesContext(hobbies, date),
     buildRecentTaskHistoryContext(),
-  ];
+  );
 
   // Standing, user-authored instructions that apply to every generation (e.g.
   // "sleep in until 9:00 AM every Saturday"). Appended only when non-empty.
@@ -242,6 +368,9 @@ export function buildSchedulePrompt({
   const todoLinking = buildTodoLinkingInstructions(todos);
   if (todoLinking) sections.push(todoLinking);
 
+  const hobbyLinking = buildHobbyLinkingInstructions(hobbies);
+  if (hobbyLinking) sections.push(hobbyLinking);
+
   sections.push(TASK_JSON_SCHEMA);
 
   return {
@@ -258,8 +387,9 @@ export async function generateScheduleTasks(
   input: SchedulePromptInput,
 ): Promise<ParseSuccess | ParseError> {
   if (process.env.MOCK_AI === "true") {
-    // Link any mock task whose label mentions a chore by name or a to-do by
-    // title, mirroring how the model would attach choreIds/todoIds.
+    // Link any mock task whose label mentions a chore by name, a to-do by
+    // title, or a hobby task by label, mirroring how the model would attach
+    // choreId/todoId/hobbyTaskId.
     const tasks = MOCK_TASKS.map((t) => {
       const label = t.label.toLowerCase();
       const chore = input.chores.find((c) =>
@@ -269,7 +399,14 @@ export async function generateScheduleTasks(
       const todo = input.todos.find((td) =>
         label.includes(td.title.toLowerCase()),
       );
-      return todo ? { ...t, todoId: todo.id } : t;
+      if (todo) return { ...t, todoId: todo.id };
+      for (const hobby of input.hobbies) {
+        const hobbyTask = hobby.tasks.find((ht) =>
+          label.includes(ht.label.toLowerCase()),
+        );
+        if (hobbyTask) return { ...t, hobbyTaskId: hobbyTask.id };
+      }
+      return t;
     });
     return { tasks };
   }
@@ -291,5 +428,5 @@ export async function generateScheduleTasks(
     return { error: "Failed to generate the task list" };
   }
 
-  return validateTasks(rawText, input.chores, input.todos);
+  return validateTasks(rawText, input.chores, input.todos, input.hobbies);
 }

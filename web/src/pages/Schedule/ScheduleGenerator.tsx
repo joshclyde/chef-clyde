@@ -15,6 +15,12 @@ import {
   dueSortKey as todoDueSortKey,
   type Todo,
 } from "../Todos/useTodos";
+import {
+  useHobbies,
+  dueStatus as hobbyDueStatus,
+  type Hobby,
+} from "../Hobbies/useHobbies";
+import { describeOccurrence } from "../Hobbies/occurrence";
 import type { Schedule } from "./useSchedules";
 import styles from "./Schedule.module.css";
 
@@ -168,6 +174,46 @@ function TodosContext({ todos }: { todos: Todo[] }) {
               <TodoDueBadge todo={todo} />
             </div>
           ))}
+        </Stack>
+      )}
+    </ContextGroup>
+  );
+}
+
+/** The hobby tasks the generator can draw on, with each task's cadence summary. */
+function HobbiesContext({ hobbies }: { hobbies: Hobby[] }) {
+  const tasks = useMemo(
+    () => hobbies.flatMap((h) => h.tasks.map((task) => ({ hobby: h, task }))),
+    [hobbies],
+  );
+  return (
+    <ContextGroup title={`Hobby tasks being considered (${tasks.length})`}>
+      {tasks.length === 0 ? (
+        <Text size="sm" variant="muted">
+          No hobby tasks recorded.
+        </Text>
+      ) : (
+        <Stack gap="3xs">
+          {tasks.map(({ hobby, task }) => {
+            const status = hobbyDueStatus(task);
+            return (
+              <div key={task.id} className={styles.contextRow}>
+                <Text size="sm">
+                  {hobby.name} — {task.label}
+                </Text>
+                <Text
+                  size="xs"
+                  variant={status === "overdue" ? "danger" : "muted"}
+                >
+                  {status === "never"
+                    ? "Due now"
+                    : status === "overdue"
+                      ? "Overdue"
+                      : describeOccurrence(task)}
+                </Text>
+              </div>
+            );
+          })}
         </Stack>
       )}
     </ContextGroup>
@@ -335,6 +381,7 @@ export function ScheduleGenerator({
 }) {
   const { chores } = useChores();
   const { todos } = useTodos();
+  const { hobbies } = useHobbies();
   const [date, setDate] = useState(initialDate);
   const [draft, setDraft] = useState(schedule?.dayContext ?? "");
   const [busy, setBusy] = useState<null | "save" | "generate">(null);
@@ -402,6 +449,7 @@ export function ScheduleGenerator({
         </Text>
         <ChoresContext chores={chores} />
         <TodosContext todos={todos} />
+        <HobbiesContext hobbies={hobbies} />
         <InstructionsContext />
         <HistoryContext schedules={schedules} />
       </div>

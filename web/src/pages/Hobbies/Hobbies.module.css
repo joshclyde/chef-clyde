@@ -1,0 +1,107 @@
+.page {
+  max-width: 860px;
+}
+
+/* ----- new hobby form ----- */
+.newHobby {
+  padding: var(--space-md);
+  border: 1px solid var(--color-action-primary-bg);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+
+/* ----- hobby card ----- */
+.hobbyCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.taskList {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-sm);
+}
+
+.taskRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  transition: background var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+}
+.taskRow:hover {
+  background: var(--color-bg-subtle);
+}
+
+/* ----- inline task editor ----- */
+.taskEditor {
+  padding: var(--space-md);
+  border: 1px solid var(--color-action-primary-bg);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+.field {
+  min-width: 0;
+}
+.numInput {
+  max-width: 120px;
+}
+
+/* ----- compact icon button ----- */
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+.addTaskButton {
+  align-self: flex-start;
+}
+
+/* ----- completion history ----- */
+.historyToggle,
+.removeCompletion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+}
+.historyToggle:hover,
+.removeCompletion:hover {
+  color: var(--color-text-default);
+}
+
+.history {
+  margin-top: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+}
+
+/* ----- readiness badges ----- */
+.dueNow {
+  background: var(--color-bg-muted);
+  color: var(--color-text-strong);
+}
+.overdue {
+  background: var(--color-bg-muted);
+  color: var(--color-action-danger-fg);
+}
+.upcoming {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+}

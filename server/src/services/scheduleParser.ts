@@ -1,11 +1,17 @@
 import type { ScheduleTask } from "../types/schedule";
 import type { Chore } from "../types/chore";
 import type { Todo } from "../types/todo";
+import type { Hobby } from "../types/hobby";
 
 /** The task fields the model produces; id + status are added server-side. */
 export type ParsedTask = Omit<
   ScheduleTask,
-  "id" | "status" | "notes" | "choreCompletionId" | "todoCompletionAt"
+  | "id"
+  | "status"
+  | "notes"
+  | "choreCompletionId"
+  | "todoCompletionAt"
+  | "hobbyTaskCompletionId"
 >;
 
 export type ParseSuccess = { tasks: ParsedTask[] };
@@ -22,12 +28,12 @@ Produce one task per concrete time-blocked activity, in chronological order. Tim
 If no tasks can be produced, output exactly this JSON:
 {"error": "no_tasks_found"}
 
-"choreId" and "todoId" are optional links explained below the schema; include at most one of them on a task, and only when it clearly applies.
+"choreId", "todoId", and "hobbyTaskId" are optional links explained below the schema; include at most one of them on a task, and only when it clearly applies.
 
 Schema:
 {
   "tasks": [
-    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string }
+    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string, "hobbyTaskId"?: string }
   ]
 }`;
 
@@ -62,11 +68,27 @@ export function buildTodoLinkingInstructions(todos: Todo[]): string {
   );
 }
 
+/**
+ * Hobby-linking guidance appended to the prompt so the model can attach a
+ * hobbyTaskId to any task that performs one of the user's hobby tasks. Empty
+ * when the user has no hobby tasks, so it adds no noise.
+ */
+export function buildHobbyLinkingInstructions(hobbies: Hobby[]): string {
+  const list = hobbies
+    .flatMap((h) => h.tasks.map((t) => `- ${t.id} :: ${h.name} — ${t.label}`))
+    .join("\n");
+  if (!list) return "";
+  return (
+    `The user pursues hobbies, each with its own tasks (a recurring session, a booked event, a loose idea, etc.). When a task is clearly an instance of one of the hobby tasks below, add an optional "hobbyTaskId" field with that task's exact id. Match on meaning, not exact wording. If none matches, omit "hobbyTaskId". Never invent ids.\n\nHobby tasks (id :: hobby — task):\n${list}`
+  );
+}
+
 /** Deterministic stand-in for the model when MOCK_AI is set. */
 export const MOCK_TASKS: ParsedTask[] = [
   { startTime: "08:00", endTime: "08:30", label: "Morning coffee and planning" },
   { startTime: "09:00", endTime: "09:45", label: "Clean the shower (overdue)" },
   { startTime: "12:00", endTime: "13:00", label: "Lunch" },
+  { startTime: "15:00", endTime: "16:30", label: "Play pickleball" },
   { startTime: "16:00", endTime: "16:05", label: "Scoop attic litter (due now)" },
   { startTime: "18:00", endTime: "19:00", label: "Dinner" },
 ];
@@ -81,6 +103,7 @@ export function validateTasks(
   rawText: string,
   chores: Chore[],
   todos: Todo[],
+  hobbies: Hobby[],
 ): ParseSuccess | ParseError {
   let parsed: unknown;
   try {
@@ -115,31 +138,44 @@ export function validateTasks(
         (typeof (t as ParsedTask).endTime === "string" &&
           TIME_PATTERN.test((t as ParsedTask).endTime as string))) &&
       typeof (t as ParsedTask).label === "string" &&
-      // the model may emit choreId/todoId: null; the sanitize step below drops it
+      // the model may emit choreId/todoId/hobbyTaskId: null; sanitize drops it
       ((t as { choreId?: unknown }).choreId == null ||
         typeof (t as { choreId?: unknown }).choreId === "string") &&
       ((t as { todoId?: unknown }).todoId == null ||
-        typeof (t as { todoId?: unknown }).todoId === "string"),
+        typeof (t as { todoId?: unknown }).todoId === "string") &&
+      ((t as { hobbyTaskId?: unknown }).hobbyTaskId == null ||
+        typeof (t as { hobbyTaskId?: unknown }).hobbyTaskId === "string"),
   );
   if (!valid) {
     console.error("Schedule generation returned malformed tasks:", parsed);
     return { error: "Generated tasks have an unexpected shape" };
   }
 
-  // Only keep links that point at real chores/to-dos — drop nulls and any id
-  // the model invented.
+  // Only keep links that point at real chores/to-dos/hobby tasks — drop nulls
+  // and any id the model invented.
   const validChoreIds = new Set(chores.map((c) => c.id));
   const validTodoIds = new Set(todos.map((t) => t.id));
+  const validHobbyTaskIds = new Set(
+    hobbies.flatMap((h) => h.tasks.map((t) => t.id)),
+  );
   return {
-    tasks: (tasks as ParsedTask[]).map(({ choreId, todoId, ...rest }) => {
-      const task: ParsedTask = { ...rest };
-      if (typeof choreId === "string" && validChoreIds.has(choreId)) {
-        task.choreId = choreId;
-      }
-      if (typeof todoId === "string" && validTodoIds.has(todoId)) {
-        task.todoId = todoId;
-      }
-      return task;
-    }),
+    tasks: (tasks as ParsedTask[]).map(
+      ({ choreId, todoId, hobbyTaskId, ...rest }) => {
+        const task: ParsedTask = { ...rest };
+        if (typeof choreId === "string" && validChoreIds.has(choreId)) {
+          task.choreId = choreId;
+        }
+        if (typeof todoId === "string" && validTodoIds.has(todoId)) {
+          task.todoId = todoId;
+        }
+        if (
+          typeof hobbyTaskId === "string" &&
+          validHobbyTaskIds.has(hobbyTaskId)
+        ) {
+          task.hobbyTaskId = hobbyTaskId;
+        }
+        return task;
+      },
+    ),
   };
 }
