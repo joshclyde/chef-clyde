@@ -5,6 +5,8 @@ import Dashboard from "../pages/Chores/Dashboard";
 import Tasks from "../pages/Chores/Tasks";
 import HobbiesDashboard from "../pages/Hobbies/Dashboard";
 import Hobbies from "../pages/Hobbies/Hobbies";
+import RoutinesBreakdown from "../pages/Routines/Dashboard";
+import Routines from "../pages/Routines/Routines";
 import Todos from "../pages/Todos/Todos";
 import ScheduleDaily from "../pages/Schedule/Daily";
 import ScheduleInstructions from "../pages/Schedule/Instructions";
@@ -40,6 +42,15 @@ export function AppLayout() {
             />
             <Route path="/hobbies/dashboard" element={<HobbiesDashboard />} />
             <Route path="/hobbies/list" element={<Hobbies />} />
+            <Route
+              path="/routines"
+              element={<Navigate to="/routines/breakdown" replace />}
+            />
+            <Route
+              path="/routines/breakdown"
+              element={<RoutinesBreakdown />}
+            />
+            <Route path="/routines/manage" element={<Routines />} />
             <Route path="/todos" element={<Todos />} />
             <Route path="/schedule" element={<Navigate to="/schedule/daily" replace />} />
             <Route path="/schedule/daily" element={<ScheduleDaily />} />

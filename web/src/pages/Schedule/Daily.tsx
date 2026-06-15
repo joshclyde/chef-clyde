@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Gamepad2,
   ListTodo,
+  Repeat2,
 } from "lucide-react";
 import {
   Button,
@@ -21,6 +22,7 @@ import { todayLocal } from "../../lib/date";
 import { useChores, type Chore } from "../Chores/useChores";
 import { useTodos, type Todo } from "../Todos/useTodos";
 import { useHobbies, type Hobby } from "../Hobbies/useHobbies";
+import { useRoutines, type Routine } from "../Routines/useRoutines";
 import {
   useSchedules,
   type Schedule,
@@ -162,12 +164,14 @@ function TaskList({
   chores,
   todos,
   hobbies,
+  routines,
   onUpdate,
 }: {
   schedule: Schedule;
   chores: Chore[];
   todos: Todo[];
   hobbies: Hobby[];
+  routines: Routine[];
   onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
 }) {
   const now = useNow();
@@ -300,6 +304,24 @@ function TaskList({
                       </span>
                     );
                   })()}
+                  {task.routineId && (() => {
+                    const routine = routines.find(
+                      (r) => r.id === task.routineId,
+                    );
+                    const label = routine
+                      ? `From your routines: ${routine.label}`
+                      : "From your routines";
+                    return (
+                      <span
+                        className={styles.routineIcon}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                      >
+                        <Repeat2 size={16} aria-hidden />
+                      </span>
+                    );
+                  })()}
                   {status === "current" && (
                     <span className={styles.nowBadge}>Now</span>
                   )}
@@ -349,6 +371,7 @@ export default function ScheduleDaily() {
   const { chores } = useChores();
   const { todos } = useTodos();
   const { hobbies } = useHobbies();
+  const { routines } = useRoutines();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
   const hasTasks = (schedule?.tasks?.length ?? 0) > 0;
@@ -380,6 +403,7 @@ export default function ScheduleDaily() {
           chores={chores}
           todos={todos}
           hobbies={hobbies}
+          routines={routines}
           onUpdate={updateTask}
         />
       )}

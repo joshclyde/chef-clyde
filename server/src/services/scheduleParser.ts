@@ -2,6 +2,7 @@ import type { ScheduleTask } from "../types/schedule";
 import type { Chore } from "../types/chore";
 import type { Todo } from "../types/todo";
 import type { Hobby } from "../types/hobby";
+import type { Routine } from "../types/routine";
 
 /** The task fields the model produces; id + status are added server-side. */
 export type ParsedTask = Omit<
@@ -12,6 +13,7 @@ export type ParsedTask = Omit<
   | "choreCompletionId"
   | "todoCompletionAt"
   | "hobbyTaskCompletionId"
+  | "routineCompletionId"
 >;
 
 export type ParseSuccess = { tasks: ParsedTask[] };
@@ -28,12 +30,12 @@ Produce one task per concrete time-blocked activity, in chronological order. Tim
 If no tasks can be produced, output exactly this JSON:
 {"error": "no_tasks_found"}
 
-"choreId", "todoId", and "hobbyTaskId" are optional links explained below the schema; include at most one of them on a task, and only when it clearly applies.
+"choreId", "todoId", "hobbyTaskId", and "routineId" are optional links explained below the schema; include at most one of them on a task, and only when it clearly applies.
 
 Schema:
 {
   "tasks": [
-    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string, "hobbyTaskId"?: string }
+    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string, "hobbyTaskId"?: string, "routineId"?: string }
   ]
 }`;
 
@@ -83,6 +85,21 @@ export function buildHobbyLinkingInstructions(hobbies: Hobby[]): string {
   );
 }
 
+/**
+ * Routine-linking guidance appended to the prompt so the model can attach a
+ * routineId to any task that performs one of the user's daily routines. Empty
+ * when the user has no routines, so it adds no noise.
+ */
+export function buildRoutineLinkingInstructions(routines: Routine[]): string {
+  if (routines.length === 0) return "";
+  const list = routines
+    .map((r) => `- ${r.id} :: ${r.label} (${r.timeOfDay})`)
+    .join("\n");
+  return (
+    `The user keeps daily routines — small repeating things that shape the day (e.g. brush teeth, make coffee). When a task is clearly an instance of one of the routines below, add an optional "routineId" field with that routine's exact id. Match on meaning, not exact wording. If none matches, omit "routineId". Never invent ids.\n\nRoutines (id :: label (time of day)):\n${list}`
+  );
+}
+
 /** Deterministic stand-in for the model when MOCK_AI is set. */
 export const MOCK_TASKS: ParsedTask[] = [
   { startTime: "08:00", endTime: "08:30", label: "Morning coffee and planning" },
@@ -104,6 +121,7 @@ export function validateTasks(
   chores: Chore[],
   todos: Todo[],
   hobbies: Hobby[],
+  routines: Routine[],
 ): ParseSuccess | ParseError {
   let parsed: unknown;
   try {
@@ -144,7 +162,9 @@ export function validateTasks(
       ((t as { todoId?: unknown }).todoId == null ||
         typeof (t as { todoId?: unknown }).todoId === "string") &&
       ((t as { hobbyTaskId?: unknown }).hobbyTaskId == null ||
-        typeof (t as { hobbyTaskId?: unknown }).hobbyTaskId === "string"),
+        typeof (t as { hobbyTaskId?: unknown }).hobbyTaskId === "string") &&
+      ((t as { routineId?: unknown }).routineId == null ||
+        typeof (t as { routineId?: unknown }).routineId === "string"),
   );
   if (!valid) {
     console.error("Schedule generation returned malformed tasks:", parsed);
@@ -158,9 +178,10 @@ export function validateTasks(
   const validHobbyTaskIds = new Set(
     hobbies.flatMap((h) => h.tasks.map((t) => t.id)),
   );
+  const validRoutineIds = new Set(routines.map((r) => r.id));
   return {
     tasks: (tasks as ParsedTask[]).map(
-      ({ choreId, todoId, hobbyTaskId, ...rest }) => {
+      ({ choreId, todoId, hobbyTaskId, routineId, ...rest }) => {
         const task: ParsedTask = { ...rest };
         if (typeof choreId === "string" && validChoreIds.has(choreId)) {
           task.choreId = choreId;
@@ -173,6 +194,9 @@ export function validateTasks(
           validHobbyTaskIds.has(hobbyTaskId)
         ) {
           task.hobbyTaskId = hobbyTaskId;
+        }
+        if (typeof routineId === "string" && validRoutineIds.has(routineId)) {
+          task.routineId = routineId;
         }
         return task;
       },

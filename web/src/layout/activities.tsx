@@ -4,6 +4,7 @@ import {
   ChefHat,
   Gamepad2,
   ListTodo,
+  Repeat2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +44,15 @@ export const activities: Activity[] = [
     navItems: [
       { label: "Dashboard", path: "/hobbies/dashboard" },
       { label: "List", path: "/hobbies/list" },
+    ],
+  },
+  {
+    id: "routines",
+    label: "Routines",
+    icon: Repeat2,
+    navItems: [
+      { label: "Breakdown", path: "/routines/breakdown" },
+      { label: "Manage", path: "/routines/manage" },
     ],
   },
   {

@@ -14,6 +14,7 @@ export type TimeOfDay =
   | "midday"
   | "afternoon"
   | "evening"
+  | "night"
   | "any";
 
 /**

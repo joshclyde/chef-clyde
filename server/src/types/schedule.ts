@@ -19,6 +19,8 @@ export type ScheduleTask = {
   todoCompletionAt?: string; // completedAt this task wrote onto the to-do; kept so unchecking can undo it
   hobbyTaskId?: string; // the hobby task this performs, when linked
   hobbyTaskCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
+  routineId?: string; // the routine this performs, when linked
+  routineCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
 };
 
 export type Schedule = {

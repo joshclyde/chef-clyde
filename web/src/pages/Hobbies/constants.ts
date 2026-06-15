@@ -22,6 +22,7 @@ export const TIMES_OF_DAY: TimeOfDay[] = [
   "midday",
   "afternoon",
   "evening",
+  "night",
   "any",
 ];
 

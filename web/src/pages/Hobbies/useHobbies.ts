@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 
 export type FrequencyUnit = "days" | "weeks" | "months";
 export type DayOfWeek = "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
-export type TimeOfDay = "morning" | "midday" | "afternoon" | "evening" | "any";
+export type TimeOfDay =
+  | "morning"
+  | "midday"
+  | "afternoon"
+  | "evening"
+  | "night"
+  | "any";
 
 export type Completion = {
   id: string;

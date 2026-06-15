@@ -5,9 +5,11 @@ import type { Chore, Completion, FrequencyUnit } from "../types/chore";
 import type { TaskStatus } from "../types/schedule";
 import type { Todo } from "../types/todo";
 import type { DayOfWeek, Hobby } from "../types/hobby";
+import type { Routine } from "../types/routine";
 import {
   buildChoreLinkingInstructions,
   buildHobbyLinkingInstructions,
+  buildRoutineLinkingInstructions,
   buildTodoLinkingInstructions,
   MOCK_TASKS,
   TASK_JSON_SCHEMA,
@@ -29,6 +31,8 @@ const SCHEDULE_SYSTEM_PROMPT =
   "undated to-dos can be woven in when there is room. " +
   "Weave in the user's hobby activities the day calls for — weekly hobby tasks on their day, " +
   "cadence-based ones when they're due, and loose hobby ideas when there is room. " +
+  "Anchor the day with the user's routines — small repeating habits (e.g. brush teeth, make coffee) " +
+  "placed at their stated time of day. " +
   "Respect each item's typical time estimate when given, and avoid over-packing the day.";
 
 function addFrequency(date: Date, value: number, unit: FrequencyUnit): Date {
@@ -243,6 +247,53 @@ function buildHobbiesContext(hobbies: Hobby[], date: string): string {
   return `The user's hobbies and what to consider today:\n${lines.join("\n")}`;
 }
 
+/**
+ * Format the user's routines the planned day should anchor on: weekly routines
+ * landing on this weekday and cadence (frequency) routines with their readiness.
+ * Every routine carries a time of day, so it's passed as a placement hint
+ * (e.g. "around morning") to keep morning routines in the morning, etc.
+ */
+function buildRoutinesContext(routines: Routine[], date: string): string {
+  const today = weekdayOf(date);
+  const lines: string[] = [];
+
+  for (const routine of routines) {
+    const occ = routine.occurrence;
+    const dur =
+      routine.typicalTimeMinutes != null
+        ? ` (~${routine.typicalTimeMinutes} min)`
+        : "";
+    const tod =
+      routine.timeOfDay !== "any" ? ` around ${routine.timeOfDay}` : "";
+
+    if (occ.kind === "weekly") {
+      if (!occ.days.includes(today)) continue;
+      lines.push(
+        `- ${routine.label}${dur}: recurs on ${occ.days.join("/")} — do it today${tod}.`,
+      );
+    } else {
+      const last = latestCompletion(routine.completions);
+      if (!last) {
+        lines.push(
+          `- ${routine.label}${dur}: every ${occ.value} ${occ.unit}; never done — DUE NOW${tod}.`,
+        );
+      } else {
+        const due = addFrequency(last, occ.value, occ.unit);
+        const status =
+          startOfDay(due) < startOfDay(new Date()) ? "OVERDUE" : "upcoming";
+        lines.push(
+          `- ${routine.label}${dur}: every ${occ.value} ${occ.unit}; last done ${isoDate(last)}; next due ${isoDate(due)} (${status})${tod}.`,
+        );
+      }
+    }
+  }
+
+  if (lines.length === 0) {
+    return "The user has no routines to anchor today.";
+  }
+  return `The user's routines to anchor today (place each at its time of day):\n${lines.join("\n")}`;
+}
+
 /** Human-readable outcome for each task status, used in the history summary. */
 const STATUS_WORD: Record<TaskStatus, string> = {
   completed: "done",
@@ -315,6 +366,7 @@ export type SchedulePromptInput = {
   chores: Chore[];
   todos: Todo[]; // the user's open one-off to-dos
   hobbies: Hobby[]; // the user's hobbies and their tasks
+  routines: Routine[]; // the user's daily routines
 };
 
 /**
@@ -329,6 +381,7 @@ export function buildSchedulePrompt({
   chores,
   todos,
   hobbies,
+  routines,
 }: SchedulePromptInput): { system: string; userMessage: string } {
   const sections: string[] = [
     SCHEDULE_SYSTEM_PROMPT,
@@ -343,6 +396,7 @@ export function buildSchedulePrompt({
     buildChoresContext(chores),
     buildTodosContext(todos),
     buildHobbiesContext(hobbies, date),
+    buildRoutinesContext(routines, date),
     buildRecentTaskHistoryContext(),
   );
 
@@ -371,6 +425,9 @@ export function buildSchedulePrompt({
   const hobbyLinking = buildHobbyLinkingInstructions(hobbies);
   if (hobbyLinking) sections.push(hobbyLinking);
 
+  const routineLinking = buildRoutineLinkingInstructions(routines);
+  if (routineLinking) sections.push(routineLinking);
+
   sections.push(TASK_JSON_SCHEMA);
 
   return {
@@ -388,8 +445,8 @@ export async function generateScheduleTasks(
 ): Promise<ParseSuccess | ParseError> {
   if (process.env.MOCK_AI === "true") {
     // Link any mock task whose label mentions a chore by name, a to-do by
-    // title, or a hobby task by label, mirroring how the model would attach
-    // choreId/todoId/hobbyTaskId.
+    // title, a hobby task by label, or a routine by label, mirroring how the
+    // model would attach choreId/todoId/hobbyTaskId/routineId.
     const tasks = MOCK_TASKS.map((t) => {
       const label = t.label.toLowerCase();
       const chore = input.chores.find((c) =>
@@ -406,6 +463,10 @@ export async function generateScheduleTasks(
         );
         if (hobbyTask) return { ...t, hobbyTaskId: hobbyTask.id };
       }
+      const routine = input.routines.find((r) =>
+        label.includes(r.label.toLowerCase()),
+      );
+      if (routine) return { ...t, routineId: routine.id };
       return t;
     });
     return { tasks };
@@ -428,5 +489,11 @@ export async function generateScheduleTasks(
     return { error: "Failed to generate the task list" };
   }
 
-  return validateTasks(rawText, input.chores, input.todos, input.hobbies);
+  return validateTasks(
+    rawText,
+    input.chores,
+    input.todos,
+    input.hobbies,
+    input.routines,
+  );
 }

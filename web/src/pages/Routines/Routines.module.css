@@ -1,0 +1,107 @@
+.page {
+  max-width: 860px;
+}
+
+/* ----- routine card ----- */
+.routineCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* ----- inline routine editor ----- */
+.routineEditor {
+  padding: var(--space-md);
+  border: 1px solid var(--color-action-primary-bg);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+.field {
+  min-width: 0;
+}
+.numInput {
+  max-width: 120px;
+}
+
+/* ----- compact icon button ----- */
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+/* ----- completion history ----- */
+.historyToggle,
+.removeCompletion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+}
+.historyToggle:hover,
+.removeCompletion:hover {
+  color: var(--color-text-default);
+}
+
+.history {
+  margin-top: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+}
+
+/* ----- readiness badges ----- */
+.dueNow {
+  background: var(--color-bg-muted);
+  color: var(--color-text-strong);
+}
+.overdue {
+  background: var(--color-bg-muted);
+  color: var(--color-action-danger-fg);
+}
+.upcoming {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+}
+
+/* ----- time-of-day badges -----
+   Neutral background with a thin accent border so the day part reads at a
+   glance in both light and dark themes without fighting the neutral palette. */
+.morning,
+.midday,
+.afternoon,
+.evening,
+.night,
+.any {
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+  border-left: 3px solid var(--color-border-strong);
+}
+.morning {
+  border-left-color: #e0a44b;
+}
+.midday {
+  border-left-color: #46a0dc;
+}
+.afternoon {
+  border-left-color: #14a096;
+}
+.evening {
+  border-left-color: #966ed2;
+}
+.night {
+  border-left-color: #5a64b4;
+}
+.any {
+  border-left-color: var(--color-border-strong);
+}

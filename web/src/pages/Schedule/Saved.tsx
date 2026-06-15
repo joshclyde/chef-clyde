@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Gamepad2,
   ListTodo,
+  Repeat2,
 } from "lucide-react";
 import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
@@ -76,6 +77,16 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
                 title="From your hobbies"
               >
                 <Gamepad2 size={14} aria-hidden />
+              </span>
+            )}
+            {task.routineId && (
+              <span
+                className={styles.routineIcon}
+                role="img"
+                aria-label="From your routines"
+                title="From your routines"
+              >
+                <Repeat2 size={14} aria-hidden />
               </span>
             )}
           </div>
