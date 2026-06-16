@@ -3,16 +3,7 @@ import { type HTMLAttributes, type Ref } from "react";
 import { cn } from "../cn";
 import styles from "./Stack.module.css";
 
-type Gap =
-  | "none"
-  | "3xs"
-  | "2xs"
-  | "xs"
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl"
-  | "2xl";
+type Gap = "none" | "3xs" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 type Align = "start" | "center" | "end" | "stretch";
 type Justify = "start" | "center" | "end" | "between";
 

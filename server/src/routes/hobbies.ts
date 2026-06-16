@@ -10,7 +10,7 @@ import {
   readHobby,
   writeHobby,
 } from "../db/hobbies";
-import type { Completion,FrequencyUnit } from "../types/chore";
+import type { Completion, FrequencyUnit } from "../types/chore";
 import type {
   DayOfWeek,
   Hobby,
@@ -64,13 +64,20 @@ function validateOccurrence(
       }
       const start = o.startTime;
       const end = o.endTime;
-      if (start != null && (typeof start !== "string" || !TIME_PATTERN.test(start))) {
+      if (
+        start != null &&
+        (typeof start !== "string" || !TIME_PATTERN.test(start))
+      ) {
         return { error: "event startTime must be HH:MM" };
       }
       if (end != null && (typeof end !== "string" || !TIME_PATTERN.test(end))) {
         return { error: "event endTime must be HH:MM" };
       }
-      if (typeof start === "string" && typeof end === "string" && end <= start) {
+      if (
+        typeof start === "string" &&
+        typeof end === "string" &&
+        end <= start
+      ) {
         return { error: "event endTime must be after startTime" };
       }
       const occurrence: Occurrence = { kind: "event", date: o.date };
@@ -88,10 +95,7 @@ function validateOccurrence(
         return { error: "weekly occurrence needs a non-empty days array" };
       }
       const timeOfDay = o.timeOfDay;
-      if (
-        timeOfDay != null &&
-        !TIMES_OF_DAY.includes(timeOfDay as TimeOfDay)
-      ) {
+      if (timeOfDay != null && !TIMES_OF_DAY.includes(timeOfDay as TimeOfDay)) {
         return { error: "weekly timeOfDay is invalid" };
       }
       // De-dupe + order days canonically (Sun→Sat) so storage is stable.

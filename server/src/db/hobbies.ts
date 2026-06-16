@@ -20,7 +20,9 @@ export function readAllHobbies(): Hobby[] {
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Hobby);
+    .map(
+      (f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Hobby,
+    );
 }
 
 export function readHobby(id: string): Hobby | null {

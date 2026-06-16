@@ -32,7 +32,8 @@ router.post("/", async (req, res) => {
   const result = await extractRecipe(messages);
 
   if ("error" in result) {
-    const status = result.error === "Failed to extract recipe from conversation" ? 500 : 422;
+    const status =
+      result.error === "Failed to extract recipe from conversation" ? 500 : 422;
     res.status(status).json({ error: result.error });
     return;
   }

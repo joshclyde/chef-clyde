@@ -34,7 +34,10 @@ export function AppLayout() {
             <Route path="/" element={<Navigate to="/recipes" replace />} />
             <Route path="/pantry" element={<Pantry />} />
             <Route path="/recipes" element={<Recipes />} />
-            <Route path="/chores" element={<Navigate to="/chores/dashboard" replace />} />
+            <Route
+              path="/chores"
+              element={<Navigate to="/chores/dashboard" replace />}
+            />
             <Route path="/chores/dashboard" element={<Dashboard />} />
             <Route path="/chores/tasks" element={<Tasks />} />
             <Route
@@ -47,13 +50,13 @@ export function AppLayout() {
               path="/routines"
               element={<Navigate to="/routines/breakdown" replace />}
             />
-            <Route
-              path="/routines/breakdown"
-              element={<RoutinesBreakdown />}
-            />
+            <Route path="/routines/breakdown" element={<RoutinesBreakdown />} />
             <Route path="/routines/manage" element={<Routines />} />
             <Route path="/todos" element={<Todos />} />
-            <Route path="/schedule" element={<Navigate to="/schedule/daily" replace />} />
+            <Route
+              path="/schedule"
+              element={<Navigate to="/schedule/daily" replace />}
+            />
             <Route path="/schedule/daily" element={<ScheduleDaily />} />
             <Route path="/schedule/saved" element={<ScheduleSaved />} />
             <Route

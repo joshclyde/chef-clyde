@@ -10,7 +10,7 @@ import {
   readRoutine,
   writeRoutine,
 } from "../db/routines";
-import type { Completion,FrequencyUnit } from "../types/chore";
+import type { Completion, FrequencyUnit } from "../types/chore";
 import type { DayOfWeek, TimeOfDay } from "../types/hobby";
 import type { Routine, RoutineOccurrence } from "../types/routine";
 
@@ -181,7 +181,8 @@ router.put("/:id", (req, res) => {
     occurrence: result.fields.occurrence,
     updatedAt: new Date().toISOString(),
   };
-  if (updated.typicalTimeMinutes === undefined) delete updated.typicalTimeMinutes;
+  if (updated.typicalTimeMinutes === undefined)
+    delete updated.typicalTimeMinutes;
   writeRoutine(updated);
   res.status(200).json({ routine: updated });
 });
@@ -231,7 +232,9 @@ router.delete("/:id/completions/:completionId", (req, res) => {
     return;
   }
   const before = routine.completions.length;
-  routine.completions = routine.completions.filter((c) => c.id !== completionId);
+  routine.completions = routine.completions.filter(
+    (c) => c.id !== completionId,
+  );
   if (routine.completions.length === before) {
     res.status(404).json({ error: "Completion not found" });
     return;

@@ -46,7 +46,9 @@ export function RoutineEditor({
       ? String(initial.typicalTimeMinutes)
       : "",
   );
-  const [kind, setKind] = useState<RoutineOccurrenceKind>(occ?.kind ?? "weekly");
+  const [kind, setKind] = useState<RoutineOccurrenceKind>(
+    occ?.kind ?? "weekly",
+  );
 
   // Weekly fields
   const [days, setDays] = useState<DayOfWeek[]>(

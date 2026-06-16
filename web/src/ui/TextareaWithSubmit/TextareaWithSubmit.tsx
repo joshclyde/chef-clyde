@@ -49,7 +49,12 @@ export function TextareaWithSubmit({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(e);
-    if (submitOnEnter && e.key === "Enter" && !e.shiftKey && !e.defaultPrevented) {
+    if (
+      submitOnEnter &&
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      !e.defaultPrevented
+    ) {
       e.preventDefault();
       if (canSubmit) onSubmit();
     }

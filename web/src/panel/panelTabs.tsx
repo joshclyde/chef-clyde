@@ -1,4 +1,4 @@
-import { type LucideIcon,Settings, Sparkles } from "lucide-react";
+import { type LucideIcon, Settings, Sparkles } from "lucide-react";
 import { type ComponentType } from "react";
 
 import { ChatTab } from "./tabs/ChatTab";

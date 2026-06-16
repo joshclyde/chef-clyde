@@ -49,7 +49,12 @@ export async function extractRecipe(
         { amount: "300", unit: "g", name: "mushrooms", notes: "sliced" },
         { amount: "3", unit: "cloves", name: "garlic", notes: "minced" },
         { amount: "2", unit: "tbsp", name: "olive oil" },
-        { amount: "1", unit: "handful", name: "fresh parsley", notes: "chopped" },
+        {
+          amount: "1",
+          unit: "handful",
+          name: "fresh parsley",
+          notes: "chopped",
+        },
         { amount: "", unit: "", name: "salt and pepper" },
       ],
       steps: [

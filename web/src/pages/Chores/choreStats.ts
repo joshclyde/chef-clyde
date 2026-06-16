@@ -1,5 +1,5 @@
 import { FLOORS } from "./constants";
-import { type Chore,frequencyDays } from "./useChores";
+import { type Chore, frequencyDays } from "./useChores";
 
 export const UNASSIGNED_LABEL = "Unassigned";
 

@@ -8,7 +8,9 @@ import type { Schedule, ScheduleTask } from "../types/schedule";
  * `completed: boolean` field; map it onto the newer `status` string and drop
  * the legacy key so reads always return a uniform shape.
  */
-function normalizeTask(task: ScheduleTask & { completed?: boolean }): ScheduleTask {
+function normalizeTask(
+  task: ScheduleTask & { completed?: boolean },
+): ScheduleTask {
   const { completed, ...rest } = task;
   return {
     ...rest,

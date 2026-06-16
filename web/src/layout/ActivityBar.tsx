@@ -62,7 +62,9 @@ export function ActivityBar({ activeActivity }: ActivityBarProps) {
       <button
         type="button"
         className={cn(styles.item)}
-        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        aria-label={
+          theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+        }
         title={theme === "dark" ? "Light mode" : "Dark mode"}
         onClick={toggle}
       >

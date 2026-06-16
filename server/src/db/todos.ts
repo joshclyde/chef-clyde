@@ -20,7 +20,9 @@ export function readAllTodos(): Todo[] {
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Todo);
+    .map(
+      (f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Todo,
+    );
 }
 
 export function readTodo(id: string): Todo | null {

@@ -49,8 +49,10 @@ export const DAY_PART_LABEL: Record<TimeOfDay, string> = {
 };
 
 /** The occurrence kinds offered in the routine editor — recurring only. */
-export const OCCURRENCE_KINDS: { kind: RoutineOccurrenceKind; label: string }[] =
-  [
-    { kind: "weekly", label: "Weekly (by day of week)" },
-    { kind: "frequency", label: "Every N days/weeks/months" },
-  ];
+export const OCCURRENCE_KINDS: {
+  kind: RoutineOccurrenceKind;
+  label: string;
+}[] = [
+  { kind: "weekly", label: "Weekly (by day of week)" },
+  { kind: "frequency", label: "Every N days/weeks/months" },
+];

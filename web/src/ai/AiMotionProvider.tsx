@@ -1,4 +1,4 @@
-import { type ReactNode,useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import {
   AI_MOTION_STORAGE_KEY,

@@ -28,7 +28,10 @@ const TOD_ORDER: Record<TimeOfDay, number> = {
 };
 
 /** Whether a routine lands on a given weekday for the "this week" grid. */
-function landsOn(routine: Routine, weekday: ReturnType<typeof weekdayOf>): boolean {
+function landsOn(
+  routine: Routine,
+  weekday: ReturnType<typeof weekdayOf>,
+): boolean {
   const occ = routine.occurrence;
   if (occ.kind === "weekly") return occ.days.includes(weekday);
   // Daily cadences show every day; coarser cadences live in the typical-day view.
@@ -103,7 +106,11 @@ export default function Dashboard() {
                 const items = byPart.get(part) ?? [];
                 return (
                   <Card key={part} className={styles.partCard}>
-                    <Text size="xs" variant="strong" className={styles.partTitle}>
+                    <Text
+                      size="xs"
+                      variant="strong"
+                      className={styles.partTitle}
+                    >
                       {DAY_PART_LABEL[part]}
                     </Text>
                     {items.length === 0 ? (
@@ -136,7 +143,10 @@ export default function Dashboard() {
               <Heading level={2}>Anytime</Heading>
               <div className={styles.anytimeRow}>
                 {anytime.map((routine) => (
-                  <span key={routine.id} className={`${styles.chip} ${styles.any}`}>
+                  <span
+                    key={routine.id}
+                    className={`${styles.chip} ${styles.any}`}
+                  >
                     {routine.label} · {describeOccurrence(routine)}
                   </span>
                 ))}

@@ -8,7 +8,8 @@
   font-family: inherit;
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--easing-standard),
+  transition:
+    background var(--duration-fast) var(--easing-standard),
     color var(--duration-fast) var(--easing-standard),
     opacity var(--duration-fast) var(--easing-standard);
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { type ChatConfig } from "./chatConfigs";
-import { type ChatMode,type Message } from "./types";
+import { type ChatMode, type Message } from "./types";
 
 /**
  * Generic chat state for the Panel. The conversation talks to whatever endpoint
@@ -18,7 +18,10 @@ export function usePanelChat(config: ChatConfig) {
     const text = input.trim();
     if (!text || loading) return;
 
-    const newMessages: Message[] = [...messages, { role: "user", content: text }];
+    const newMessages: Message[] = [
+      ...messages,
+      { role: "user", content: text },
+    ];
     setMessages(newMessages);
     setInput("");
     setLoading(true);

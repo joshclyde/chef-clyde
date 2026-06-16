@@ -14,11 +14,7 @@ import { cn } from "../../ui/cn";
 import { formatTimeRange } from "./dailyTime";
 import styles from "./Schedule.module.css";
 import { ScheduleGenerator } from "./ScheduleGenerator";
-import {
-  type Schedule,
-  type ScheduleTask,
-  useSchedules,
-} from "./useSchedules";
+import { type Schedule, type ScheduleTask, useSchedules } from "./useSchedules";
 
 /** Format a "YYYY-MM-DD" string as a readable local date (no TZ shift). */
 function formatDate(date: string) {
@@ -98,7 +94,13 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
 }
 
 /** Collapsible (closed by default) wrapper around a labeled text blob. */
-function CollapsibleText({ label, content }: { label: string; content: string }) {
+function CollapsibleText({
+  label,
+  content,
+}: {
+  label: string;
+  content: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <Stack gap="2xs">
@@ -116,7 +118,9 @@ function CollapsibleText({ label, content }: { label: string; content: string })
         {label}
       </button>
       {open && (
-        <Text className={styles.content}>{content || "No notes for this day."}</Text>
+        <Text className={styles.content}>
+          {content || "No notes for this day."}
+        </Text>
       )}
     </Stack>
   );
@@ -180,7 +184,10 @@ function ScheduleCard({
         {hasTasks ? (
           <>
             <SavedTaskList tasks={schedule.tasks ?? []} />
-            <CollapsibleText label="Day context" content={schedule.dayContext} />
+            <CollapsibleText
+              label="Day context"
+              content={schedule.dayContext}
+            />
           </>
         ) : (
           <Text className={styles.content}>

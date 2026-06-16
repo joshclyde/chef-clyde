@@ -30,7 +30,8 @@
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-bg-surface);
-  transition: background var(--duration-fast) var(--easing-standard),
+  transition:
+    background var(--duration-fast) var(--easing-standard),
     border-color var(--duration-fast) var(--easing-standard);
 }
 .todoRow:hover {
@@ -86,7 +87,8 @@
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--easing-standard),
+  transition:
+    background var(--duration-fast) var(--easing-standard),
     color var(--duration-fast) var(--easing-standard),
     border-color var(--duration-fast) var(--easing-standard);
 }

@@ -1,7 +1,15 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import { Button, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
+import {
+  Button,
+  Heading,
+  Inline,
+  Input,
+  Stack,
+  Text,
+  Textarea,
+} from "../../ui";
 import styles from "./Hobbies.module.css";
 import { HobbyCard } from "./HobbyCard";
 import { useHobbies } from "./useHobbies";
@@ -87,7 +95,10 @@ export default function Hobbies() {
             </Text>
           )}
           <Inline gap="2xs">
-            <Button onClick={create} disabled={submitting || name.trim() === ""}>
+            <Button
+              onClick={create}
+              disabled={submitting || name.trim() === ""}
+            >
               {submitting ? "Adding..." : "Add hobby"}
             </Button>
             <Button

@@ -7,11 +7,17 @@ import { panelTabs } from "./panelTabs";
 import { usePanel } from "./usePanel";
 
 export function Panel() {
-  const { position, activeTab, width, height, setActiveTab, togglePosition, setOpen } =
-    usePanel();
+  const {
+    position,
+    activeTab,
+    width,
+    height,
+    setActiveTab,
+    togglePosition,
+    setOpen,
+  } = usePanel();
 
-  const active =
-    panelTabs.find((tab) => tab.id === activeTab) ?? panelTabs[0];
+  const active = panelTabs.find((tab) => tab.id === activeTab) ?? panelTabs[0];
 
   return (
     <section

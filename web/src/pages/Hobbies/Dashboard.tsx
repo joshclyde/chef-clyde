@@ -2,10 +2,7 @@ import { useMemo } from "react";
 
 import { Card, Heading, Stack, Text } from "../../ui";
 import styles from "./Dashboard.module.css";
-import {
-  formatMinutes,
-  weeklyTimeCommitment,
-} from "./hobbyStats";
+import { formatMinutes, weeklyTimeCommitment } from "./hobbyStats";
 import {
   describeOccurrence,
   localIsoDate,
@@ -155,7 +152,8 @@ export default function Dashboard() {
           kind: "event",
         });
       } else if (occ.kind === "weekly" && occ.days.includes(wd)) {
-        const t = occ.timeOfDay && occ.timeOfDay !== "any" ? ` · ${occ.timeOfDay}` : "";
+        const t =
+          occ.timeOfDay && occ.timeOfDay !== "any" ? ` · ${occ.timeOfDay}` : "";
         items.push({
           key: task.id,
           text: `${task.label}${t}`,
@@ -211,7 +209,9 @@ export default function Dashboard() {
             <Text size="xs" variant="muted">
               Recurring time this week
             </Text>
-            <Heading level={2}>{formatMinutes(commitment.minutesPerWeek)}</Heading>
+            <Heading level={2}>
+              {formatMinutes(commitment.minutesPerWeek)}
+            </Heading>
             <Text size="xs" variant="subtle">
               across {commitment.includedCount} recurring task
               {commitment.includedCount === 1 ? "" : "s"}
@@ -221,7 +221,10 @@ export default function Dashboard() {
             </Text>
           </Card>
 
-          <Section title="Upcoming events" empty="No scheduled events coming up.">
+          <Section
+            title="Upcoming events"
+            empty="No scheduled events coming up."
+          >
             {upcomingEvents.map(({ hobby, task }) => {
               const occ = task.occurrence as {
                 date: string;
@@ -231,7 +234,7 @@ export default function Dashboard() {
               const time =
                 occ.startTime && occ.endTime
                   ? `${occ.startTime}–${occ.endTime}`
-                  : occ.startTime ?? "";
+                  : (occ.startTime ?? "");
               return (
                 <Row
                   key={task.id}

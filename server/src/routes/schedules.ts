@@ -156,7 +156,8 @@ router.post("/:id/generate", async (req, res) => {
     routines: readAllRoutines(),
   });
   if ("error" in result) {
-    const status = result.error === "No tasks found in this schedule" ? 422 : 500;
+    const status =
+      result.error === "No tasks found in this schedule" ? 422 : 500;
     res.status(status).json({ error: result.error });
     return;
   }
@@ -274,7 +275,9 @@ function removeLinkedHobbyTaskCompletion(task: ScheduleTask): void {
   const hobby = task.hobbyTaskId ? findHobbyByTaskId(task.hobbyTaskId) : null;
   const hobbyTask = hobby?.tasks.find((t) => t.id === task.hobbyTaskId);
   if (hobby && hobbyTask) {
-    const remaining = hobbyTask.completions.filter((c) => c.id !== completionId);
+    const remaining = hobbyTask.completions.filter(
+      (c) => c.id !== completionId,
+    );
     if (remaining.length !== hobbyTask.completions.length) {
       hobbyTask.completions = remaining;
       hobby.updatedAt = new Date().toISOString();
@@ -373,7 +376,11 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     res.status(400).json({ error: "notes must be a string" });
     return;
   }
-  if (choreId !== undefined && choreId !== null && typeof choreId !== "string") {
+  if (
+    choreId !== undefined &&
+    choreId !== null &&
+    typeof choreId !== "string"
+  ) {
     res.status(400).json({ error: "choreId must be a string or null" });
     return;
   }
@@ -444,7 +451,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   if (notes !== undefined) task.notes = notes;
 
   if (choreId !== undefined) {
-    const next = choreId === null ? undefined : (choreId);
+    const next = choreId === null ? undefined : choreId;
     if (task.choreId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedCompletion(task);
@@ -454,7 +461,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
 
   if (todoId !== undefined) {
-    const next = todoId === null ? undefined : (todoId);
+    const next = todoId === null ? undefined : todoId;
     if (task.todoId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       clearLinkedTodo(task);
@@ -464,7 +471,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
 
   if (hobbyTaskId !== undefined) {
-    const next = hobbyTaskId === null ? undefined : (hobbyTaskId);
+    const next = hobbyTaskId === null ? undefined : hobbyTaskId;
     if (task.hobbyTaskId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedHobbyTaskCompletion(task);
@@ -474,7 +481,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
 
   if (routineId !== undefined) {
-    const next = routineId === null ? undefined : (routineId);
+    const next = routineId === null ? undefined : routineId;
     if (task.routineId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedRoutineCompletion(task);

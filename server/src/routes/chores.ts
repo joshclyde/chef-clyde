@@ -42,16 +42,29 @@ type ValidatedFields = Pick<
 function validateChoreInput(
   body: ChoreInput,
 ): { fields: ValidatedFields } | { error: string } {
-  const { name, frequencyValue, frequencyUnit, typicalTimeMinutes, room, floor } =
-    body;
+  const {
+    name,
+    frequencyValue,
+    frequencyUnit,
+    typicalTimeMinutes,
+    room,
+    floor,
+  } = body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return { error: "name is required" };
   }
-  if (typeof frequencyValue !== "number" || !Number.isFinite(frequencyValue) || frequencyValue <= 0) {
+  if (
+    typeof frequencyValue !== "number" ||
+    !Number.isFinite(frequencyValue) ||
+    frequencyValue <= 0
+  ) {
     return { error: "frequencyValue must be a positive number" };
   }
-  if (typeof frequencyUnit !== "string" || !FREQUENCY_UNITS.includes(frequencyUnit as FrequencyUnit)) {
+  if (
+    typeof frequencyUnit !== "string" ||
+    !FREQUENCY_UNITS.includes(frequencyUnit as FrequencyUnit)
+  ) {
     return { error: "frequencyUnit must be one of days, weeks, months" };
   }
   if (
@@ -153,7 +166,8 @@ router.post("/:id/completions", (req, res) => {
     res.status(404).json({ error: "Chore not found" });
     return;
   }
-  const when = typeof performedAt === "string" ? performedAt : new Date().toISOString();
+  const when =
+    typeof performedAt === "string" ? performedAt : new Date().toISOString();
   if (Number.isNaN(new Date(when).getTime())) {
     res.status(400).json({ error: "performedAt is not a valid date" });
     return;

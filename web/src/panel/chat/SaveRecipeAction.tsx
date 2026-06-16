@@ -21,9 +21,11 @@ export function SaveRecipeAction({ messages }: { messages: Message[] }) {
     })
       .then((res) => {
         if (!res.ok)
-          return res.json().then((d: { error?: string }) =>
-            Promise.reject(new Error(d.error ?? "Save failed")),
-          );
+          return res
+            .json()
+            .then((d: { error?: string }) =>
+              Promise.reject(new Error(d.error ?? "Save failed")),
+            );
         return res.json();
       })
       .then((data: { recipe: { id: string } }) => {

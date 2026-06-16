@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button, Inline, Input, Select, Stack, Text } from "../../ui";
-import { DAYS_OF_WEEK, FREQUENCY_UNITS, OCCURRENCE_KINDS, TIMES_OF_DAY } from "./constants";
+import {
+  DAYS_OF_WEEK,
+  FREQUENCY_UNITS,
+  OCCURRENCE_KINDS,
+  TIMES_OF_DAY,
+} from "./constants";
 import styles from "./Hobbies.module.css";
 import type {
   DayOfWeek,
@@ -35,7 +40,9 @@ export function HobbyTaskEditor({
   const occ = initial?.occurrence;
   const [label, setLabel] = useState(initial?.label ?? "");
   const [typicalTime, setTypicalTime] = useState(
-    initial?.typicalTimeMinutes != null ? String(initial.typicalTimeMinutes) : "",
+    initial?.typicalTimeMinutes != null
+      ? String(initial.typicalTimeMinutes)
+      : "",
   );
   const [kind, setKind] = useState<OccurrenceKind>(occ?.kind ?? "weekly");
 
@@ -77,8 +84,7 @@ export function HobbyTaskEditor({
 
   const timeNum = Number(typicalTime);
   const freqNum = Number(freqValue);
-  const timesValid =
-    startTime === "" || endTime === "" || endTime > startTime;
+  const timesValid = startTime === "" || endTime === "" || endTime > startTime;
   const occurrenceValid =
     (kind === "event" && date !== "" && timesValid) ||
     (kind === "weekly" && days.length > 0) ||
@@ -278,7 +284,12 @@ export function HobbyTaskEditor({
         <Button size="sm" onClick={save} disabled={!valid || submitting}>
           {submitting ? "Saving..." : initial ? "Save task" : "Add task"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={submitting}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={submitting}
+        >
           Cancel
         </Button>
       </Inline>

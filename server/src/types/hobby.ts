@@ -1,13 +1,6 @@
 import type { Completion, FrequencyUnit } from "./chore";
 
-export type DayOfWeek =
-  | "Sun"
-  | "Mon"
-  | "Tue"
-  | "Wed"
-  | "Thu"
-  | "Fri"
-  | "Sat";
+export type DayOfWeek = "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
 
 export type TimeOfDay =
   | "morning"

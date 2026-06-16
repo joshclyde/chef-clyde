@@ -98,9 +98,13 @@ export function useSchedules() {
    * standing instructions, recent history) in one step, and store the result.
    */
   async function generateTasks(id: string) {
-    const res = await fetch(`/api/schedules/${id}/generate`, { method: "POST" });
+    const res = await fetch(`/api/schedules/${id}/generate`, {
+      method: "POST",
+    });
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       throw new Error(data?.error ?? "Failed to generate task list");
     }
     const data = (await res.json()) as { schedule: Schedule };
@@ -161,7 +165,9 @@ export function useSchedules() {
       });
       if (!res.ok) throw new Error("Failed to update task");
       const data = (await res.json()) as { schedule: Schedule };
-      setSchedules((prev) => prev.map((s) => (s.id === id ? data.schedule : s)));
+      setSchedules((prev) =>
+        prev.map((s) => (s.id === id ? data.schedule : s)),
+      );
     } catch (err) {
       // Restore the full prior task: a merge would leave behind optional keys
       // the optimistic update added.

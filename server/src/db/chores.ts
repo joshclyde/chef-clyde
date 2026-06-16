@@ -20,7 +20,9 @@ export function readAllChores(): Chore[] {
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Chore);
+    .map(
+      (f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as Chore,
+    );
 }
 
 export function readChore(id: string): Chore | null {

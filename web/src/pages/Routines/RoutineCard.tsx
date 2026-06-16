@@ -1,21 +1,11 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Badge, Button, Card, Inline, Stack, Text } from "../../ui";
 import { describeOccurrence, parseLocalDate, shortDate } from "./occurrence";
 import { RoutineEditor } from "./RoutineEditor";
 import styles from "./Routines.module.css";
-import {
-  dueStatus,
-  type Routine,
-  type RoutineInput,
-} from "./useRoutines";
+import { dueStatus, type Routine, type RoutineInput } from "./useRoutines";
 
 /** Readiness badge for cadence routines; nothing for weekly ones. */
 function ReadinessBadge({ routine }: { routine: Routine }) {
@@ -110,7 +100,11 @@ export function RoutineCard({
           </Inline>
         </Stack>
         <Inline gap="2xs">
-          <Button size="sm" variant="secondary" onClick={() => onLog(routine.id)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onLog(routine.id)}
+          >
             <Check size={14} aria-hidden /> Log
           </Button>
           <Button

@@ -31,7 +31,9 @@ export function ChoreRowEditor({
     initial?.frequencyUnit ?? "weeks",
   );
   const [typicalTime, setTypicalTime] = useState(
-    initial?.typicalTimeMinutes != null ? String(initial.typicalTimeMinutes) : "",
+    initial?.typicalTimeMinutes != null
+      ? String(initial.typicalTimeMinutes)
+      : "",
   );
   const [room, setRoom] = useState(initial?.room ?? "");
   const [floor, setFloor] = useState(initial?.floor ?? "");

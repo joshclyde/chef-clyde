@@ -2,7 +2,15 @@ import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Button, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
+import {
+  Button,
+  Heading,
+  Inline,
+  Input,
+  Stack,
+  Text,
+  Textarea,
+} from "../../ui";
 import {
   type Chore,
   dueSortKey,
@@ -241,10 +249,12 @@ function InstructionsContext() {
         </Link>
       }
     >
-      <Text size="sm" variant={instructions ? undefined : "muted"} className={styles.content}>
-        {instructions === null
-          ? "Loading…"
-          : instructions || "None yet."}
+      <Text
+        size="sm"
+        variant={instructions ? undefined : "muted"}
+        className={styles.content}
+      >
+        {instructions === null ? "Loading…" : instructions || "None yet."}
       </Text>
     </ContextGroup>
   );
@@ -412,7 +422,9 @@ export function ScheduleGenerator({
       await onGenerate(saved.id);
       onClose?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to generate task list.");
+      setError(
+        e instanceof Error ? e.message : "Failed to generate task list.",
+      );
     } finally {
       setBusy(null);
     }

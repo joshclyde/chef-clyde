@@ -153,10 +153,9 @@ export function useRoutines() {
   }
 
   async function deleteCompletion(id: string, completionId: string) {
-    const res = await fetch(
-      `/api/routines/${id}/completions/${completionId}`,
-      { method: "DELETE" },
-    );
+    const res = await fetch(`/api/routines/${id}/completions/${completionId}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error("Failed to delete completion");
     const data = (await res.json()) as { routine: Routine };
     setRoutines((prev) => prev.map((r) => (r.id === id ? data.routine : r)));

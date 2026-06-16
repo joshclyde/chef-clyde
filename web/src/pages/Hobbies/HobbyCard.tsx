@@ -45,7 +45,8 @@ function tasksToInput(tasks: HobbyTask[]): HobbyTaskInput[] {
 function ReadinessBadge({ task }: { task: HobbyTask }) {
   const status = dueStatus(task);
   if (status === null) return null;
-  if (status === "never") return <Badge className={styles.dueNow}>Due now</Badge>;
+  if (status === "never")
+    return <Badge className={styles.dueNow}>Due now</Badge>;
   if (status === "overdue")
     return <Badge className={styles.overdue}>Overdue</Badge>;
   return <Badge className={styles.upcoming}>Upcoming</Badge>;
@@ -110,7 +111,9 @@ export function HobbyCard({
     await persist({
       name: hobby.name,
       notes: hobby.notes,
-      tasks: tasksToInput(hobby.tasks).map((t) => (t.id === taskId ? input : t)),
+      tasks: tasksToInput(hobby.tasks).map((t) =>
+        t.id === taskId ? input : t,
+      ),
     });
     setEditingTaskId(null);
   }
@@ -140,7 +143,11 @@ export function HobbyCard({
             placeholder="Notes (optional)"
           />
           <Inline gap="2xs">
-            <Button size="sm" onClick={saveMeta} disabled={busy || name.trim() === ""}>
+            <Button
+              size="sm"
+              onClick={saveMeta}
+              disabled={busy || name.trim() === ""}
+            >
               Save
             </Button>
             <Button
@@ -287,7 +294,9 @@ export function HobbyCard({
                     .map((c) => (
                       <Inline key={c.id} justify="between">
                         <Text size="xs" variant="muted">
-                          {shortDate(parseLocalDate(c.performedAt.slice(0, 10)))}
+                          {shortDate(
+                            parseLocalDate(c.performedAt.slice(0, 10)),
+                          )}
                         </Text>
                         <button
                           type="button"

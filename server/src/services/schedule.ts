@@ -23,7 +23,7 @@ const anthropic = new Anthropic();
 
 const SCHEDULE_SYSTEM_PROMPT =
   "You are a planning assistant for Chef Clyde that builds realistic, time-blocked daily schedules. " +
-  "Plan a single day using concrete time blocks (e.g. \"9:00–9:30\"). " +
+  'Plan a single day using concrete time blocks (e.g. "9:00–9:30"). ' +
   "Balance the user's stated goals with their household chores, one-off to-dos, and hobbies. " +
   "Any FIXED COMMITMENTS are booked at specific times and are non-negotiable: place them at exactly " +
   "their stated times and build everything else around them. " +

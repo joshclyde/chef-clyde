@@ -20,10 +20,10 @@ import {
   Textarea,
 } from "../../ui";
 import { cn } from "../../ui/cn";
-import { type Chore,useChores } from "../Chores/useChores";
-import { type Hobby,useHobbies } from "../Hobbies/useHobbies";
-import { type Routine,useRoutines } from "../Routines/useRoutines";
-import { type Todo,useTodos } from "../Todos/useTodos";
+import { type Chore, useChores } from "../Chores/useChores";
+import { type Hobby, useHobbies } from "../Hobbies/useHobbies";
+import { type Routine, useRoutines } from "../Routines/useRoutines";
+import { type Todo, useTodos } from "../Todos/useTodos";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
 import styles from "./Schedule.module.css";
 import { ScheduleGenerator } from "./ScheduleGenerator";
@@ -231,10 +231,7 @@ function TaskList({
             const status = taskStatus(tasks, i, now);
             const expanded = expandedId === task.id;
             return (
-              <div
-                key={task.id}
-                className={cn(styles.taskRow, styles[status])}
-              >
+              <div key={task.id} className={cn(styles.taskRow, styles[status])}>
                 <div className={styles.taskMain}>
                   <input
                     type="checkbox"
@@ -251,78 +248,82 @@ function TaskList({
                     {formatTimeRange(task)}
                   </span>
                   <span className={styles.taskLabel}>{task.label}</span>
-                  {task.choreId && (() => {
-                    const chore = chores.find((c) => c.id === task.choreId);
-                    const label = chore
-                      ? `Linked chore: ${chore.name}`
-                      : "Linked chore";
-                    return (
-                      <span
-                        className={styles.choreIcon}
-                        role="img"
-                        aria-label={label}
-                        title={label}
-                      >
-                        <BrushCleaning size={16} aria-hidden />
-                      </span>
-                    );
-                  })()}
-                  {task.todoId && (() => {
-                    const todo = todos.find((t) => t.id === task.todoId);
-                    const label = todo
-                      ? `From your to-dos: ${todo.title}`
-                      : "From your to-dos";
-                    return (
-                      <span
-                        className={styles.todoIcon}
-                        role="img"
-                        aria-label={label}
-                        title={label}
-                      >
-                        <ListTodo size={16} aria-hidden />
-                      </span>
-                    );
-                  })()}
-                  {task.hobbyTaskId && (() => {
-                    const hobby = hobbies.find((h) =>
-                      h.tasks.some((t) => t.id === task.hobbyTaskId),
-                    );
-                    const hobbyTask = hobby?.tasks.find(
-                      (t) => t.id === task.hobbyTaskId,
-                    );
-                    const label =
-                      hobby && hobbyTask
-                        ? `From your hobbies: ${hobby.name} — ${hobbyTask.label}`
-                        : "From your hobbies";
-                    return (
-                      <span
-                        className={styles.hobbyIcon}
-                        role="img"
-                        aria-label={label}
-                        title={label}
-                      >
-                        <Gamepad2 size={16} aria-hidden />
-                      </span>
-                    );
-                  })()}
-                  {task.routineId && (() => {
-                    const routine = routines.find(
-                      (r) => r.id === task.routineId,
-                    );
-                    const label = routine
-                      ? `From your routines: ${routine.label}`
-                      : "From your routines";
-                    return (
-                      <span
-                        className={styles.routineIcon}
-                        role="img"
-                        aria-label={label}
-                        title={label}
-                      >
-                        <Repeat2 size={16} aria-hidden />
-                      </span>
-                    );
-                  })()}
+                  {task.choreId &&
+                    (() => {
+                      const chore = chores.find((c) => c.id === task.choreId);
+                      const label = chore
+                        ? `Linked chore: ${chore.name}`
+                        : "Linked chore";
+                      return (
+                        <span
+                          className={styles.choreIcon}
+                          role="img"
+                          aria-label={label}
+                          title={label}
+                        >
+                          <BrushCleaning size={16} aria-hidden />
+                        </span>
+                      );
+                    })()}
+                  {task.todoId &&
+                    (() => {
+                      const todo = todos.find((t) => t.id === task.todoId);
+                      const label = todo
+                        ? `From your to-dos: ${todo.title}`
+                        : "From your to-dos";
+                      return (
+                        <span
+                          className={styles.todoIcon}
+                          role="img"
+                          aria-label={label}
+                          title={label}
+                        >
+                          <ListTodo size={16} aria-hidden />
+                        </span>
+                      );
+                    })()}
+                  {task.hobbyTaskId &&
+                    (() => {
+                      const hobby = hobbies.find((h) =>
+                        h.tasks.some((t) => t.id === task.hobbyTaskId),
+                      );
+                      const hobbyTask = hobby?.tasks.find(
+                        (t) => t.id === task.hobbyTaskId,
+                      );
+                      const label =
+                        hobby && hobbyTask
+                          ? `From your hobbies: ${hobby.name} — ${hobbyTask.label}`
+                          : "From your hobbies";
+                      return (
+                        <span
+                          className={styles.hobbyIcon}
+                          role="img"
+                          aria-label={label}
+                          title={label}
+                        >
+                          <Gamepad2 size={16} aria-hidden />
+                        </span>
+                      );
+                    })()}
+                  {task.routineId &&
+                    (() => {
+                      const routine = routines.find(
+                        (r) => r.id === task.routineId,
+                      );
+                      const label = routine
+                        ? `From your routines: ${routine.label}`
+                        : "From your routines";
+                      return (
+                        <span
+                          className={styles.routineIcon}
+                          role="img"
+                          aria-label={label}
+                          title={label}
+                        >
+                          <Repeat2 size={16} aria-hidden />
+                        </span>
+                      );
+                    })()}
                   {status === "current" && (
                     <span className={styles.nowBadge}>Now</span>
                   )}
@@ -331,9 +332,7 @@ function TaskList({
                     className={styles.expandButton}
                     aria-expanded={expanded}
                     aria-label={expanded ? "Collapse task" : "Expand task"}
-                    onClick={() =>
-                      setExpandedId(expanded ? null : task.id)
-                    }
+                    onClick={() => setExpandedId(expanded ? null : task.id)}
                   >
                     {expanded ? (
                       <ChevronDown size={18} aria-hidden />

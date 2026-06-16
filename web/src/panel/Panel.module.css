@@ -136,7 +136,8 @@
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--easing-standard),
+  transition:
+    background var(--duration-fast) var(--easing-standard),
     color var(--duration-fast) var(--easing-standard);
 }
 .control:hover {

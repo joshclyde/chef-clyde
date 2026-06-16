@@ -1,7 +1,15 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { Button, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
+import {
+  Button,
+  Heading,
+  Inline,
+  Input,
+  Stack,
+  Text,
+  Textarea,
+} from "../../ui";
 import { cn } from "../../ui/cn";
 import styles from "./Todos.module.css";
 import {
@@ -203,8 +211,8 @@ export default function Todos() {
     <Stack gap="lg" className={styles.page}>
       <Heading level={1}>To-Dos</Heading>
       <Text variant="muted">
-        One-off things to get done. These are fed into your daily schedule, where
-        Clyde can slot and link them.
+        One-off things to get done. These are fed into your daily schedule,
+        where Clyde can slot and link them.
       </Text>
 
       <div className={styles.addRow}>

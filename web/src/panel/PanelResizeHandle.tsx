@@ -1,9 +1,6 @@
 import { cn } from "../ui/cn";
 import styles from "./Panel.module.css";
-import {
-  PANEL_MIN_HEIGHT,
-  PANEL_MIN_WIDTH,
-} from "./PanelContext";
+import { PANEL_MIN_HEIGHT, PANEL_MIN_WIDTH } from "./PanelContext";
 import { usePanel } from "./usePanel";
 
 const KEYBOARD_STEP = 16;
@@ -43,7 +40,11 @@ export function PanelResizeHandle() {
     const onMove = (ev: PointerEvent) => {
       if (isRight) {
         setWidth(
-          clamp(startWidth + (startX - ev.clientX), PANEL_MIN_WIDTH, maxWidth()),
+          clamp(
+            startWidth + (startX - ev.clientX),
+            PANEL_MIN_WIDTH,
+            maxWidth(),
+          ),
         );
       } else {
         setHeight(
@@ -81,10 +82,14 @@ export function PanelResizeHandle() {
     } else {
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHeight((h) => clamp(h + KEYBOARD_STEP, PANEL_MIN_HEIGHT, maxHeight()));
+        setHeight((h) =>
+          clamp(h + KEYBOARD_STEP, PANEL_MIN_HEIGHT, maxHeight()),
+        );
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setHeight((h) => clamp(h - KEYBOARD_STEP, PANEL_MIN_HEIGHT, maxHeight()));
+        setHeight((h) =>
+          clamp(h - KEYBOARD_STEP, PANEL_MIN_HEIGHT, maxHeight()),
+        );
       }
     }
   };

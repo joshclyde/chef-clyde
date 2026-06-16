@@ -117,9 +117,21 @@ function SortableHeader({
   onSort: (column: SortColumn) => void;
 }) {
   const active = sort.column === column;
-  const Icon = !active ? ChevronsUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
+  const Icon = !active
+    ? ChevronsUpDown
+    : sort.direction === "asc"
+      ? ArrowUp
+      : ArrowDown;
   return (
-    <th aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
+    <th
+      aria-sort={
+        active
+          ? sort.direction === "asc"
+            ? "ascending"
+            : "descending"
+          : "none"
+      }
+    >
       <button
         type="button"
         className={styles.sortButton}
@@ -231,7 +243,9 @@ export default function Tasks() {
       {error && <Text variant="danger">{error}</Text>}
 
       {chores.length === 0 && !creating ? (
-        <Text variant="muted">No chores yet. Click "New chore" to add one.</Text>
+        <Text variant="muted">
+          No chores yet. Click "New chore" to add one.
+        </Text>
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -357,7 +371,10 @@ export default function Tasks() {
 
                     {isExpanded && (
                       <tr className={styles.detailRow}>
-                        <td className={styles.detailCell} colSpan={COLUMN_COUNT}>
+                        <td
+                          className={styles.detailCell}
+                          colSpan={COLUMN_COUNT}
+                        >
                           <Stack gap="md">
                             <Inline gap="2xs">
                               <Button

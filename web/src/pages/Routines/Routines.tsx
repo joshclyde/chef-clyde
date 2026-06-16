@@ -6,7 +6,7 @@ import { DAY_PART_LABEL, DAY_PARTS } from "./constants";
 import { RoutineCard } from "./RoutineCard";
 import { RoutineEditor } from "./RoutineEditor";
 import styles from "./Routines.module.css";
-import { type TimeOfDay,useRoutines } from "./useRoutines";
+import { type TimeOfDay, useRoutines } from "./useRoutines";
 
 // Lay the manage list out in clock order, with "any" trailing at the end.
 const SECTIONS: TimeOfDay[] = [...DAY_PARTS, "any"];

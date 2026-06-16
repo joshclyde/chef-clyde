@@ -1,23 +1,26 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import n from 'eslint-plugin-n'
-import promise from 'eslint-plugin-promise'
-import simpleImportSort from 'eslint-plugin-simple-import-sort'
-import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import js from "@eslint/js";
+import globals from "globals";
+import n from "eslint-plugin-n";
+import promise from "eslint-plugin-promise";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import tseslint from "typescript-eslint";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
+import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.ts'],
+    files: ["**/*.ts"],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommendedTypeChecked,
-      n.configs['flat/recommended-script'],
-      promise.configs['flat/recommended'],
+      n.configs["flat/recommended-script"],
+      promise.configs["flat/recommended"],
+      // Last: turn off ESLint formatting rules that would conflict with Prettier.
+      eslintConfigPrettier,
     ],
     plugins: {
-      'simple-import-sort': simpleImportSort,
+      "simple-import-sort": simpleImportSort,
     },
     languageOptions: {
       globals: globals.node,
@@ -27,11 +30,11 @@ export default defineConfig([
       },
     },
     rules: {
-      'simple-import-sort/imports': 'error',
-      'simple-import-sort/exports': 'error',
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
       // TypeScript owns module resolution; n's resolver misfires on TS path/ext rules.
-      'n/no-missing-import': 'off',
-      'n/no-unpublished-import': 'off',
+      "n/no-missing-import": "off",
+      "n/no-unpublished-import": "off",
     },
   },
-])
+]);

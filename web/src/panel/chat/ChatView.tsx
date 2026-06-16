@@ -19,7 +19,7 @@ export function ChatView({ config }: { config: ChatConfig }) {
   const selectedMode = config.modes?.find((m) => m.id === mode);
   const placeholder = hasMessages
     ? config.continuePlaceholder
-    : selectedMode?.placeholder ?? config.placeholder;
+    : (selectedMode?.placeholder ?? config.placeholder);
 
   return (
     <div className={styles.chatView}>

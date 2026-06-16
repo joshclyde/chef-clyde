@@ -47,9 +47,7 @@ Schema:
 export function buildChoreLinkingInstructions(chores: Chore[]): string {
   if (chores.length === 0) return "";
   const list = chores.map((c) => `- ${c.id} :: ${c.name}`).join("\n");
-  return (
-    `The user tracks recurring household chores. When a task is clearly an instance of one of the chores below, add an optional "choreId" field with that chore's exact id. Match on meaning, not exact wording (e.g. "Clean the shower (overdue)" is the chore "Clean the shower"). If no chore matches, omit "choreId". Never invent ids.\n\nChores (id :: name):\n${list}`
-  );
+  return `The user tracks recurring household chores. When a task is clearly an instance of one of the chores below, add an optional "choreId" field with that chore's exact id. Match on meaning, not exact wording (e.g. "Clean the shower (overdue)" is the chore "Clean the shower"). If no chore matches, omit "choreId". Never invent ids.\n\nChores (id :: name):\n${list}`;
 }
 
 /**
@@ -65,9 +63,7 @@ export function buildTodoLinkingInstructions(todos: Todo[]): string {
       return `- ${t.id} :: ${t.title} (${due})`;
     })
     .join("\n");
-  return (
-    `The user also keeps one-off to-dos (separate from recurring chores). When a task fulfills one of the to-dos below, add an optional "todoId" field with that to-do's exact id. Match on meaning, not exact wording. If no to-do matches, omit "todoId". Never invent ids.\n\nTo-dos (id :: title):\n${list}`
-  );
+  return `The user also keeps one-off to-dos (separate from recurring chores). When a task fulfills one of the to-dos below, add an optional "todoId" field with that to-do's exact id. Match on meaning, not exact wording. If no to-do matches, omit "todoId". Never invent ids.\n\nTo-dos (id :: title):\n${list}`;
 }
 
 /**
@@ -80,9 +76,7 @@ export function buildHobbyLinkingInstructions(hobbies: Hobby[]): string {
     .flatMap((h) => h.tasks.map((t) => `- ${t.id} :: ${h.name} — ${t.label}`))
     .join("\n");
   if (!list) return "";
-  return (
-    `The user pursues hobbies, each with its own tasks (a recurring session, a booked event, a loose idea, etc.). When a task is clearly an instance of one of the hobby tasks below, add an optional "hobbyTaskId" field with that task's exact id. Match on meaning, not exact wording. If none matches, omit "hobbyTaskId". Never invent ids.\n\nHobby tasks (id :: hobby — task):\n${list}`
-  );
+  return `The user pursues hobbies, each with its own tasks (a recurring session, a booked event, a loose idea, etc.). When a task is clearly an instance of one of the hobby tasks below, add an optional "hobbyTaskId" field with that task's exact id. Match on meaning, not exact wording. If none matches, omit "hobbyTaskId". Never invent ids.\n\nHobby tasks (id :: hobby — task):\n${list}`;
 }
 
 /**
@@ -95,18 +89,24 @@ export function buildRoutineLinkingInstructions(routines: Routine[]): string {
   const list = routines
     .map((r) => `- ${r.id} :: ${r.label} (${r.timeOfDay})`)
     .join("\n");
-  return (
-    `The user keeps daily routines — small repeating things that shape the day (e.g. brush teeth, make coffee). When a task is clearly an instance of one of the routines below, add an optional "routineId" field with that routine's exact id. Match on meaning, not exact wording. If none matches, omit "routineId". Never invent ids.\n\nRoutines (id :: label (time of day)):\n${list}`
-  );
+  return `The user keeps daily routines — small repeating things that shape the day (e.g. brush teeth, make coffee). When a task is clearly an instance of one of the routines below, add an optional "routineId" field with that routine's exact id. Match on meaning, not exact wording. If none matches, omit "routineId". Never invent ids.\n\nRoutines (id :: label (time of day)):\n${list}`;
 }
 
 /** Deterministic stand-in for the model when MOCK_AI is set. */
 export const MOCK_TASKS: ParsedTask[] = [
-  { startTime: "08:00", endTime: "08:30", label: "Morning coffee and planning" },
+  {
+    startTime: "08:00",
+    endTime: "08:30",
+    label: "Morning coffee and planning",
+  },
   { startTime: "09:00", endTime: "09:45", label: "Clean the shower (overdue)" },
   { startTime: "12:00", endTime: "13:00", label: "Lunch" },
   { startTime: "15:00", endTime: "16:30", label: "Play pickleball" },
-  { startTime: "16:00", endTime: "16:05", label: "Scoop attic litter (due now)" },
+  {
+    startTime: "16:00",
+    endTime: "16:05",
+    label: "Scoop attic litter (due now)",
+  },
   { startTime: "18:00", endTime: "19:00", label: "Dinner" },
 ];
 
@@ -180,26 +180,24 @@ export function validateTasks(
   );
   const validRoutineIds = new Set(routines.map((r) => r.id));
   return {
-    tasks: (tasks).map(
-      ({ choreId, todoId, hobbyTaskId, routineId, ...rest }) => {
-        const task: ParsedTask = { ...rest };
-        if (typeof choreId === "string" && validChoreIds.has(choreId)) {
-          task.choreId = choreId;
-        }
-        if (typeof todoId === "string" && validTodoIds.has(todoId)) {
-          task.todoId = todoId;
-        }
-        if (
-          typeof hobbyTaskId === "string" &&
-          validHobbyTaskIds.has(hobbyTaskId)
-        ) {
-          task.hobbyTaskId = hobbyTaskId;
-        }
-        if (typeof routineId === "string" && validRoutineIds.has(routineId)) {
-          task.routineId = routineId;
-        }
-        return task;
-      },
-    ),
+    tasks: tasks.map(({ choreId, todoId, hobbyTaskId, routineId, ...rest }) => {
+      const task: ParsedTask = { ...rest };
+      if (typeof choreId === "string" && validChoreIds.has(choreId)) {
+        task.choreId = choreId;
+      }
+      if (typeof todoId === "string" && validTodoIds.has(todoId)) {
+        task.todoId = todoId;
+      }
+      if (
+        typeof hobbyTaskId === "string" &&
+        validHobbyTaskIds.has(hobbyTaskId)
+      ) {
+        task.hobbyTaskId = hobbyTaskId;
+      }
+      if (typeof routineId === "string" && validRoutineIds.has(routineId)) {
+        task.routineId = routineId;
+      }
+      return task;
+    }),
   };
 }

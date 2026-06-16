@@ -81,7 +81,8 @@ export function describeOccurrence(task: HobbyTask): string {
     }
     case "weekly": {
       const days = occ.days.join("/");
-      const tod = occ.timeOfDay && occ.timeOfDay !== "any" ? ` · ${occ.timeOfDay}` : "";
+      const tod =
+        occ.timeOfDay && occ.timeOfDay !== "any" ? ` · ${occ.timeOfDay}` : "";
       return `Every ${days}${tod}`;
     }
     case "frequency":

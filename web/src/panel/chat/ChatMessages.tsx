@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { useEffect,useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { cn } from "../../ui/cn";
 import styles from "./Chat.module.css";

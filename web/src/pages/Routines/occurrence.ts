@@ -10,7 +10,15 @@ export const DAY_INDEX: Record<DayOfWeek, number> = {
   Sat: 6,
 };
 
-const DAY_NAMES: DayOfWeek[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES: DayOfWeek[] = [
+  "Sun",
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+];
 
 /** Parse a "YYYY-MM-DD" string into a local Date (no timezone shift). */
 export function parseLocalDate(date: string): Date {

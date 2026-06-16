@@ -52,7 +52,9 @@ export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newNoteContent, setNewNoteContent] = useState<Record<string, string>>({});
+  const [newNoteContent, setNewNoteContent] = useState<Record<string, string>>(
+    {},
+  );
   const [editingNote, setEditingNote] = useState<
     Record<string, { noteId: string; content: string } | null>
   >({});
@@ -71,7 +73,9 @@ export default function Recipes() {
       body: JSON.stringify({ content }),
     });
     const data = (await res.json()) as { recipe: Recipe };
-    setRecipes((prev) => prev.map((r) => (r.id === recipeId ? data.recipe : r)));
+    setRecipes((prev) =>
+      prev.map((r) => (r.id === recipeId ? data.recipe : r)),
+    );
     setNewNoteContent((prev) => ({ ...prev, [recipeId]: "" }));
   }
 
@@ -84,7 +88,9 @@ export default function Recipes() {
       body: JSON.stringify({ content: edit.content }),
     });
     const data = (await res.json()) as { recipe: Recipe };
-    setRecipes((prev) => prev.map((r) => (r.id === recipeId ? data.recipe : r)));
+    setRecipes((prev) =>
+      prev.map((r) => (r.id === recipeId ? data.recipe : r)),
+    );
     setEditingNote((prev) => ({ ...prev, [recipeId]: null }));
   }
 
@@ -93,7 +99,9 @@ export default function Recipes() {
       method: "DELETE",
     });
     const data = (await res.json()) as { recipe: Recipe };
-    setRecipes((prev) => prev.map((r) => (r.id === recipeId ? data.recipe : r)));
+    setRecipes((prev) =>
+      prev.map((r) => (r.id === recipeId ? data.recipe : r)),
+    );
   }
 
   useEffect(() => {
@@ -247,7 +255,9 @@ export default function Recipes() {
                                     <Button
                                       variant="danger"
                                       size="sm"
-                                      onClick={() => deleteNote(recipe.id, note.id)}
+                                      onClick={() =>
+                                        deleteNote(recipe.id, note.id)
+                                      }
                                     >
                                       Delete
                                     </Button>
@@ -273,7 +283,9 @@ export default function Recipes() {
                             <Button
                               size="sm"
                               onClick={() => addNote(recipe.id)}
-                              disabled={!(newNoteContent[recipe.id] ?? "").trim()}
+                              disabled={
+                                !(newNoteContent[recipe.id] ?? "").trim()
+                              }
                             >
                               Save Note
                             </Button>

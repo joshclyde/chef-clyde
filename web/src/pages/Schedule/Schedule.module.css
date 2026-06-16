@@ -69,7 +69,13 @@
   background: var(--color-bg-subtle);
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: var(--font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(
+    --font-family-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace
+  );
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-default);
@@ -81,7 +87,8 @@
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-bg-surface);
-  transition: background var(--duration-fast) var(--easing-standard),
+  transition:
+    background var(--duration-fast) var(--easing-standard),
     border-color var(--duration-fast) var(--easing-standard);
 }
 .taskMain {
@@ -106,7 +113,8 @@
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--easing-standard),
+  transition:
+    background var(--duration-fast) var(--easing-standard),
     color var(--duration-fast) var(--easing-standard);
 }
 .expandButton:hover {
