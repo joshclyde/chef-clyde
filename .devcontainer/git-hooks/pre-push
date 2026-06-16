@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Block pushes to the protected `main` branch from inside the dev container.
+#
+# This is fast, local defense-in-depth. The authoritative control is the
+# server-side branch-protection ruleset on `main` in GitHub, which rejects the
+# push even if this hook is bypassed.
+set -euo pipefail
+
+protected_branch="main"
+
+# pre-push receives "<local ref> <local sha> <remote ref> <remote sha>" lines on stdin.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ "$remote_ref" == "refs/heads/$protected_branch" ]]; then
+    echo "" >&2
+    echo "✗ Push to '$protected_branch' is blocked in the dev container." >&2
+    echo "  Push a feature branch and open a pull request instead:" >&2
+    echo "    git switch -c my-feature && git push -u origin my-feature && gh pr create" >&2
+    echo "" >&2
+    exit 1
+  fi
+done
+
+exit 0

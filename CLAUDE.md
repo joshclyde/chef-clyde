@@ -19,3 +19,21 @@ Available configs:
 
 Start each config you need with its own `preview_start` call so both servers show up as
 stoppable entries in the Preview dropdown.
+
+## Running in the dev container
+
+This repo ships a hardened dev container ([.devcontainer/](.devcontainer/)) for running
+Claude in an isolated, auto-accept-friendly environment. It runs Claude as a non-root
+user inside Docker behind a default-deny egress firewall
+([init-firewall.sh](.devcontainer/init-firewall.sh) allowlists only Anthropic, GitHub,
+and npm). Ports **5173** and **3001** are forwarded, so the preview workflow above is
+unchanged — open `localhost:5173` in the host browser as usual.
+
+Git is wired for normal work but **cannot push to `main`**, by design:
+
+- A repo-scoped fine-grained PAT (host env `CHEF_CLYDE_GH_TOKEN` → container `GH_TOKEN`)
+  authenticates pushes/PRs over HTTPS. The host's SSH keys are **never** mounted.
+- The [pre-push hook](.devcontainer/git-hooks/pre-push) rejects pushes to `main`
+  locally; a GitHub branch-protection ruleset on `main` enforces it server-side.
+
+So Claude should branch, commit, push the branch, and open a PR — never push to `main`.
