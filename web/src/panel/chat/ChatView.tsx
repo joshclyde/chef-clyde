@@ -1,10 +1,10 @@
 import { Button, Inline, Text } from "../../ui";
 import { cn } from "../../ui/cn";
-import { type ChatConfig } from "./chatConfigs";
-import { usePanelChat } from "./usePanelChat";
-import { ChatMessages } from "./ChatMessages";
-import { ChatComposer } from "./ChatComposer";
 import styles from "./Chat.module.css";
+import { ChatComposer } from "./ChatComposer";
+import { type ChatConfig } from "./chatConfigs";
+import { ChatMessages } from "./ChatMessages";
+import { usePanelChat } from "./usePanelChat";
 
 /**
  * The full chat experience for one activity, driven entirely by `config`.

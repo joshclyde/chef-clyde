@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode,useEffect, useState } from "react";
+
 import {
-  AiMotionContext,
   AI_MOTION_STORAGE_KEY,
   type AiMotion,
+  AiMotionContext,
 } from "./AiMotionContext";
 
 function getInitialMotion(): AiMotion {

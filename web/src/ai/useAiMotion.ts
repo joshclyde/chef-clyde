@@ -1,4 +1,5 @@
 import { useContext } from "react";
+
 import { AiMotionContext } from "./AiMotionContext";
 
 export function useAiMotion() {

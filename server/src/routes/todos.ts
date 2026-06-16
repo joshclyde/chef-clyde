@@ -2,7 +2,7 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { Todo } from "../types/todo";
+
 import {
   getSoftDeleteDir,
   getTodosDir,
@@ -10,6 +10,7 @@ import {
   readTodo,
   writeTodo,
 } from "../db/todos";
+import type { Todo } from "../types/todo";
 
 const router = express.Router();
 

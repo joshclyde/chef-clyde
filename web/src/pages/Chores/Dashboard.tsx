@@ -1,8 +1,8 @@
 import { Heading, Stack, Text } from "../../ui";
+import styles from "./Dashboard.module.css";
 import { FrequencyBreakdownView } from "./FrequencyBreakdownView";
 import { TimeCommitmentView } from "./TimeCommitmentView";
 import { useChores } from "./useChores";
-import styles from "./Dashboard.module.css";
 
 export default function Dashboard() {
   const { chores, loading, error } = useChores();

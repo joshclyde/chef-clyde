@@ -2,8 +2,10 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { Schedule, ScheduleTask, TaskStatus } from "../types/schedule";
-import type { Completion } from "../types/chore";
+
+import { readAllChores, readChore, writeChore } from "../db/chores";
+import { findHobbyByTaskId, readAllHobbies, writeHobby } from "../db/hobbies";
+import { findRoutineById, readAllRoutines, writeRoutine } from "../db/routines";
 import {
   getSchedulesDir,
   getSoftDeleteDir,
@@ -11,14 +13,13 @@ import {
   readSchedule,
   writeSchedule,
 } from "../db/schedules";
-import { readAllChores, readChore, writeChore } from "../db/chores";
 import { readAllTodos, readTodo, writeTodo } from "../db/todos";
-import { findHobbyByTaskId, readAllHobbies, writeHobby } from "../db/hobbies";
-import { findRoutineById, readAllRoutines, writeRoutine } from "../db/routines";
 import {
   buildSchedulePrompt,
   generateScheduleTasks,
 } from "../services/schedule";
+import type { Completion } from "../types/chore";
+import type { Schedule, ScheduleTask, TaskStatus } from "../types/schedule";
 
 /** All open (not-yet-completed) to-dos — what the generator considers. */
 function openTodos() {
@@ -440,10 +441,10 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     return;
   }
 
-  if (notes !== undefined) task.notes = notes as string;
+  if (notes !== undefined) task.notes = notes;
 
   if (choreId !== undefined) {
-    const next = choreId === null ? undefined : (choreId as string);
+    const next = choreId === null ? undefined : (choreId);
     if (task.choreId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedCompletion(task);
@@ -453,7 +454,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
 
   if (todoId !== undefined) {
-    const next = todoId === null ? undefined : (todoId as string);
+    const next = todoId === null ? undefined : (todoId);
     if (task.todoId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       clearLinkedTodo(task);
@@ -463,7 +464,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
 
   if (hobbyTaskId !== undefined) {
-    const next = hobbyTaskId === null ? undefined : (hobbyTaskId as string);
+    const next = hobbyTaskId === null ? undefined : (hobbyTaskId);
     if (task.hobbyTaskId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedHobbyTaskCompletion(task);
@@ -473,7 +474,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
 
   if (routineId !== undefined) {
-    const next = routineId === null ? undefined : (routineId as string);
+    const next = routineId === null ? undefined : (routineId);
     if (task.routineId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedRoutineCompletion(task);

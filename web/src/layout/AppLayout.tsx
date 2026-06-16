@@ -1,22 +1,23 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import Pantry from "../pages/Pantry";
-import Recipes from "../pages/Recipes";
+
 import Dashboard from "../pages/Chores/Dashboard";
 import Tasks from "../pages/Chores/Tasks";
 import HobbiesDashboard from "../pages/Hobbies/Dashboard";
 import Hobbies from "../pages/Hobbies/Hobbies";
+import Pantry from "../pages/Pantry";
+import Recipes from "../pages/Recipes";
 import RoutinesBreakdown from "../pages/Routines/Dashboard";
 import Routines from "../pages/Routines/Routines";
-import Todos from "../pages/Todos/Todos";
 import ScheduleDaily from "../pages/Schedule/Daily";
 import ScheduleInstructions from "../pages/Schedule/Instructions";
 import ScheduleSaved from "../pages/Schedule/Saved";
+import Todos from "../pages/Todos/Todos";
 import { Panel } from "../panel/Panel";
 import { usePanel } from "../panel/usePanel";
-import { ActivityBar } from "./ActivityBar";
-import { Sidebar } from "./Sidebar";
 import { activityForPath } from "./activities";
+import { ActivityBar } from "./ActivityBar";
 import styles from "./AppLayout.module.css";
+import { Sidebar } from "./Sidebar";
 
 export function AppLayout() {
   const { pathname } = useLocation();

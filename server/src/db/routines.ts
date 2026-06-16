@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+
 import type { Routine } from "../types/routine";
 
 export function getRoutinesDir(): string {

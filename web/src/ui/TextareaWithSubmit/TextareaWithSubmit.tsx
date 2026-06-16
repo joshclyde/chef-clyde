@@ -1,13 +1,14 @@
+import { Send } from "lucide-react";
 import {
   type ComponentProps,
   type ReactNode,
   type Ref,
   type TextareaHTMLAttributes,
 } from "react";
-import { Send } from "lucide-react";
+
 import { Button } from "../Button/Button";
-import { Textarea } from "../Textarea/Textarea";
 import { cn } from "../cn";
+import { Textarea } from "../Textarea/Textarea";
 import styles from "./TextareaWithSubmit.module.css";
 
 type Props = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onSubmit"> & {

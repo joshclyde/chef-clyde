@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -6,15 +5,17 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { useState } from "react";
+
 import { Badge, Button, Card, Inline, Stack, Text } from "../../ui";
-import { RoutineEditor } from "./RoutineEditor";
 import { describeOccurrence, parseLocalDate, shortDate } from "./occurrence";
+import { RoutineEditor } from "./RoutineEditor";
+import styles from "./Routines.module.css";
 import {
   dueStatus,
   type Routine,
   type RoutineInput,
 } from "./useRoutines";
-import styles from "./Routines.module.css";
 
 /** Readiness badge for cadence routines; nothing for weekly ones. */
 function ReadinessBadge({ routine }: { routine: Routine }) {

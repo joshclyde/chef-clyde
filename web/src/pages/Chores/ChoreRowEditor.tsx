@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+
 import { Button, Inline, Input, Select } from "../../ui";
 import { FLOORS, FREQUENCY_UNITS, ROOMS } from "./constants";
-import type { Chore, ChoreInput, FrequencyUnit } from "./useChores";
 import styles from "./Tasks.module.css";
+import type { Chore, ChoreInput, FrequencyUnit } from "./useChores";
 
 type ChoreRowEditorProps = {
   initial?: Chore;

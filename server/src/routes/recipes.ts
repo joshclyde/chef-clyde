@@ -2,7 +2,7 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { Note } from "../types/recipe";
+
 import {
   getRecipesDir,
   getSoftDeleteDir,
@@ -11,6 +11,7 @@ import {
   writeRecipe,
 } from "../db/recipes";
 import { extractRecipe } from "../services/recipeExtractor";
+import type { Note } from "../types/recipe";
 
 const router = express.Router();
 

@@ -1,13 +1,14 @@
-import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
+
 import { Card, Heading, Inline, Stack, Text } from "../../ui";
 import {
   formatMinutes,
-  frequencyGroups,
   type FrequencyGroup,
+  frequencyGroups,
 } from "./choreStats";
-import type { Chore } from "./useChores";
 import styles from "./Dashboard.module.css";
+import type { Chore } from "./useChores";
 
 function GroupRow({ group }: { group: FrequencyGroup }) {
   const [expanded, setExpanded] = useState(false);

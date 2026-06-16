@@ -1,4 +1,3 @@
-import { Fragment, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -7,21 +6,23 @@ import {
   ChevronsUpDown,
   Pencil,
 } from "lucide-react";
+import { Fragment, useState } from "react";
+
 import { Button, Heading, Inline, Input, Stack, Text } from "../../ui";
 import { ChoreRowEditor } from "./ChoreRowEditor";
 import { FLOORS } from "./constants";
+import styles from "./Tasks.module.css";
 import {
+  type Chore,
+  type ChoreInput,
   dueSortKey,
   dueStatus,
   frequencyDays,
+  type FrequencyUnit,
   lastPerformed,
   nextDue,
   useChores,
-  type Chore,
-  type ChoreInput,
-  type FrequencyUnit,
 } from "./useChores";
-import styles from "./Tasks.module.css";
 
 const COLUMN_COUNT = 8;
 
@@ -206,7 +207,7 @@ export default function Tasks() {
     const dateStr = logDates[id];
     if (!dateStr) return;
     const performedAt = new Date(`${dateStr}T12:00:00`).toISOString();
-    logCompletion(id, performedAt);
+    void logCompletion(id, performedAt);
     setLogDates((prev) => ({ ...prev, [id]: "" }));
   }
 

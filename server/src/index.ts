@@ -1,10 +1,11 @@
 import express from "express";
+
 import chatRouter from "./routes/chat";
 import choresRouter from "./routes/chores";
 import hobbiesRouter from "./routes/hobbies";
 import pantryRouter from "./routes/pantry";
-import routinesRouter from "./routes/routines";
 import recipesRouter from "./routes/recipes";
+import routinesRouter from "./routes/routines";
 import scheduleInstructionsRouter from "./routes/scheduleInstructions";
 import schedulesRouter from "./routes/schedules";
 import todosRouter from "./routes/todos";

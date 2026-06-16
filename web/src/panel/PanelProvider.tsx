@@ -1,13 +1,14 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode,useEffect, useState } from "react";
+
 import {
-  PanelContext,
+  PANEL_DEFAULT_HEIGHT,
+  PANEL_DEFAULT_WIDTH,
+  PANEL_HEIGHT_KEY,
   PANEL_OPEN_KEY,
   PANEL_POSITION_KEY,
   PANEL_TAB_KEY,
   PANEL_WIDTH_KEY,
-  PANEL_HEIGHT_KEY,
-  PANEL_DEFAULT_WIDTH,
-  PANEL_DEFAULT_HEIGHT,
+  PanelContext,
   type PanelPosition,
 } from "./PanelContext";
 

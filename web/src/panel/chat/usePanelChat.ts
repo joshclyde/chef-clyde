@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { type Message, type ChatMode } from "./types";
+
 import { type ChatConfig } from "./chatConfigs";
+import { type ChatMode,type Message } from "./types";
 
 /**
  * Generic chat state for the Panel. The conversation talks to whatever endpoint
@@ -27,7 +28,7 @@ export function usePanelChat(config: ChatConfig) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(config.buildBody(newMessages, mode)),
     })
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<{ content: string }>)
       .then((data) => {
         setMessages([
           ...newMessages,

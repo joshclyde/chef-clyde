@@ -1,4 +1,5 @@
 import { type HTMLAttributes } from "react";
+
 import { cn } from "../cn";
 import styles from "./Badge.module.css";
 

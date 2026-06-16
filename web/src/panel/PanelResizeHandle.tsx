@@ -1,10 +1,10 @@
-import { usePanel } from "./usePanel";
-import {
-  PANEL_MIN_WIDTH,
-  PANEL_MIN_HEIGHT,
-} from "./PanelContext";
 import { cn } from "../ui/cn";
 import styles from "./Panel.module.css";
+import {
+  PANEL_MIN_HEIGHT,
+  PANEL_MIN_WIDTH,
+} from "./PanelContext";
+import { usePanel } from "./usePanel";
 
 const KEYBOARD_STEP = 16;
 
@@ -90,6 +90,10 @@ export function PanelResizeHandle() {
   };
 
   return (
+    // Intentional ARIA window-splitter: a focusable separator with keyboard
+    // resize handlers. jsx-a11y flags separators as non-interactive, which
+    // doesn't account for this pattern.
+    /* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */
     <div
       className={cn(
         styles.resizeHandle,
@@ -98,6 +102,7 @@ export function PanelResizeHandle() {
       role="separator"
       aria-orientation={isRight ? "vertical" : "horizontal"}
       aria-label="Resize panel"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}

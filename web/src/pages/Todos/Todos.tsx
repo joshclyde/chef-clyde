@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
 import { Button, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
 import { cn } from "../../ui/cn";
+import styles from "./Todos.module.css";
 import {
   dueSortKey,
   dueStatus,
-  useTodos,
   type Todo,
   type TodoInput,
+  useTodos,
 } from "./useTodos";
-import styles from "./Todos.module.css";
 
 /** Format a "YYYY-MM-DD" string as a readable local date (no TZ shift). */
 function formatDate(date: string) {
@@ -215,7 +216,7 @@ export default function Todos() {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              handleAdd();
+              void handleAdd();
             }
           }}
           placeholder="Add a to-do…"

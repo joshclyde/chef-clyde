@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+
 import { Button, Inline, Input, Select, Stack, Text } from "../../ui";
 import {
   DAYS_OF_WEEK,
@@ -6,6 +7,7 @@ import {
   OCCURRENCE_KINDS,
   TIMES_OF_DAY,
 } from "./constants";
+import styles from "./Routines.module.css";
 import type {
   DayOfWeek,
   FrequencyUnit,
@@ -15,7 +17,6 @@ import type {
   RoutineOccurrenceKind,
   TimeOfDay,
 } from "./useRoutines";
-import styles from "./Routines.module.css";
 
 type RoutineEditorProps = {
   initial?: Routine;

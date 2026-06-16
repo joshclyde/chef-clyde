@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   BrushCleaning,
   ChevronDown,
@@ -7,6 +6,9 @@ import {
   ListTodo,
   Repeat2,
 } from "lucide-react";
+import { useState } from "react";
+
+import { todayLocal } from "../../lib/date";
 import {
   Button,
   Card,
@@ -18,21 +20,20 @@ import {
   Textarea,
 } from "../../ui";
 import { cn } from "../../ui/cn";
-import { todayLocal } from "../../lib/date";
-import { useChores, type Chore } from "../Chores/useChores";
-import { useTodos, type Todo } from "../Todos/useTodos";
-import { useHobbies, type Hobby } from "../Hobbies/useHobbies";
-import { useRoutines, type Routine } from "../Routines/useRoutines";
+import { type Chore,useChores } from "../Chores/useChores";
+import { type Hobby,useHobbies } from "../Hobbies/useHobbies";
+import { type Routine,useRoutines } from "../Routines/useRoutines";
+import { type Todo,useTodos } from "../Todos/useTodos";
+import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
+import styles from "./Schedule.module.css";
+import { ScheduleGenerator } from "./ScheduleGenerator";
 import {
-  useSchedules,
   type Schedule,
   type ScheduleTask,
   type TaskPatch,
   type TaskStatus,
+  useSchedules,
 } from "./useSchedules";
-import { ScheduleGenerator } from "./ScheduleGenerator";
-import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
-import styles from "./Schedule.module.css";
 
 /** Format a "YYYY-MM-DD" string as a readable local date (no TZ shift). */
 function formatDate(date: string) {

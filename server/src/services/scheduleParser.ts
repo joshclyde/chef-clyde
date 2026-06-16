@@ -1,8 +1,8 @@
-import type { ScheduleTask } from "../types/schedule";
 import type { Chore } from "../types/chore";
-import type { Todo } from "../types/todo";
 import type { Hobby } from "../types/hobby";
 import type { Routine } from "../types/routine";
+import type { ScheduleTask } from "../types/schedule";
+import type { Todo } from "../types/todo";
 
 /** The task fields the model produces; id + status are added server-side. */
 export type ParsedTask = Omit<
@@ -180,7 +180,7 @@ export function validateTasks(
   );
   const validRoutineIds = new Set(routines.map((r) => r.id));
   return {
-    tasks: (tasks as ParsedTask[]).map(
+    tasks: (tasks).map(
       ({ choreId, todoId, hobbyTaskId, routineId, ...rest }) => {
         const task: ParsedTask = { ...rest };
         if (typeof choreId === "string" && validChoreIds.has(choreId)) {

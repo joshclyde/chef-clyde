@@ -1,5 +1,7 @@
 import { useMemo } from "react";
-import { Card, Heading, Inline, Stack, Text } from "../../ui";
+
+import { Card, Heading, Stack, Text } from "../../ui";
+import styles from "./Dashboard.module.css";
 import {
   formatMinutes,
   weeklyTimeCommitment,
@@ -14,14 +16,13 @@ import {
   weekdayOf,
 } from "./occurrence";
 import {
-  dueStatus,
-  nextDue,
   dueSortKey,
-  useHobbies,
+  dueStatus,
   type Hobby,
   type HobbyTask,
+  nextDue,
+  useHobbies,
 } from "./useHobbies";
-import styles from "./Dashboard.module.css";
 
 type TaskRef = { hobby: Hobby; task: HobbyTask };
 

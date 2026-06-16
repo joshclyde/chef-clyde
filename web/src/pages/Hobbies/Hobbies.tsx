@@ -1,9 +1,10 @@
-import { useState } from "react";
 import { Plus } from "lucide-react";
+import { useState } from "react";
+
 import { Button, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
+import styles from "./Hobbies.module.css";
 import { HobbyCard } from "./HobbyCard";
 import { useHobbies } from "./useHobbies";
-import styles from "./Hobbies.module.css";
 
 export default function Hobbies() {
   const {

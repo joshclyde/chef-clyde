@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+
 import { TextareaWithSubmit } from "../../ui";
 import styles from "./Chat.module.css";
 

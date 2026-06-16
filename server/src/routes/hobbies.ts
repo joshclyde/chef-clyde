@@ -2,14 +2,7 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { FrequencyUnit, Completion } from "../types/chore";
-import type {
-  DayOfWeek,
-  Hobby,
-  HobbyTask,
-  Occurrence,
-  TimeOfDay,
-} from "../types/hobby";
+
 import {
   getHobbiesDir,
   getSoftDeleteDir,
@@ -17,6 +10,14 @@ import {
   readHobby,
   writeHobby,
 } from "../db/hobbies";
+import type { Completion,FrequencyUnit } from "../types/chore";
+import type {
+  DayOfWeek,
+  Hobby,
+  HobbyTask,
+  Occurrence,
+  TimeOfDay,
+} from "../types/hobby";
 
 const router = express.Router();
 

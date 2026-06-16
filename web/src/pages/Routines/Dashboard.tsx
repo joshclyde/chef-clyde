@@ -1,6 +1,8 @@
 import { useMemo } from "react";
+
 import { Card, Heading, Stack, Text } from "../../ui";
 import { DAY_PART_LABEL, DAY_PARTS } from "./constants";
+import styles from "./Dashboard.module.css";
 import {
   describeOccurrence,
   localIsoDate,
@@ -10,11 +12,10 @@ import {
 } from "./occurrence";
 import {
   frequencyDays,
-  useRoutines,
   type Routine,
   type TimeOfDay,
+  useRoutines,
 } from "./useRoutines";
-import styles from "./Dashboard.module.css";
 
 /** Order routines within a day so morning items sit above night ones. */
 const TOD_ORDER: Record<TimeOfDay, number> = {

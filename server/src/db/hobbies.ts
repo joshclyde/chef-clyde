@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+
 import type { Hobby } from "../types/hobby";
 
 export function getHobbiesDir(): string {

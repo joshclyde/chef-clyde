@@ -1,11 +1,11 @@
+export { Badge } from "./Badge/Badge";
 export { Button } from "./Button/Button";
+export { Card } from "./Card/Card";
+export { Heading } from "./Heading/Heading";
+export { Inline } from "./Inline/Inline";
 export { Input } from "./Input/Input";
 export { Select } from "./Select/Select";
+export { Stack } from "./Stack/Stack";
+export { Text } from "./Text/Text";
 export { Textarea } from "./Textarea/Textarea";
 export { TextareaWithSubmit } from "./TextareaWithSubmit/TextareaWithSubmit";
-export { Card } from "./Card/Card";
-export { Badge } from "./Badge/Badge";
-export { Text } from "./Text/Text";
-export { Heading } from "./Heading/Heading";
-export { Stack } from "./Stack/Stack";
-export { Inline } from "./Inline/Inline";

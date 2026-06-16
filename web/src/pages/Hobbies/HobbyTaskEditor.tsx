@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+
 import { Button, Inline, Input, Select, Stack, Text } from "../../ui";
 import { DAYS_OF_WEEK, FREQUENCY_UNITS, OCCURRENCE_KINDS, TIMES_OF_DAY } from "./constants";
+import styles from "./Hobbies.module.css";
 import type {
   DayOfWeek,
   FrequencyUnit,
@@ -10,7 +12,6 @@ import type {
   OccurrenceKind,
   TimeOfDay,
 } from "./useHobbies";
-import styles from "./Hobbies.module.css";
 
 type HobbyTaskEditorProps = {
   initial?: HobbyTask;

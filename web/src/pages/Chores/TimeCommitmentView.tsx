@@ -1,13 +1,13 @@
 import { Card, Heading, Inline, Stack, Text } from "../../ui";
 import {
+  type BreakdownRow,
   formatMinutes,
   timeCommitment,
   weeklyMinutesByFloor,
   weeklyMinutesByRoom,
-  type BreakdownRow,
 } from "./choreStats";
-import type { Chore } from "./useChores";
 import styles from "./Dashboard.module.css";
+import type { Chore } from "./useChores";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (

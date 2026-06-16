@@ -1,6 +1,7 @@
 import express from "express";
-import type { ChatMode } from "../types/chat";
+
 import { generateChatResponse } from "../services/chat";
+import type { ChatMode } from "../types/chat";
 
 const router = express.Router();
 

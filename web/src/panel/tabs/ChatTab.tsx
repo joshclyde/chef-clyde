@@ -1,4 +1,5 @@
 import { useLocation } from "react-router-dom";
+
 import { activityForPath } from "../../layout/activities";
 import { chatConfigForActivity } from "../chat/chatConfigs";
 import { ChatView } from "../chat/ChatView";

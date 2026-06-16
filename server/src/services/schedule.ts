@@ -1,21 +1,22 @@
 import Anthropic from "@anthropic-ai/sdk";
+
 import { readScheduleInstructions } from "../db/scheduleInstructions";
 import { readAllSchedules } from "../db/schedules";
 import type { Chore, Completion, FrequencyUnit } from "../types/chore";
-import type { TaskStatus } from "../types/schedule";
-import type { Todo } from "../types/todo";
 import type { DayOfWeek, Hobby } from "../types/hobby";
 import type { Routine } from "../types/routine";
+import type { TaskStatus } from "../types/schedule";
+import type { Todo } from "../types/todo";
 import {
   buildChoreLinkingInstructions,
   buildHobbyLinkingInstructions,
   buildRoutineLinkingInstructions,
   buildTodoLinkingInstructions,
   MOCK_TASKS,
-  TASK_JSON_SCHEMA,
-  validateTasks,
   type ParseError,
   type ParseSuccess,
+  TASK_JSON_SCHEMA,
+  validateTasks,
 } from "./scheduleParser";
 
 const anthropic = new Anthropic();

@@ -1,6 +1,7 @@
 import { type ComponentType } from "react";
-import { type ChatMode, type Message, MODE_CONFIG } from "./types";
+
 import { SaveRecipeAction } from "./SaveRecipeAction";
+import { type ChatMode, type Message, MODE_CONFIG } from "./types";
 
 export type ModeOption = {
   id: ChatMode;

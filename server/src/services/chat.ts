@@ -1,6 +1,7 @@
+import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+
 import type { ChatMode } from "../types/chat";
 
 const anthropic = new Anthropic();

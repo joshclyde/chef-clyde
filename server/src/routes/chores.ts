@@ -2,7 +2,7 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { Chore, Completion, FrequencyUnit } from "../types/chore";
+
 import {
   getChoresDir,
   getSoftDeleteDir,
@@ -10,6 +10,7 @@ import {
   readChore,
   writeChore,
 } from "../db/chores";
+import type { Chore, Completion, FrequencyUnit } from "../types/chore";
 
 const router = express.Router();
 

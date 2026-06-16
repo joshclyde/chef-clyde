@@ -1,28 +1,29 @@
+import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+
 import { Button, Heading, Inline, Input, Stack, Text, Textarea } from "../../ui";
 import {
-  useChores,
+  type Chore,
+  dueSortKey,
   dueStatus,
   nextDue,
-  dueSortKey,
-  type Chore,
+  useChores,
 } from "../Chores/useChores";
+import { describeOccurrence } from "../Hobbies/occurrence";
 import {
-  useTodos,
-  dueStatus as todoDueStatus,
-  dueSortKey as todoDueSortKey,
-  type Todo,
-} from "../Todos/useTodos";
-import {
-  useHobbies,
   dueStatus as hobbyDueStatus,
   type Hobby,
+  useHobbies,
 } from "../Hobbies/useHobbies";
-import { describeOccurrence } from "../Hobbies/occurrence";
-import type { Schedule } from "./useSchedules";
+import {
+  dueSortKey as todoDueSortKey,
+  dueStatus as todoDueStatus,
+  type Todo,
+  useTodos,
+} from "../Todos/useTodos";
 import styles from "./Schedule.module.css";
+import type { Schedule } from "./useSchedules";
 
 /** "Mon, Jun 8" from a "YYYY-MM-DD" string, with no timezone shift. */
 function shortDateStr(date: string) {

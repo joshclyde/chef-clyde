@@ -1,6 +1,6 @@
 import { Button, Heading, Inline, Stack, Text } from "../../ui";
-import { usePanel } from "../usePanel";
 import { type PanelPosition } from "../PanelContext";
+import { usePanel } from "../usePanel";
 
 const POSITIONS: { id: PanelPosition; label: string }[] = [
   { id: "right", label: "Right" },

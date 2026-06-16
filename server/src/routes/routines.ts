@@ -2,9 +2,7 @@ import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import type { FrequencyUnit, Completion } from "../types/chore";
-import type { DayOfWeek, TimeOfDay } from "../types/hobby";
-import type { Routine, RoutineOccurrence } from "../types/routine";
+
 import {
   getRoutinesDir,
   getSoftDeleteDir,
@@ -12,6 +10,9 @@ import {
   readRoutine,
   writeRoutine,
 } from "../db/routines";
+import type { Completion,FrequencyUnit } from "../types/chore";
+import type { DayOfWeek, TimeOfDay } from "../types/hobby";
+import type { Routine, RoutineOccurrence } from "../types/routine";
 
 const router = express.Router();
 

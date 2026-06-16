@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode,useEffect, useState } from "react";
+
 import {
-  ThemeContext,
-  THEME_STORAGE_KEY,
   type Theme,
+  THEME_STORAGE_KEY,
+  ThemeContext,
 } from "./ThemeContext";
 
 function getInitialTheme(): Theme {

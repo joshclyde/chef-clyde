@@ -4,8 +4,8 @@ import {
   ChefHat,
   Gamepad2,
   ListTodo,
-  Repeat2,
   type LucideIcon,
+  Repeat2,
 } from "lucide-react";
 
 export type NavItem = { label: string; path: string; end?: boolean };

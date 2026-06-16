@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -7,6 +6,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { useState } from "react";
+
 import {
   Badge,
   Button,
@@ -18,6 +19,7 @@ import {
   Text,
   Textarea,
 } from "../../ui";
+import styles from "./Hobbies.module.css";
 import { HobbyTaskEditor } from "./HobbyTaskEditor";
 import { describeOccurrence, parseLocalDate, shortDate } from "./occurrence";
 import {
@@ -27,7 +29,6 @@ import {
   type HobbyTask,
   type HobbyTaskInput,
 } from "./useHobbies";
-import styles from "./Hobbies.module.css";
 
 function tasksToInput(tasks: HobbyTask[]): HobbyTaskInput[] {
   return tasks.map((t) => ({

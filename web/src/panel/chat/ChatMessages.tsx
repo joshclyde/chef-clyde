@@ -1,8 +1,9 @@
-import { useRef, useEffect } from "react";
 import { Sparkles } from "lucide-react";
-import { type Message } from "./types";
+import { useEffect,useRef } from "react";
+
 import { cn } from "../../ui/cn";
 import styles from "./Chat.module.css";
+import { type Message } from "./types";
 
 /** Small iridescent sparkle that marks a message as coming from the AI. */
 function AiMark() {

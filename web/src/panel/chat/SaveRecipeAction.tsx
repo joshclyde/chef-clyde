@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { Button, Inline, Text } from "../../ui";
 import { type Message } from "./types";
 
@@ -20,14 +21,16 @@ export function SaveRecipeAction({ messages }: { messages: Message[] }) {
     })
       .then((res) => {
         if (!res.ok)
-          return res.json().then((d) => Promise.reject(d.error ?? "Save failed"));
+          return res.json().then((d: { error?: string }) =>
+            Promise.reject(new Error(d.error ?? "Save failed")),
+          );
         return res.json();
       })
       .then((data: { recipe: { id: string } }) => {
         setSavedId(data.recipe.id);
       })
       .catch((err: unknown) => {
-        setError(typeof err === "string" ? err : "Failed to save recipe.");
+        setError(err instanceof Error ? err.message : "Failed to save recipe.");
       })
       .finally(() => setSaving(false));
   };

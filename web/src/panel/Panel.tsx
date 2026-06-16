@@ -1,9 +1,10 @@
 import { PanelBottom, PanelRight, X } from "lucide-react";
+
 import { cn } from "../ui/cn";
-import { usePanel } from "./usePanel";
-import { panelTabs } from "./panelTabs";
-import { PanelResizeHandle } from "./PanelResizeHandle";
 import styles from "./Panel.module.css";
+import { PanelResizeHandle } from "./PanelResizeHandle";
+import { panelTabs } from "./panelTabs";
+import { usePanel } from "./usePanel";
 
 export function Panel() {
   const { position, activeTab, width, height, setActiveTab, togglePosition, setOpen } =

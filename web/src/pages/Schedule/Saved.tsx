@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   BrushCleaning,
   ChevronDown,
@@ -7,17 +6,19 @@ import {
   ListTodo,
   Repeat2,
 } from "lucide-react";
+import { useState } from "react";
+
+import { todayLocal } from "../../lib/date";
 import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
-import { todayLocal } from "../../lib/date";
-import {
-  useSchedules,
-  type Schedule,
-  type ScheduleTask,
-} from "./useSchedules";
-import { ScheduleGenerator } from "./ScheduleGenerator";
 import { formatTimeRange } from "./dailyTime";
 import styles from "./Schedule.module.css";
+import { ScheduleGenerator } from "./ScheduleGenerator";
+import {
+  type Schedule,
+  type ScheduleTask,
+  useSchedules,
+} from "./useSchedules";
 
 /** Format a "YYYY-MM-DD" string as a readable local date (no TZ shift). */
 function formatDate(date: string) {

@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+
 import { cn } from "../ui/cn";
 import { type Activity } from "./activities";
 import styles from "./Sidebar.module.css";

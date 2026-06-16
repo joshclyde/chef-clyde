@@ -1,8 +1,9 @@
 import { Moon, PanelRight, Sparkles, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../theme/useTheme";
+
 import { useAiMotion } from "../ai/useAiMotion";
 import { usePanel } from "../panel/usePanel";
+import { useTheme } from "../theme/useTheme";
 import { cn } from "../ui/cn";
 import { activities, type Activity } from "./activities";
 import styles from "./ActivityBar.module.css";
