@@ -6,7 +6,7 @@ import {
   ListTodo,
   Repeat2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { todayLocal } from "../../lib/date";
 import {
@@ -179,7 +179,15 @@ function TaskList({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // When on, hide tasks the user has already resolved and show only pending ones.
-  const [onlyUnresolved, setOnlyUnresolved] = useState(false);
+  const [onlyUnresolved, setOnlyUnresolved] = useState(
+    () => localStorage.getItem("schedule-daily-only-unresolved") === "true",
+  );
+  useEffect(() => {
+    localStorage.setItem(
+      "schedule-daily-only-unresolved",
+      String(onlyUnresolved),
+    );
+  }, [onlyUnresolved]);
   const tasks = schedule.tasks ?? [];
   // A task is "resolved" once the user gives it any terminal outcome.
   const resolved = tasks.filter((t) => t.status !== "pending").length;
