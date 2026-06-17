@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Gamepad2,
   ListTodo,
+  Pencil,
   Repeat2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -27,7 +28,9 @@ import { type Todo, useTodos } from "../Todos/useTodos";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
 import styles from "./Schedule.module.css";
 import { ScheduleGenerator } from "./ScheduleGenerator";
+import { TaskEditor } from "./TaskEditor";
 import {
+  type NewTaskInput,
   type Schedule,
   type ScheduleTask,
   type TaskPatch,
@@ -167,16 +170,24 @@ function TaskList({
   hobbies,
   routines,
   onUpdate,
+  onAddTask,
+  onDeleteTask,
 }: {
-  schedule: Schedule;
+  schedule: Schedule | undefined;
   chores: Chore[];
   todos: Todo[];
   hobbies: Hobby[];
   routines: Routine[];
   onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
+  onAddTask: (input: NewTaskInput) => Promise<void>;
+  onDeleteTask: (id: string, taskId: string) => Promise<void>;
 }) {
   const now = useNow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  // The task id (or "new") currently saving, so its editor can show progress.
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // When on, hide tasks the user has already resolved and show only pending ones.
   const [onlyUnresolved, setOnlyUnresolved] = useState(
@@ -188,17 +199,62 @@ function TaskList({
       String(onlyUnresolved),
     );
   }, [onlyUnresolved]);
-  const tasks = schedule.tasks ?? [];
+  const scheduleId = schedule?.id;
+  const tasks = schedule?.tasks ?? [];
   // A task is "resolved" once the user gives it any terminal outcome.
   const resolved = tasks.filter((t) => t.status !== "pending").length;
   const allResolved = tasks.length > 0 && resolved === tasks.length;
 
   async function update(taskId: string, patch: TaskPatch) {
+    if (!scheduleId) return;
     setError(null);
     try {
-      await onUpdate(schedule.id, taskId, patch);
+      await onUpdate(scheduleId, taskId, patch);
     } catch {
       setError("Failed to update task. Please try again.");
+    }
+  }
+
+  // Persist a label/time edit from the inline editor, closing it on success.
+  async function saveEdit(taskId: string, values: NewTaskInput) {
+    if (!scheduleId) return;
+    setError(null);
+    setBusyId(taskId);
+    try {
+      await onUpdate(scheduleId, taskId, values);
+      setEditingId(null);
+    } catch {
+      setError("Failed to update task. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function removeTask(taskId: string) {
+    if (!scheduleId) return;
+    setError(null);
+    setBusyId(taskId);
+    try {
+      await onDeleteTask(scheduleId, taskId);
+      setEditingId(null);
+    } catch {
+      setError("Failed to delete task. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Add a task. The parent creates today's schedule first if none exists yet.
+  async function addTask(values: NewTaskInput) {
+    setError(null);
+    setBusyId("new");
+    try {
+      await onAddTask(values);
+      setCreating(false);
+    } catch {
+      setError("Failed to add task. Please try again.");
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -208,9 +264,18 @@ function TaskList({
         <Inline justify="between">
           <Heading level={2}>Today's schedule</Heading>
           <Inline gap="sm">
-            <Text variant="muted" size="sm">
-              {resolved}/{tasks.length} resolved
-            </Text>
+            {tasks.length > 0 && (
+              <Text variant="muted" size="sm">
+                {resolved}/{tasks.length} resolved
+              </Text>
+            )}
+            <Button
+              size="sm"
+              onClick={() => setCreating(true)}
+              disabled={creating}
+            >
+              New task
+            </Button>
             <Button
               size="sm"
               variant={onlyUnresolved ? "primary" : "secondary"}
@@ -227,6 +292,12 @@ function TaskList({
           </Text>
         )}
         <Stack gap="2xs">
+          {tasks.length === 0 && !creating && (
+            <Text variant="muted" size="sm">
+              No tasks yet — add one with the New task button, or generate a
+              plan below.
+            </Text>
+          )}
           {onlyUnresolved && allResolved && (
             <Text variant="muted" size="sm">
               No unresolved tasks — everything's resolved for today.
@@ -238,6 +309,19 @@ function TaskList({
             if (onlyUnresolved && task.status !== "pending") return null;
             const status = taskStatus(tasks, i, now);
             const expanded = expandedId === task.id;
+            if (editingId === task.id) {
+              return (
+                <div key={task.id} className={styles.taskRow}>
+                  <TaskEditor
+                    initial={task}
+                    submitting={busyId === task.id}
+                    onSubmit={(values) => saveEdit(task.id, values)}
+                    onCancel={() => setEditingId(null)}
+                    onDelete={() => removeTask(task.id)}
+                  />
+                </div>
+              );
+            }
             return (
               <div key={task.id} className={cn(styles.taskRow, styles[status])}>
                 <div className={styles.taskMain}>
@@ -338,6 +422,17 @@ function TaskList({
                   <button
                     type="button"
                     className={styles.expandButton}
+                    aria-label="Edit task"
+                    onClick={() => {
+                      setEditingId(task.id);
+                      setExpandedId(null);
+                    }}
+                  >
+                    <Pencil size={16} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.expandButton}
                     aria-expanded={expanded}
                     aria-label={expanded ? "Collapse task" : "Expand task"}
                     onClick={() => setExpandedId(expanded ? null : task.id)}
@@ -360,6 +455,15 @@ function TaskList({
               </div>
             );
           })}
+          {creating && (
+            <div className={styles.taskRow}>
+              <TaskEditor
+                submitting={busyId === "new"}
+                onSubmit={addTask}
+                onCancel={() => setCreating(false)}
+              />
+            </div>
+          )}
         </Stack>
       </Stack>
     </Card>
@@ -375,6 +479,8 @@ export default function ScheduleDaily() {
     generateTasks,
     previewPrompt,
     updateTask,
+    addTask,
+    deleteTask,
   } = useSchedules();
   const { chores } = useChores();
   const { todos } = useTodos();
@@ -383,6 +489,14 @@ export default function ScheduleDaily() {
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
   const hasTasks = (schedule?.tasks?.length ?? 0) > 0;
+
+  // Adding a task needs a schedule to attach to; create today's on the fly the
+  // first time if the user hasn't planned the day yet.
+  async function handleAddTask(input: NewTaskInput) {
+    const target =
+      schedule ?? (await createSchedule({ date: today, dayContext: "" }));
+    await addTask(target.id, input);
+  }
 
   const header = (
     <Stack gap="2xs">
@@ -405,16 +519,16 @@ export default function ScheduleDaily() {
       {header}
       {error && <Text variant="danger">{error}</Text>}
 
-      {hasTasks && schedule && (
-        <TaskList
-          schedule={schedule}
-          chores={chores}
-          todos={todos}
-          hobbies={hobbies}
-          routines={routines}
-          onUpdate={updateTask}
-        />
-      )}
+      <TaskList
+        schedule={schedule}
+        chores={chores}
+        todos={todos}
+        hobbies={hobbies}
+        routines={routines}
+        onUpdate={updateTask}
+        onAddTask={handleAddTask}
+        onDeleteTask={deleteTask}
+      />
 
       <Card>
         <ScheduleGenerator

@@ -102,6 +102,14 @@
   background: var(--color-bg-subtle);
 }
 
+/* inline editor that fills a task row when adding or editing a task */
+.taskEditor {
+  padding: var(--space-sm) var(--space-md);
+}
+.timeInput {
+  max-width: 140px;
+}
+
 .expandButton {
   flex-shrink: 0;
   display: inline-flex;
