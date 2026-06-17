@@ -36,13 +36,23 @@ export type ScheduleInput = {
 
 /**
  * Fields accepted by the task PATCH endpoint. `choreId`/`todoId: null` clears
- * the respective link.
+ * the respective link; `endTime: null` makes the task open-ended.
  */
 export type TaskPatch = {
   status?: TaskStatus;
   notes?: string;
+  label?: string;
+  startTime?: string;
+  endTime?: string | null;
   choreId?: string | null;
   todoId?: string | null;
+};
+
+/** The fields needed to create a task via the POST endpoint. */
+export type NewTaskInput = {
+  label: string;
+  startTime: string; // 24h "HH:MM"
+  endTime: string | null; // 24h "HH:MM" or null when open-ended
 };
 
 export function useSchedules() {
@@ -176,6 +186,33 @@ export function useSchedules() {
     }
   }
 
+  /** Add a user-authored task to a day; the server returns the re-sorted day. */
+  async function addTask(scheduleId: string, input: NewTaskInput) {
+    const res = await fetch(`/api/schedules/${scheduleId}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error("Failed to add task");
+    const data = (await res.json()) as { schedule: Schedule };
+    setSchedules((prev) =>
+      prev.map((s) => (s.id === scheduleId ? data.schedule : s)),
+    );
+    return data.schedule;
+  }
+
+  /** Remove a task from a day, reconciling with the server's updated schedule. */
+  async function deleteTask(scheduleId: string, taskId: string) {
+    const res = await fetch(`/api/schedules/${scheduleId}/tasks/${taskId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete task");
+    const data = (await res.json()) as { schedule: Schedule };
+    setSchedules((prev) =>
+      prev.map((s) => (s.id === scheduleId ? data.schedule : s)),
+    );
+  }
+
   return {
     schedules,
     loading,
@@ -186,5 +223,7 @@ export function useSchedules() {
     generateTasks,
     previewPrompt,
     updateTask,
+    addTask,
+    deleteTask,
   };
 }

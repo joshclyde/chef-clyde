@@ -29,6 +29,16 @@ function openTodos() {
 const router = express.Router();
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/; // 24h "HH:MM"
+
+/**
+ * Keep a day's tasks chronological by start time. The daily view's time-of-day
+ * styling (see web `dailyTime.ts`) assumes this order, so every insert or
+ * start-time edit must re-sort. Zero-padded 24h strings sort lexically.
+ */
+function sortTasks(tasks: ScheduleTask[]): ScheduleTask[] {
+  return [...tasks].sort((a, b) => a.startTime.localeCompare(b.startTime));
+}
 
 router.get("/", (_req, res) => {
   res.json({ schedules: readAllSchedules() });
@@ -356,15 +366,27 @@ function logLinkedRoutineCompletion(task: ScheduleTask): void {
 // optional, but at least one must be present. `choreId: null` clears the link.
 router.patch("/:id/tasks/:taskId", (req, res) => {
   const { id, taskId } = req.params;
-  const { status, notes, choreId, todoId, hobbyTaskId, routineId } =
-    req.body as {
-      status?: unknown;
-      notes?: unknown;
-      choreId?: unknown;
-      todoId?: unknown;
-      hobbyTaskId?: unknown;
-      routineId?: unknown;
-    };
+  const {
+    status,
+    notes,
+    label,
+    startTime,
+    endTime,
+    choreId,
+    todoId,
+    hobbyTaskId,
+    routineId,
+  } = req.body as {
+    status?: unknown;
+    notes?: unknown;
+    label?: unknown;
+    startTime?: unknown;
+    endTime?: unknown;
+    choreId?: unknown;
+    todoId?: unknown;
+    hobbyTaskId?: unknown;
+    routineId?: unknown;
+  };
 
   if (status !== undefined && !TASK_STATUSES.includes(status as TaskStatus)) {
     res.status(400).json({
@@ -374,6 +396,28 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   }
   if (notes !== undefined && typeof notes !== "string") {
     res.status(400).json({ error: "notes must be a string" });
+    return;
+  }
+  if (
+    label !== undefined &&
+    (typeof label !== "string" || label.trim() === "")
+  ) {
+    res.status(400).json({ error: "label must be a non-empty string" });
+    return;
+  }
+  if (
+    startTime !== undefined &&
+    (typeof startTime !== "string" || !TIME_PATTERN.test(startTime))
+  ) {
+    res.status(400).json({ error: "startTime must be HH:MM (24h)" });
+    return;
+  }
+  if (
+    endTime !== undefined &&
+    endTime !== null &&
+    (typeof endTime !== "string" || !TIME_PATTERN.test(endTime))
+  ) {
+    res.status(400).json({ error: "endTime must be HH:MM (24h) or null" });
     return;
   }
   if (
@@ -407,6 +451,9 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   if (
     status === undefined &&
     notes === undefined &&
+    label === undefined &&
+    startTime === undefined &&
+    endTime === undefined &&
     choreId === undefined &&
     todoId === undefined &&
     hobbyTaskId === undefined &&
@@ -414,7 +461,7 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
   ) {
     res.status(400).json({
       error:
-        "status, notes, choreId, todoId, hobbyTaskId, or routineId is required",
+        "status, notes, label, startTime, endTime, choreId, todoId, hobbyTaskId, or routineId is required",
     });
     return;
   }
@@ -447,6 +494,19 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     res.status(400).json({ error: "Routine not found" });
     return;
   }
+
+  // Reject an end that lands before the start, comparing against whichever
+  // value this edit leaves in place.
+  const nextStart = startTime === undefined ? task.startTime : startTime;
+  const nextEnd = endTime === undefined ? task.endTime : endTime;
+  if (nextEnd !== null && nextEnd < nextStart) {
+    res.status(400).json({ error: "endTime must not be before startTime" });
+    return;
+  }
+
+  if (label !== undefined) task.label = label.trim();
+  if (startTime !== undefined) task.startTime = startTime;
+  if (endTime !== undefined) task.endTime = endTime;
 
   if (notes !== undefined) task.notes = notes;
 
@@ -507,6 +567,88 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     removeLinkedRoutineCompletion(task);
   }
 
+  // A changed start time can move this task within the day; keep order intact.
+  if (startTime !== undefined && schedule.tasks) {
+    schedule.tasks = sortTasks(schedule.tasks);
+  }
+
+  schedule.updatedAt = new Date().toISOString();
+  writeSchedule(schedule);
+  res.status(200).json({ schedule });
+});
+
+// Add a single user-authored task to a day. Tasks are otherwise produced in
+// bulk by /generate; this lets the user insert one by hand. Kept chronological.
+router.post("/:id/tasks", (req, res) => {
+  const { id } = req.params;
+  const { label, startTime, endTime } = req.body as {
+    label?: unknown;
+    startTime?: unknown;
+    endTime?: unknown;
+  };
+
+  if (typeof label !== "string" || label.trim() === "") {
+    res.status(400).json({ error: "label is required" });
+    return;
+  }
+  if (typeof startTime !== "string" || !TIME_PATTERN.test(startTime)) {
+    res.status(400).json({ error: "startTime must be HH:MM (24h)" });
+    return;
+  }
+  if (
+    endTime !== undefined &&
+    endTime !== null &&
+    (typeof endTime !== "string" || !TIME_PATTERN.test(endTime))
+  ) {
+    res.status(400).json({ error: "endTime must be HH:MM (24h) or null" });
+    return;
+  }
+  if (typeof endTime === "string" && endTime < startTime) {
+    res.status(400).json({ error: "endTime must not be before startTime" });
+    return;
+  }
+
+  const schedule = readSchedule(id);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule not found" });
+    return;
+  }
+
+  const task: ScheduleTask = {
+    id: crypto.randomUUID(),
+    startTime,
+    endTime: typeof endTime === "string" ? endTime : null,
+    label: label.trim(),
+    status: "pending",
+  };
+  schedule.tasks = sortTasks([...(schedule.tasks ?? []), task]);
+  schedule.updatedAt = new Date().toISOString();
+  writeSchedule(schedule);
+  res.status(201).json({ schedule });
+});
+
+// Delete a single task. If it had logged completions on a linked chore / to-do
+// / hobby / routine (i.e. it was completed), undo those first so nothing is
+// left orphaned — the same bookkeeping as moving a task out of "completed".
+router.delete("/:id/tasks/:taskId", (req, res) => {
+  const { id, taskId } = req.params;
+  const schedule = readSchedule(id);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule not found" });
+    return;
+  }
+  const task = schedule.tasks?.find((t) => t.id === taskId);
+  if (!task) {
+    res.status(404).json({ error: "Task not found" });
+    return;
+  }
+
+  removeLinkedCompletion(task);
+  clearLinkedTodo(task);
+  removeLinkedHobbyTaskCompletion(task);
+  removeLinkedRoutineCompletion(task);
+
+  schedule.tasks = (schedule.tasks ?? []).filter((t) => t.id !== taskId);
   schedule.updatedAt = new Date().toISOString();
   writeSchedule(schedule);
   res.status(200).json({ schedule });
