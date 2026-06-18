@@ -1,0 +1,49 @@
+{
+  "id": "fixture-schedule-2026-06-17",
+  "date": "2026-06-17",
+  "dayContext": "A normal weekday. Code in the morning, run an errand in the afternoon.",
+  "tasks": [
+    {
+      "id": "fixture-task-coffee",
+      "startTime": "07:00",
+      "endTime": "07:15",
+      "label": "Make coffee",
+      "status": "completed",
+      "routineId": "fixture-routine-coffee"
+    },
+    {
+      "id": "fixture-task-code",
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "label": "Coding block",
+      "status": "pending"
+    },
+    {
+      "id": "fixture-task-plants",
+      "startTime": "13:00",
+      "endTime": "13:10",
+      "label": "Water the plants",
+      "status": "pending",
+      "choreId": "fixture-chore-plants"
+    },
+    {
+      "id": "fixture-task-oil-change",
+      "startTime": "15:00",
+      "endTime": null,
+      "label": "Schedule car oil change",
+      "status": "future",
+      "notes": "Call the shop.",
+      "todoId": "fixture-todo-oil-change"
+    },
+    {
+      "id": "fixture-task-stretch",
+      "startTime": "21:30",
+      "endTime": "21:45",
+      "label": "Evening stretch",
+      "status": "pending",
+      "routineId": "fixture-routine-stretch"
+    }
+  ],
+  "createdAt": "2026-06-17T06:00:00.000Z",
+  "updatedAt": "2026-06-17T07:15:00.000Z"
+}

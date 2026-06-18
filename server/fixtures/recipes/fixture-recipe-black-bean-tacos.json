@@ -1,0 +1,35 @@
+{
+  "id": "fixture-recipe-black-bean-tacos",
+  "name": "Black Bean Tacos",
+  "description": "Quick weeknight tacos with seasoned black beans.",
+  "servings": 4,
+  "prepTime": 10,
+  "cookTime": 15,
+  "ingredients": [
+    {
+      "amount": "2",
+      "unit": "cans",
+      "name": "black beans",
+      "notes": "drained and rinsed"
+    },
+    { "amount": "8", "unit": "", "name": "corn tortillas" },
+    { "amount": "1", "unit": "tsp", "name": "cumin" },
+    { "amount": "1", "unit": "tbsp", "name": "olive oil" }
+  ],
+  "steps": [
+    "Warm the olive oil in a skillet over medium heat.",
+    "Add the black beans and cumin; cook until heated through, about 5 minutes.",
+    "Warm the tortillas and fill with the beans.",
+    "Top as desired and serve."
+  ],
+  "tags": ["vegetarian", "quick"],
+  "savedAt": "2026-05-20T18:00:00.000Z",
+  "notes": [
+    {
+      "id": "fixture-recipe-tacos-n1",
+      "content": "Great with a squeeze of lime.",
+      "createdAt": "2026-05-21T18:00:00.000Z",
+      "updatedAt": "2026-05-21T18:00:00.000Z"
+    }
+  ]
+}

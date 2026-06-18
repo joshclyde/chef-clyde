@@ -1,0 +1,8 @@
+{
+  "id": "fixture-todo-oil-change",
+  "title": "Schedule car oil change",
+  "dueDate": "2026-06-20",
+  "notes": "Due around 30k miles.",
+  "createdAt": "2026-06-12T12:00:00.000Z",
+  "updatedAt": "2026-06-12T12:00:00.000Z"
+}

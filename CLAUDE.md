@@ -20,6 +20,39 @@ Available configs:
 Start each config you need with its own `preview_start` call so both servers show up as
 stoppable entries in the Preview dropdown.
 
+## Environments & data
+
+The database is a directory of JSON files; its location is the single env var
+`DB_PATH` (validated in [server/src/index.ts](server/src/index.ts), used by every
+module in [server/src/db/](server/src/db/)). One knob selects the environment:
+
+| Mode | Who | `DB_PATH` |
+|------|-----|-----------|
+| **Production** | The one clone you run for yourself (native) | `~/chef-clyde-data/production` (outside every clone) |
+| **Test (native)** | Any other clone | `<that-clone>/database` (git-ignored), seeded from fixtures |
+| **Test (container)** | The dev container | `/workspace/database` (set in devcontainer.json), seeded on create |
+
+Production data lives **outside all clones**, so any number of clones develop in
+parallel without collisions, and the dev container never touches it. `node
+--env-file` does **not** expand `~`/variables — every path in a `.env` must be
+absolute. See [README.md](README.md) for first-time setup and the one-time
+production relocation.
+
+Data scripts (run from `server/`):
+
+- `npm run db:seed` — copy committed fixtures (`server/fixtures/`) into `DB_PATH`,
+  skipping existing files (`-- --force` to overwrite). Refuses to run against the
+  production directory.
+- `npm run db:backup` — copy `DB_PATH` into a timestamped folder under
+  `~/chef-clyde-data/backups/`. Run it from the production environment.
+
+## Scripting
+
+Project scripts are written in **TypeScript** (in [server/src/scripts/](server/src/scripts/),
+run via `node -r ts-node/register`), not shell scripts. The bash files under
+[.devcontainer/](.devcontainer/) (`setup.sh`, `init-firewall.sh`) are the exception —
+they are container provisioning, not application scripts.
+
 ## Running in the dev container
 
 This repo ships a hardened dev container ([.devcontainer/](.devcontainer/)) for running

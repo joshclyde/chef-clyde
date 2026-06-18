@@ -7,6 +7,14 @@ echo "==> Installing dependencies"
 (cd /workspace/web && npm install)
 (cd /workspace/server && npm install)
 
+# Seed the container's test database from committed fixtures so data-backed pages
+# work immediately. The container never sees production (DB_PATH=/workspace/database
+# from containerEnv); we invoke the script directly rather than via `npm run db:seed`
+# so it doesn't depend on a server/.env file existing yet. Idempotent: existing
+# files are skipped.
+echo "==> Seeding test database from fixtures"
+(cd /workspace/server && DB_PATH="${DB_PATH:-/workspace/database}" TS_NODE_FILES=true node -r ts-node/register src/scripts/db-seed.ts)
+
 echo "==> Configuring git (container-global only; does not touch the host repo config)"
 # Trust the bind-mounted workspace regardless of UID mismatch.
 git config --global --add safe.directory /workspace
