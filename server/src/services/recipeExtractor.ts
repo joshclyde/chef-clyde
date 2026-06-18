@@ -1,8 +1,67 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 import type { Recipe } from "../types/recipe";
+import {
+  type AiOptions,
+  type AiUsage,
+  buildModelParams,
+  MOCK_USAGE,
+  toUsage,
+} from "./aiOptions";
 
 const anthropic = new Anthropic();
+
+/**
+ * JSON Schema for `output_config.format` so the extractor returns schema-valid
+ * JSON. The `anyOf` keeps the existing "no recipe found" signal — the model can
+ * emit `{ "error": "no_recipe_found" }` instead of a recipe.
+ */
+const RECIPE_OUTPUT_SCHEMA = {
+  anyOf: [
+    {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        description: { type: "string" },
+        servings: { type: "number" },
+        prepTime: { type: "integer" },
+        cookTime: { type: "integer" },
+        ingredients: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              amount: { type: "string" },
+              unit: { type: "string" },
+              name: { type: "string" },
+              notes: { type: "string" },
+            },
+            required: ["amount", "unit", "name"],
+            additionalProperties: false,
+          },
+        },
+        steps: { type: "array", items: { type: "string" } },
+        tags: { type: "array", items: { type: "string" } },
+      },
+      required: [
+        "name",
+        "description",
+        "servings",
+        "prepTime",
+        "cookTime",
+        "ingredients",
+        "steps",
+      ],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: { error: { type: "string", const: "no_recipe_found" } },
+      required: ["error"],
+      additionalProperties: false,
+    },
+  ],
+};
 
 const EXTRACTION_SYSTEM_PROMPT = `You are a recipe data extractor. Your only job is to read a cooking conversation and output a single valid JSON object that matches the schema below. Output ONLY the raw JSON — no markdown fences, no explanation, no prose before or after.
 
@@ -24,11 +83,15 @@ Schema:
 const EXTRACTION_USER_MESSAGE =
   "Based on the recipe discussed in this conversation, extract the complete recipe and return it as JSON matching the schema in your instructions. Include all ingredients and all steps.";
 
-type ExtractionSuccess = { recipe: Omit<Recipe, "id" | "savedAt"> };
+type ExtractionSuccess = {
+  recipe: Omit<Recipe, "id" | "savedAt">;
+  usage: AiUsage;
+};
 type ExtractionError = { error: string };
 
 export async function extractRecipe(
   messages: { role: "user" | "assistant"; content: string }[],
+  opts: AiOptions,
 ): Promise<ExtractionSuccess | ExtractionError> {
   const extractionMessages = [
     ...messages,
@@ -36,6 +99,7 @@ export async function extractRecipe(
   ];
 
   let rawText: string;
+  let usage: AiUsage = MOCK_USAGE;
 
   if (process.env.MOCK_AI === "true") {
     rawText = JSON.stringify({
@@ -70,7 +134,7 @@ export async function extractRecipe(
   } else {
     try {
       const response = await anthropic.messages.create({
-        model: "claude-opus-4-8",
+        ...buildModelParams(opts, RECIPE_OUTPUT_SCHEMA),
         max_tokens: 2048,
         system: EXTRACTION_SYSTEM_PROMPT,
         messages: extractionMessages,
@@ -78,6 +142,7 @@ export async function extractRecipe(
 
       const textBlock = response.content.find((b) => b.type === "text");
       rawText = textBlock?.text ?? "";
+      usage = toUsage(response.usage);
     } catch (error) {
       console.error("Recipe extraction Anthropic error:", error);
       return { error: "Failed to extract recipe from conversation" };
@@ -111,5 +176,5 @@ export async function extractRecipe(
     return { error: "Extracted recipe is missing required fields" };
   }
 
-  return { recipe: parsed as Omit<Recipe, "id" | "savedAt"> };
+  return { recipe: parsed as Omit<Recipe, "id" | "savedAt">, usage };
 }

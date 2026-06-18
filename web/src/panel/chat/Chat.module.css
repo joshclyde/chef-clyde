@@ -111,6 +111,28 @@
   }
 }
 
+/* ----- AI controls (model + effort pickers, usage readout) ----- */
+.aiControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-sm);
+}
+.aiControlsRow {
+  display: flex;
+  gap: var(--space-sm);
+}
+.aiControlSelect {
+  flex: 1;
+  min-width: 0;
+  padding-top: var(--space-2xs);
+  padding-bottom: var(--space-2xs);
+  font-size: var(--font-size-sm);
+}
+.aiUsage {
+  text-align: right;
+}
+
 /* ----- composer ----- */
 .inputRow {
   width: 100%;

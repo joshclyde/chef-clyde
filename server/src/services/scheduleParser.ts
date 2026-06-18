@@ -76,6 +76,83 @@ Schema:
   ]
 }`;
 
+/** A nullable "HH:MM" time, expressed the way structured outputs accepts. */
+const NULLABLE_TIME = { anyOf: [{ type: "string" }, { type: "null" }] };
+
+/** The `{ "error": "no_tasks_found" }` variant, shared by both task schemas. */
+const NO_TASKS_ERROR = {
+  type: "object",
+  properties: { error: { type: "string", const: "no_tasks_found" } },
+  required: ["error"],
+  additionalProperties: false,
+};
+
+/**
+ * JSON Schema for `output_config.format` on schedule *generation*. Mirrors the
+ * prose `TASK_JSON_SCHEMA` so the model emits schema-valid JSON; `validateTasks`
+ * still runs as a safety net. Includes the no-tasks error variant via `anyOf`.
+ */
+export const TASK_OUTPUT_SCHEMA = {
+  anyOf: [
+    {
+      type: "object",
+      properties: {
+        tasks: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              startTime: { type: "string" },
+              endTime: NULLABLE_TIME,
+              label: { type: "string" },
+              choreId: { type: "string" },
+              todoId: { type: "string" },
+              hobbyTaskId: { type: "string" },
+              routineId: { type: "string" },
+            },
+            required: ["startTime", "endTime", "label"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["tasks"],
+      additionalProperties: false,
+    },
+    NO_TASKS_ERROR,
+  ],
+};
+
+/**
+ * JSON Schema for `output_config.format` on schedule *editing*. Same as
+ * generation plus the optional `id` that carries task identity across the edit.
+ */
+export const EDITED_TASK_OUTPUT_SCHEMA = {
+  anyOf: [
+    {
+      type: "object",
+      properties: {
+        tasks: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              startTime: { type: "string" },
+              endTime: NULLABLE_TIME,
+              label: { type: "string" },
+            },
+            required: ["startTime", "endTime", "label"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["tasks"],
+      additionalProperties: false,
+    },
+    NO_TASKS_ERROR,
+  ],
+};
+
 /**
  * Chore-linking guidance appended to the prompt so the model can attach a
  * choreId to any task that performs one. Empty when the user has no chores, so

@@ -1,5 +1,6 @@
 import { Button, Inline, Text } from "../../ui";
 import { cn } from "../../ui/cn";
+import { AiControls } from "./AiControls";
 import styles from "./Chat.module.css";
 import { ChatComposer } from "./ChatComposer";
 import { type ChatConfig } from "./chatConfigs";
@@ -53,6 +54,7 @@ export function ChatView({ config }: { config: ChatConfig }) {
         )}
       </div>
       <div className={styles.footer}>
+        <AiControls />
         <ChatComposer
           input={input}
           placeholder={placeholder}
