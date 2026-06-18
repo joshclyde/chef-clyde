@@ -19,7 +19,7 @@
         "eamodio.gitlens"
       ],
       "settings": {
-        "window.title": "${localWorkspaceFolderBasename}${separator}${activeEditorShort}${separator}${appName}",
+        "window.title": "${localWorkspaceFolderBasename}${separator}${remoteName}",
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.codeActionsOnSave": {
