@@ -33,8 +33,8 @@ if [ -n "${GH_TOKEN:-}" ]; then
   git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
   echo "==> GitHub token wired (repo-scoped)."
 else
-  echo "WARNING: GH_TOKEN is empty. Set CHEF_CLYDE_GH_TOKEN on the host and rebuild"
-  echo "         the container to enable git push / gh PR creation."
+  echo "ERROR: GH_TOKEN is empty. Set CHEF_CLYDE_GH_TOKEN on the host and rebuild the container." >&2
+  exit 1
 fi
 
 echo "==> Dev container setup complete."
