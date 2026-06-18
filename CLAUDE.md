@@ -2,6 +2,17 @@
 
 A web app (`web/`, React + Vite) backed by a Node/TypeScript API (`server/`).
 
+## Completing work — always open a PR
+
+When you finish any task that involves code changes:
+
+1. Create a new branch (never commit directly to `main`).
+2. Commit your changes to that branch.
+3. Push the branch and open a pull request against `main` using `gh pr create`.
+4. Return the PR URL so the user can review the changes on GitHub.
+
+This applies to every task — bug fixes, new features, refactors, config changes, etc. Do not consider a task done until the PR is open.
+
 ## Running dev servers
 
 Always start long-running dev servers through the **preview system** (`preview_start`)
