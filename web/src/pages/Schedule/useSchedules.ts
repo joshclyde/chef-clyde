@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import { type AiUsage } from "../../ai/AiSettingsContext";
+import { useAiSettings } from "../../ai/useAiSettings";
+
 export type TaskStatus = "pending" | "completed" | "future" | "wontDo";
 
 export type ScheduleTask = {
@@ -67,6 +70,7 @@ export type TaskPlan = {
 };
 
 export function useSchedules() {
+  const { model, effort, setLastUsage } = useAiSettings();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +125,8 @@ export function useSchedules() {
   async function generateTasks(id: string) {
     const res = await fetch(`/api/schedules/${id}/generate`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, effort }),
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as {
@@ -128,7 +134,8 @@ export function useSchedules() {
       } | null;
       throw new Error(data?.error ?? "Failed to generate task list");
     }
-    const data = (await res.json()) as { schedule: Schedule };
+    const data = (await res.json()) as { schedule: Schedule; usage?: AiUsage };
+    if (data.usage) setLastUsage(data.usage);
     setSchedules((prev) => prev.map((s) => (s.id === id ? data.schedule : s)));
     return data.schedule;
   }
@@ -157,7 +164,7 @@ export function useSchedules() {
     const res = await fetch(`/api/schedules/${id}/edit-preview`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction }),
+      body: JSON.stringify({ instruction, model, effort }),
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as {
@@ -165,7 +172,11 @@ export function useSchedules() {
       } | null;
       throw new Error(data?.error ?? "Failed to suggest changes");
     }
-    const data = (await res.json()) as { proposal: ScheduleTask[] };
+    const data = (await res.json()) as {
+      proposal: ScheduleTask[];
+      usage?: AiUsage;
+    };
+    if (data.usage) setLastUsage(data.usage);
     return data.proposal;
   }
 

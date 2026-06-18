@@ -10,6 +10,7 @@ import {
   readRecipe,
   writeRecipe,
 } from "../db/recipes";
+import { resolveAiOptions } from "../services/aiOptions";
 import { extractRecipe } from "../services/recipeExtractor";
 import type { Note } from "../types/recipe";
 
@@ -29,7 +30,7 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  const result = await extractRecipe(messages);
+  const result = await extractRecipe(messages, resolveAiOptions(req.body));
 
   if ("error" in result) {
     const status =
@@ -45,7 +46,7 @@ router.post("/", async (req, res) => {
   };
 
   writeRecipe(recipe);
-  res.status(201).json({ recipe });
+  res.status(201).json({ recipe, usage: result.usage });
 });
 
 router.delete("/:id", (req, res) => {

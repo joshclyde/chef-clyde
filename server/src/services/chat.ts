@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 import type { ChatMode } from "../types/chat";
+import { type AiOptions, type AiUsage, buildModelParams, toUsage } from "./aiOptions";
 
 const anthropic = new Anthropic();
 
@@ -47,7 +48,8 @@ function readPantry(): string {
 export async function generateChatResponse(
   messages: { role: "user" | "assistant"; content: string }[],
   mode: ChatMode,
-): Promise<string> {
+  opts: AiOptions,
+): Promise<{ content: string; usage: AiUsage }> {
   let systemPrompt: string;
 
   if (mode === "pantry-recipe") {
@@ -60,13 +62,12 @@ export async function generateChatResponse(
   }
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-8",
+    ...buildModelParams(opts),
     max_tokens: 8096,
-    thinking: { type: "adaptive" },
     system: systemPrompt,
     messages,
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
-  return textBlock?.text ?? "";
+  return { content: textBlock?.text ?? "", usage: toUsage(response.usage) };
 }

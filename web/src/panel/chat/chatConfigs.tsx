@@ -1,7 +1,11 @@
 import { type ComponentType } from "react";
 
+import { type AiEffort, type AiModel } from "../../ai/AiSettingsContext";
 import { SaveRecipeAction } from "./SaveRecipeAction";
 import { type ChatMode, type Message, MODE_CONFIG } from "./types";
+
+/** The model + effort the user picked, merged into every AI request body. */
+export type ChatSettings = { model: AiModel; effort: AiEffort };
 
 export type ModeOption = {
   id: ChatMode;
@@ -14,7 +18,11 @@ export type ChatConfig = {
   /** Endpoint the composer POSTs to. */
   endpoint: string;
   /** Build the request body for a turn. */
-  buildBody: (messages: Message[], mode: ChatMode) => unknown;
+  buildBody: (
+    messages: Message[],
+    mode: ChatMode,
+    settings: ChatSettings,
+  ) => unknown;
   /** Mode toggle buttons shown before the first message. */
   modes?: ModeOption[];
   /** Mode the chat starts in (passed to buildBody). */
@@ -31,7 +39,7 @@ export type ChatConfig = {
 
 const COOKBOOK_CONFIG: ChatConfig = {
   endpoint: "/api/chat",
-  buildBody: (messages, mode) => ({ messages, mode }),
+  buildBody: (messages, mode, settings) => ({ messages, mode, ...settings }),
   modes: [
     { id: "new-recipe", ...MODE_CONFIG["new-recipe"] },
     { id: "pantry-recipe", ...MODE_CONFIG["pantry-recipe"] },
@@ -45,7 +53,11 @@ const COOKBOOK_CONFIG: ChatConfig = {
 
 const DEFAULT_CONFIG: ChatConfig = {
   endpoint: "/api/chat",
-  buildBody: (messages) => ({ messages, mode: "general" }),
+  buildBody: (messages, _mode, settings) => ({
+    messages,
+    mode: "general",
+    ...settings,
+  }),
   defaultMode: "general",
   emptyHint: "Ask me anything — I'm your Chef Clyde assistant.",
   placeholder: "e.g. How do I dice an onion without crying?",

@@ -14,6 +14,7 @@ import {
   writeSchedule,
 } from "../db/schedules";
 import { readAllTodos, readTodo, writeTodo } from "../db/todos";
+import { resolveAiOptions } from "../services/aiOptions";
 import {
   buildSchedulePrompt,
   editScheduleTasks,
@@ -158,14 +159,17 @@ router.post("/:id/generate", async (req, res) => {
     return;
   }
 
-  const result = await generateScheduleTasks({
-    date: schedule.date,
-    dayContext: schedule.dayContext,
-    chores: readAllChores(),
-    todos: openTodos(),
-    hobbies: readAllHobbies(),
-    routines: readAllRoutines(),
-  });
+  const result = await generateScheduleTasks(
+    {
+      date: schedule.date,
+      dayContext: schedule.dayContext,
+      chores: readAllChores(),
+      todos: openTodos(),
+      hobbies: readAllHobbies(),
+      routines: readAllRoutines(),
+    },
+    resolveAiOptions(req.body),
+  );
   if ("error" in result) {
     const status =
       result.error === "No tasks found in this schedule" ? 422 : 500;
@@ -183,7 +187,7 @@ router.post("/:id/generate", async (req, res) => {
     updatedAt: new Date().toISOString(),
   };
   writeSchedule(updated);
-  res.status(200).json({ schedule: updated });
+  res.status(200).json({ schedule: updated, usage: result.usage });
 });
 
 // Ask the model to apply one natural-language change to the day's task list and
@@ -209,16 +213,19 @@ router.post("/:id/edit-preview", async (req, res) => {
     return;
   }
 
-  const result = await editScheduleTasks({
-    date: schedule.date,
-    dayContext: schedule.dayContext,
-    chores: readAllChores(),
-    todos: openTodos(),
-    hobbies: readAllHobbies(),
-    routines: readAllRoutines(),
-    currentTasks,
-    instruction,
-  });
+  const result = await editScheduleTasks(
+    {
+      date: schedule.date,
+      dayContext: schedule.dayContext,
+      chores: readAllChores(),
+      todos: openTodos(),
+      hobbies: readAllHobbies(),
+      routines: readAllRoutines(),
+      currentTasks,
+      instruction,
+    },
+    resolveAiOptions(req.body),
+  );
   if ("error" in result) {
     const status =
       result.error === "No tasks found in this schedule" ? 422 : 500;
@@ -250,7 +257,7 @@ router.post("/:id/edit-preview", async (req, res) => {
     };
   });
 
-  res.status(200).json({ proposal: sortTasks(proposal) });
+  res.status(200).json({ proposal: sortTasks(proposal), usage: result.usage });
 });
 
 const TASK_STATUSES: TaskStatus[] = [

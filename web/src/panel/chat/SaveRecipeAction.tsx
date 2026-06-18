@@ -1,10 +1,13 @@
 import { useState } from "react";
 
+import { type AiUsage } from "../../ai/AiSettingsContext";
+import { useAiSettings } from "../../ai/useAiSettings";
 import { Button, Inline, Text } from "../../ui";
 import { type Message } from "./types";
 
 /** "Save to Recipes" action for the Cookbook chat. Manages its own save state. */
 export function SaveRecipeAction({ messages }: { messages: Message[] }) {
+  const { model, effort, setLastUsage } = useAiSettings();
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +20,7 @@ export function SaveRecipeAction({ messages }: { messages: Message[] }) {
     fetch("/api/recipes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, model, effort }),
     })
       .then((res) => {
         if (!res.ok)
@@ -28,7 +31,8 @@ export function SaveRecipeAction({ messages }: { messages: Message[] }) {
             );
         return res.json();
       })
-      .then((data: { recipe: { id: string } }) => {
+      .then((data: { recipe: { id: string }; usage?: AiUsage }) => {
+        if (data.usage) setLastUsage(data.usage);
         setSavedId(data.recipe.id);
       })
       .catch((err: unknown) => {

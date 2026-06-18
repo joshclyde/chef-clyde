@@ -1,5 +1,6 @@
 import express from "express";
 
+import { MOCK_USAGE, resolveAiOptions } from "../services/aiOptions";
 import { generateChatResponse } from "../services/chat";
 import type { ChatMode } from "../types/chat";
 
@@ -10,15 +11,16 @@ router.post("/", async (req, res) => {
     messages: { role: "user" | "assistant"; content: string }[];
     mode?: ChatMode;
   };
+  const opts = resolveAiOptions(req.body);
 
   if (process.env.MOCK_AI === "true") {
-    res.json({ content: "Mocked response." });
+    res.json({ content: "Mocked response.", usage: MOCK_USAGE });
     return;
   }
 
   try {
-    const content = await generateChatResponse(messages, mode);
-    res.json({ content });
+    const { content, usage } = await generateChatResponse(messages, mode, opts);
+    res.json({ content, usage });
   } catch (error) {
     console.error("Chat error:", error);
     res.status(500).json({ error: "Failed to generate response" });

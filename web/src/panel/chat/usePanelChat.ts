@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { type AiUsage } from "../../ai/AiSettingsContext";
+import { useAiSettings } from "../../ai/useAiSettings";
 import { type ChatConfig } from "./chatConfigs";
 import { type ChatMode, type Message } from "./types";
 
@@ -9,6 +11,7 @@ import { type ChatMode, type Message } from "./types";
  * actions) live in the config, not here.
  */
 export function usePanelChat(config: ChatConfig) {
+  const { model, effort, setLastUsage } = useAiSettings();
   const [messages, setMessages] = useState<Message[]>([]);
   const [mode, setMode] = useState<ChatMode>(config.defaultMode);
   const [input, setInput] = useState("");
@@ -29,10 +32,11 @@ export function usePanelChat(config: ChatConfig) {
     fetch(config.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config.buildBody(newMessages, mode)),
+      body: JSON.stringify(config.buildBody(newMessages, mode, { model, effort })),
     })
-      .then((res) => res.json() as Promise<{ content: string }>)
+      .then((res) => res.json() as Promise<{ content: string; usage?: AiUsage }>)
       .then((data) => {
+        if (data.usage) setLastUsage(data.usage);
         setMessages([
           ...newMessages,
           { role: "assistant", content: data.content },

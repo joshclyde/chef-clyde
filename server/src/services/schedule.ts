@@ -8,17 +8,26 @@ import type { Routine } from "../types/routine";
 import type { ScheduleTask, TaskStatus } from "../types/schedule";
 import type { Todo } from "../types/todo";
 import {
+  type AiOptions,
+  type AiUsage,
+  buildModelParams,
+  MOCK_USAGE,
+  toUsage,
+} from "./aiOptions";
+import {
   buildChoreLinkingInstructions,
   buildHobbyLinkingInstructions,
   buildRoutineLinkingInstructions,
   buildTodoLinkingInstructions,
   EDITED_TASK_JSON_SCHEMA,
+  EDITED_TASK_OUTPUT_SCHEMA,
   type EditedTask,
   type EditSuccess,
   MOCK_TASKS,
   type ParseError,
   type ParseSuccess,
   TASK_JSON_SCHEMA,
+  TASK_OUTPUT_SCHEMA,
   validateEditedTasks,
   validateTasks,
 } from "./scheduleParser";
@@ -447,7 +456,8 @@ export function buildSchedulePrompt({
  */
 export async function generateScheduleTasks(
   input: SchedulePromptInput,
-): Promise<ParseSuccess | ParseError> {
+  opts: AiOptions,
+): Promise<(ParseSuccess | ParseError) & { usage: AiUsage }> {
   if (process.env.MOCK_AI === "true") {
     // Link any mock task whose label mentions a chore by name, a to-do by
     // title, a hobby task by label, or a routine by label, mirroring how the
@@ -474,33 +484,37 @@ export async function generateScheduleTasks(
       if (routine) return { ...t, routineId: routine.id };
       return t;
     });
-    return { tasks };
+    return { tasks, usage: MOCK_USAGE };
   }
 
   const { system, userMessage } = buildSchedulePrompt(input);
   let rawText: string;
+  let usage: AiUsage;
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-8",
+      ...buildModelParams(opts, TASK_OUTPUT_SCHEMA),
       max_tokens: 8096,
-      thinking: { type: "adaptive" },
       system,
       messages: [{ role: "user", content: userMessage }],
     });
     const textBlock = response.content.find((b) => b.type === "text");
     rawText = textBlock?.text ?? "";
+    usage = toUsage(response.usage);
   } catch (error) {
     console.error("Schedule generation Anthropic error:", error);
-    return { error: "Failed to generate the task list" };
+    return { error: "Failed to generate the task list", usage: MOCK_USAGE };
   }
 
-  return validateTasks(
-    rawText,
-    input.chores,
-    input.todos,
-    input.hobbies,
-    input.routines,
-  );
+  return {
+    ...validateTasks(
+      rawText,
+      input.chores,
+      input.todos,
+      input.hobbies,
+      input.routines,
+    ),
+    usage,
+  };
 }
 
 const SCHEDULE_EDIT_SYSTEM_PROMPT =
@@ -631,30 +645,35 @@ function mockEditTasks(currentTasks: ScheduleTask[]): EditSuccess {
  */
 export async function editScheduleTasks(
   input: ScheduleEditInput,
-): Promise<EditSuccess | ParseError> {
+  opts: AiOptions,
+): Promise<(EditSuccess | ParseError) & { usage: AiUsage }> {
   if (process.env.MOCK_AI === "true") {
-    return mockEditTasks(input.currentTasks);
+    return { ...mockEditTasks(input.currentTasks), usage: MOCK_USAGE };
   }
 
   const { system, userMessage } = buildEditPrompt(input);
   let rawText: string;
+  let usage: AiUsage;
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-8",
+      ...buildModelParams(opts, EDITED_TASK_OUTPUT_SCHEMA),
       max_tokens: 8096,
-      thinking: { type: "adaptive" },
       system,
       messages: [{ role: "user", content: userMessage }],
     });
     const textBlock = response.content.find((b) => b.type === "text");
     rawText = textBlock?.text ?? "";
+    usage = toUsage(response.usage);
   } catch (error) {
     console.error("Schedule edit Anthropic error:", error);
-    return { error: "Failed to edit the task list" };
+    return { error: "Failed to edit the task list", usage: MOCK_USAGE };
   }
 
-  return validateEditedTasks(
-    rawText,
-    new Set(input.currentTasks.map((t) => t.id)),
-  );
+  return {
+    ...validateEditedTasks(
+      rawText,
+      new Set(input.currentTasks.map((t) => t.id)),
+    ),
+    usage,
+  };
 }
