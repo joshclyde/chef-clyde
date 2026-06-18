@@ -1,0 +1,22 @@
+{
+  "id": "fixture-recipe-veggie-stir-fry",
+  "name": "Veggie Stir Fry",
+  "description": "A fast stir fry over jasmine rice.",
+  "servings": 2,
+  "prepTime": 15,
+  "cookTime": 10,
+  "ingredients": [
+    { "amount": "2", "unit": "cups", "name": "frozen broccoli" },
+    { "amount": "1", "unit": "cup", "name": "frozen corn" },
+    { "amount": "2", "unit": "tbsp", "name": "soy sauce" },
+    { "amount": "1", "unit": "cup", "name": "jasmine rice" }
+  ],
+  "steps": [
+    "Cook the jasmine rice according to package directions.",
+    "Stir fry the vegetables over high heat until tender-crisp.",
+    "Add the soy sauce and toss to coat.",
+    "Serve over the rice."
+  ],
+  "tags": ["vegetarian"],
+  "savedAt": "2026-05-22T18:00:00.000Z"
+}

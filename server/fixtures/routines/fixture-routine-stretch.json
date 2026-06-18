@@ -1,0 +1,10 @@
+{
+  "id": "fixture-routine-stretch",
+  "label": "Evening stretch",
+  "timeOfDay": "night",
+  "typicalTimeMinutes": 15,
+  "occurrence": { "kind": "frequency", "value": 1, "unit": "days" },
+  "completions": [],
+  "createdAt": "2026-05-01T12:00:00.000Z",
+  "updatedAt": "2026-05-01T12:00:00.000Z"
+}
