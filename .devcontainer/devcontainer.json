@@ -9,7 +9,21 @@
       "ZSH_IN_DOCKER_VERSION": "1.2.0"
     }
   },
-  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW",
+    // Join the shared proxy network so the host Traefik can reach this clone's
+    // web server by name. Created by infra/proxy/sync-and-up.sh — start the
+    // proxy once before opening dev containers.
+    "--network=chef-clyde-net",
+    // Advertise this clone to Traefik. ${localWorkspaceFolderBasename} is the
+    // clone's directory name (e.g. chef-clyde-charmander), so the browser URL is
+    // http://<clone-name>.localhost. Routing is per-clone and isolated here.
+    "--label=traefik.enable=true",
+    "--label=traefik.http.routers.${localWorkspaceFolderBasename}.rule=Host(`${localWorkspaceFolderBasename}.localhost`)",
+    "--label=traefik.http.services.${localWorkspaceFolderBasename}.loadbalancer.server.port=5173",
+    "--label=traefik.docker.network=chef-clyde-net"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -49,11 +63,16 @@
     "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "GH_TOKEN": "${localEnv:CHEF_CLYDE_GH_TOKEN}",
-    "DB_PATH": "/workspace/database"
+    "DB_PATH": "/workspace/database",
+    // Vite is served through the host proxy on port 80, so its HMR client must
+    // connect back on 80 (not the internal 5173). See web/vite.config.ts.
+    "HMR_CLIENT_PORT": "80"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  "forwardPorts": [5173, 3001],
+  // No forwardPorts: clones are reached by name through the shared host proxy
+  // (see infra/proxy/), not by publishing host ports — which is what let every
+  // clone keep 5173/3001 internally without colliding.
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"

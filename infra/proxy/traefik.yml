@@ -1,0 +1,23 @@
+# Traefik static configuration for the shared Chef Clyde proxy.
+# Generic and set-and-forget: per-clone routing lives in each clone's
+# devcontainer.json labels (Docker provider) — not here.
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  # Auto-discover dev-container clones by their Traefik labels. Only containers
+  # that opt in (traefik.enable=true) are exposed.
+  docker:
+    exposedByDefault: false
+    network: chef-clyde-net
+  # Static routes that aren't containers (e.g. the natively-run gengar clone).
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# Dashboard at http://localhost:8080 — useful for inspecting discovered routers.
+api:
+  dashboard: true
+  insecure: true

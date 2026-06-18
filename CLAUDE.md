@@ -31,6 +31,17 @@ Available configs:
 Start each config you need with its own `preview_start` call so both servers show up as
 stoppable entries in the Preview dropdown.
 
+## Reaching clones by name (parallel clones)
+
+Every clone uses the same ports (`5173`/`3001`). To run several at once without
+collisions, a single shared reverse proxy ([infra/proxy/](infra/proxy/)) routes
+`http://<clone-directory-name>.localhost` to the right clone — dev-container clones are
+auto-discovered via Traefik labels; the native production clone (gengar) has a static
+route. Start it once with `bash infra/proxy/sync-and-up.sh` (it also creates the shared
+`chef-clyde-net` Docker network that dev containers join). The proxy runs from
+`~/chef-clyde-data/proxy/`, outside every clone; `infra/proxy/` is the template. See
+[infra/proxy/README.md](infra/proxy/README.md) and [README.md](README.md).
+
 ## Environments & data
 
 The database is a directory of JSON files; its location is the single env var
@@ -70,8 +81,12 @@ This repo ships a hardened dev container ([.devcontainer/](.devcontainer/)) for 
 Claude in an isolated, auto-accept-friendly environment. It runs Claude as a non-root
 user inside Docker behind a default-deny egress firewall
 ([init-firewall.sh](.devcontainer/init-firewall.sh) allowlists only Anthropic, GitHub,
-and npm). Ports **5173** and **3001** are forwarded, so the preview workflow above is
-unchanged — open `localhost:5173` in the host browser as usual.
+and npm; it also opens inbound `5173` so the shared proxy can reach the web server).
+The container does **not** forward host ports — it joins the `chef-clyde-net` network
+and is reached by name through the shared proxy (see "Reaching clones by name" above),
+so **start the proxy before opening the container** and open
+`http://<clone-name>.localhost` in the host browser. The preview workflow for starting
+the servers themselves is unchanged.
 
 Git is wired for normal work but **cannot push to `main`**, by design:
 
