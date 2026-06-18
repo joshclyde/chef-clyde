@@ -268,3 +268,70 @@
 .taskRow.wontDo .taskTime {
   color: var(--color-text-subtle);
 }
+
+/* ----- AI edit diff (unified timeline) ----- */
+.diffRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-2xs) var(--space-md);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-md);
+}
+.diffTime {
+  flex-shrink: 0;
+  min-width: 130px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.diffLabel {
+  flex: 1;
+  color: var(--color-text-default);
+}
+.diffNote {
+  flex-shrink: 0;
+}
+
+/* added — a brand-new task Clyde suggests (AI teal accent) */
+.diffRow.added {
+  border-left-color: var(--color-ai-accent);
+  background: var(--color-bg-subtle);
+}
+/* changed — a kept task whose time or label moved */
+.diffRow.changed {
+  border-left-color: var(--color-action-primary-bg);
+  background: var(--color-bg-subtle);
+}
+/* removed — a task dropped from the day */
+.diffRow.removed {
+  border-left-color: var(--color-action-danger-fg);
+}
+.diffRow.removed .diffLabel,
+.diffRow.removed .diffTime {
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+/* unchanged — context only, de-emphasized */
+.diffRow.unchanged .diffLabel,
+.diffRow.unchanged .diffTime {
+  color: var(--color-text-muted);
+}
+
+/* pills tagging added / removed rows */
+.diffBadge {
+  flex-shrink: 0;
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+.badgeAdded {
+  background: var(--color-ai-accent);
+  color: var(--color-ai-fg);
+}
+.badgeRemoved {
+  background: var(--color-action-danger-bg-hover);
+  color: var(--color-action-danger-fg-hover);
+}

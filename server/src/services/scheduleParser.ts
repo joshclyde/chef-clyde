@@ -20,6 +20,16 @@ export type ParseSuccess = { tasks: ParsedTask[] };
 export type ParseError = { error: string };
 
 /**
+ * A task the model returns when *editing* an existing day. Same plan fields as
+ * `ParsedTask` plus an optional `id`: present (and matching a current task) to
+ * keep/modify that task, absent for a brand-new task. Links are preserved
+ * server-side by id, so the edit schema carries no link fields.
+ */
+export type EditedTask = ParsedTask & { id?: string };
+
+export type EditSuccess = { tasks: EditedTask[] };
+
+/**
  * The JSON contract the model must follow when emitting the day's task list.
  * Shared by the generation prompt so the output always matches `validateTasks`.
  */
@@ -36,6 +46,33 @@ Schema:
 {
   "tasks": [
     { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string, "hobbyTaskId"?: string, "routineId"?: string }
+  ]
+}`;
+
+/**
+ * The JSON contract the model must follow when *editing* an existing day's task
+ * list. The model returns the full updated list; task identity is carried by
+ * "id" so the server can keep status/links/completions on tasks that survive.
+ * Shared by the edit prompt so the output always matches `validateEditedTasks`.
+ */
+export const EDITED_TASK_JSON_SCHEMA = `Output ONLY a single valid JSON object matching the schema below — no markdown fences, no explanation, no prose before or after.
+
+Return the FULL updated task list for the day, in chronological order, after applying the user's requested change. Times must be 24-hour "HH:MM" strings (e.g. "07:30", "16:05"). For a time range use the start as startTime and the end as endTime; for a single-time item set endTime to null.
+
+How to express the edit:
+- To KEEP or MODIFY an existing task, include it with its exact "id" from the current list (adjust its startTime/endTime/label as needed).
+- To ADD a new task, include it WITHOUT an "id".
+- To REMOVE a task, simply leave it out of the list.
+- Apply only what the user asked for: leave every other task unchanged (same id, startTime, endTime, and label).
+- Do not move or re-time tasks whose current status is "completed" unless the user explicitly asks.
+
+If the change would leave no tasks at all, output exactly this JSON:
+{"error": "no_tasks_found"}
+
+Schema:
+{
+  "tasks": [
+    { "id"?: string (an existing task's id to keep/modify it; omit for a new task), "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string }
   ]
 }`;
 
@@ -196,6 +233,69 @@ export function validateTasks(
       }
       if (typeof routineId === "string" && validRoutineIds.has(routineId)) {
         task.routineId = routineId;
+      }
+      return task;
+    }),
+  };
+}
+
+/**
+ * Parse and validate the model's reply to an *edit* request into a clean list of
+ * `EditedTask`. Keeps an `id` only when it points at a real current task (passed
+ * in `currentTaskIds`); invented or null ids are dropped so those rows are
+ * treated as brand-new tasks.
+ */
+export function validateEditedTasks(
+  rawText: string,
+  currentTaskIds: Set<string>,
+): EditSuccess | ParseError {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    console.error("Schedule edit returned non-JSON:", rawText);
+    return { error: "Schedule edit returned malformed response" };
+  }
+
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "error" in parsed &&
+    (parsed as { error: string }).error === "no_tasks_found"
+  ) {
+    return { error: "No tasks found in this schedule" };
+  }
+
+  const tasks = (parsed as { tasks?: unknown }).tasks;
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    console.error("Schedule edit returned unexpected shape:", parsed);
+    return { error: "Edited schedule is missing a tasks array" };
+  }
+
+  const valid = tasks.every(
+    (t): t is EditedTask =>
+      typeof t === "object" &&
+      t !== null &&
+      typeof (t as EditedTask).startTime === "string" &&
+      TIME_PATTERN.test((t as EditedTask).startTime) &&
+      ((t as EditedTask).endTime === null ||
+        (typeof (t as EditedTask).endTime === "string" &&
+          TIME_PATTERN.test((t as EditedTask).endTime as string))) &&
+      typeof (t as EditedTask).label === "string" &&
+      // the model may emit id: null on a new task; sanitize drops it
+      ((t as { id?: unknown }).id == null ||
+        typeof (t as { id?: unknown }).id === "string"),
+  );
+  if (!valid) {
+    console.error("Schedule edit returned malformed tasks:", parsed);
+    return { error: "Edited tasks have an unexpected shape" };
+  }
+
+  return {
+    tasks: tasks.map(({ id, startTime, endTime, label }) => {
+      const task: EditedTask = { startTime, endTime, label };
+      if (typeof id === "string" && currentTaskIds.has(id)) {
+        task.id = id;
       }
       return task;
     }),

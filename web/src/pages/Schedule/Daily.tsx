@@ -27,6 +27,7 @@ import { type Routine, useRoutines } from "../Routines/useRoutines";
 import { type Todo, useTodos } from "../Todos/useTodos";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
 import styles from "./Schedule.module.css";
+import { ScheduleAiEdit } from "./ScheduleAiEdit";
 import { ScheduleGenerator } from "./ScheduleGenerator";
 import { TaskEditor } from "./TaskEditor";
 import {
@@ -478,6 +479,8 @@ export default function ScheduleDaily() {
     createSchedule,
     generateTasks,
     previewPrompt,
+    editPreview,
+    replaceTasks,
     updateTask,
     addTask,
     deleteTask,
@@ -529,6 +532,16 @@ export default function ScheduleDaily() {
         onAddTask={handleAddTask}
         onDeleteTask={deleteTask}
       />
+
+      {schedule && hasTasks && (
+        <Card>
+          <ScheduleAiEdit
+            schedule={schedule}
+            onPreview={editPreview}
+            onAccept={replaceTasks}
+          />
+        </Card>
+      )}
 
       <Card>
         <ScheduleGenerator
