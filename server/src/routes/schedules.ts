@@ -16,6 +16,7 @@ import {
 import { readAllTodos, readTodo, writeTodo } from "../db/todos";
 import {
   buildSchedulePrompt,
+  editScheduleTasks,
   generateScheduleTasks,
 } from "../services/schedule";
 import type { Completion } from "../types/chore";
@@ -183,6 +184,73 @@ router.post("/:id/generate", async (req, res) => {
   };
   writeSchedule(updated);
   res.status(200).json({ schedule: updated });
+});
+
+// Ask the model to apply one natural-language change to the day's task list and
+// return a PROPOSED full list for the user to review. This is read-only: nothing
+// is persisted until the user accepts via PUT /:id/tasks.
+router.post("/:id/edit-preview", async (req, res) => {
+  const { id } = req.params;
+  const { instruction } = req.body as { instruction?: unknown };
+
+  if (typeof instruction !== "string" || instruction.trim() === "") {
+    res.status(400).json({ error: "instruction is required" });
+    return;
+  }
+
+  const schedule = readSchedule(id);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule not found" });
+    return;
+  }
+  const currentTasks = schedule.tasks ?? [];
+  if (currentTasks.length === 0) {
+    res.status(400).json({ error: "This schedule has no tasks to edit" });
+    return;
+  }
+
+  const result = await editScheduleTasks({
+    date: schedule.date,
+    dayContext: schedule.dayContext,
+    chores: readAllChores(),
+    todos: openTodos(),
+    hobbies: readAllHobbies(),
+    routines: readAllRoutines(),
+    currentTasks,
+    instruction,
+  });
+  if ("error" in result) {
+    const status =
+      result.error === "No tasks found in this schedule" ? 422 : 500;
+    res.status(status).json({ error: result.error });
+    return;
+  }
+
+  // Reconstruct a full proposed task list for the diff, WITHOUT persisting it.
+  // A task the model kept (matched by id) carries its original status, links,
+  // and completion bookkeeping with only its plan fields overlaid; a new task
+  // gets a fresh id and pending status.
+  const byId = new Map(currentTasks.map((t) => [t.id, t]));
+  const proposal: ScheduleTask[] = result.tasks.map((edited) => {
+    const existing = edited.id ? byId.get(edited.id) : undefined;
+    if (existing) {
+      return {
+        ...existing,
+        startTime: edited.startTime,
+        endTime: edited.endTime,
+        label: edited.label,
+      };
+    }
+    return {
+      id: crypto.randomUUID(),
+      startTime: edited.startTime,
+      endTime: edited.endTime,
+      label: edited.label,
+      status: "pending" as const,
+    };
+  });
+
+  res.status(200).json({ proposal: sortTasks(proposal) });
 });
 
 const TASK_STATUSES: TaskStatus[] = [
@@ -625,6 +693,114 @@ router.post("/:id/tasks", (req, res) => {
   schedule.updatedAt = new Date().toISOString();
   writeSchedule(schedule);
   res.status(201).json({ schedule });
+});
+
+// Replace the day's whole task list — the "accept" step of an AI edit. Only plan
+// fields (label/start/end) and membership come from the client; a task matched
+// by id keeps its server-side status, links, and completion bookkeeping, while
+// any current task left out is removed (undoing its completions like a delete).
+router.put("/:id/tasks", (req, res) => {
+  const { id } = req.params;
+  const { tasks } = req.body as { tasks?: unknown };
+
+  if (!Array.isArray(tasks)) {
+    res.status(400).json({ error: "tasks must be an array" });
+    return;
+  }
+
+  for (const t of tasks) {
+    if (typeof t !== "object" || t === null) {
+      res.status(400).json({ error: "each task must be an object" });
+      return;
+    }
+    const {
+      id: taskId,
+      label,
+      startTime,
+      endTime,
+    } = t as {
+      id?: unknown;
+      label?: unknown;
+      startTime?: unknown;
+      endTime?: unknown;
+    };
+    if (taskId !== undefined && typeof taskId !== "string") {
+      res.status(400).json({ error: "task id must be a string" });
+      return;
+    }
+    if (typeof label !== "string" || label.trim() === "") {
+      res.status(400).json({ error: "label is required" });
+      return;
+    }
+    if (typeof startTime !== "string" || !TIME_PATTERN.test(startTime)) {
+      res.status(400).json({ error: "startTime must be HH:MM (24h)" });
+      return;
+    }
+    if (
+      endTime !== undefined &&
+      endTime !== null &&
+      (typeof endTime !== "string" || !TIME_PATTERN.test(endTime))
+    ) {
+      res.status(400).json({ error: "endTime must be HH:MM (24h) or null" });
+      return;
+    }
+    if (typeof endTime === "string" && endTime < startTime) {
+      res.status(400).json({ error: "endTime must not be before startTime" });
+      return;
+    }
+  }
+
+  const schedule = readSchedule(id);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule not found" });
+    return;
+  }
+
+  const incoming = tasks as Array<{
+    id?: string;
+    label: string;
+    startTime: string;
+    endTime?: string | null;
+  }>;
+  const current = schedule.tasks ?? [];
+  const byId = new Map(current.map((t) => [t.id, t]));
+  const keptIds = new Set<string>();
+
+  const nextTasks: ScheduleTask[] = incoming.map((t) => {
+    const endTime = typeof t.endTime === "string" ? t.endTime : null;
+    const existing = t.id ? byId.get(t.id) : undefined;
+    if (existing) {
+      keptIds.add(existing.id);
+      return {
+        ...existing,
+        label: t.label.trim(),
+        startTime: t.startTime,
+        endTime,
+      };
+    }
+    return {
+      id: crypto.randomUUID(),
+      label: t.label.trim(),
+      startTime: t.startTime,
+      endTime,
+      status: "pending" as const,
+    };
+  });
+
+  // Anything dropped from the day is removed — undo its logged completions, the
+  // same bookkeeping as DELETE /:id/tasks/:taskId.
+  for (const task of current) {
+    if (keptIds.has(task.id)) continue;
+    removeLinkedCompletion(task);
+    clearLinkedTodo(task);
+    removeLinkedHobbyTaskCompletion(task);
+    removeLinkedRoutineCompletion(task);
+  }
+
+  schedule.tasks = sortTasks(nextTasks);
+  schedule.updatedAt = new Date().toISOString();
+  writeSchedule(schedule);
+  res.status(200).json({ schedule });
 });
 
 // Delete a single task. If it had logged completions on a linked chore / to-do

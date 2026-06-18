@@ -55,6 +55,17 @@ export type NewTaskInput = {
   endTime: string | null; // 24h "HH:MM" or null when open-ended
 };
 
+/**
+ * One row sent to the replace-tasks (PUT) endpoint when accepting an AI edit.
+ * `id` ties the row to an existing task (kept/modified); omit it for a new task.
+ */
+export type TaskPlan = {
+  id?: string;
+  label: string;
+  startTime: string; // 24h "HH:MM"
+  endTime: string | null; // 24h "HH:MM" or null when open-ended
+};
+
 export function useSchedules() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +146,44 @@ export function useSchedules() {
     if (!res.ok) throw new Error("Failed to load prompt preview");
     const data = (await res.json()) as { prompt: string };
     return data.prompt;
+  }
+
+  /**
+   * Ask AI to apply a natural-language edit and return the PROPOSED task list.
+   * Read-only: nothing is saved until the user accepts via replaceTasks, so this
+   * leaves local state untouched.
+   */
+  async function editPreview(id: string, instruction: string) {
+    const res = await fetch(`/api/schedules/${id}/edit-preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instruction }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      throw new Error(data?.error ?? "Failed to suggest changes");
+    }
+    const data = (await res.json()) as { proposal: ScheduleTask[] };
+    return data.proposal;
+  }
+
+  /**
+   * Replace the day's whole task list — the "accept" step of an AI edit. The
+   * server preserves status/links/completions on tasks matched by id and undoes
+   * completions for any task left out.
+   */
+  async function replaceTasks(id: string, tasks: TaskPlan[]) {
+    const res = await fetch(`/api/schedules/${id}/tasks`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tasks }),
+    });
+    if (!res.ok) throw new Error("Failed to apply changes");
+    const data = (await res.json()) as { schedule: Schedule };
+    setSchedules((prev) => prev.map((s) => (s.id === id ? data.schedule : s)));
+    return data.schedule;
   }
 
   /**
@@ -222,6 +271,8 @@ export function useSchedules() {
     deleteSchedule,
     generateTasks,
     previewPrompt,
+    editPreview,
+    replaceTasks,
     updateTask,
     addTask,
     deleteTask,

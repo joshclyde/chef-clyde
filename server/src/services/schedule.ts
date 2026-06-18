@@ -5,17 +5,21 @@ import { readAllSchedules } from "../db/schedules";
 import type { Chore, Completion, FrequencyUnit } from "../types/chore";
 import type { DayOfWeek, Hobby } from "../types/hobby";
 import type { Routine } from "../types/routine";
-import type { TaskStatus } from "../types/schedule";
+import type { ScheduleTask, TaskStatus } from "../types/schedule";
 import type { Todo } from "../types/todo";
 import {
   buildChoreLinkingInstructions,
   buildHobbyLinkingInstructions,
   buildRoutineLinkingInstructions,
   buildTodoLinkingInstructions,
+  EDITED_TASK_JSON_SCHEMA,
+  type EditedTask,
+  type EditSuccess,
   MOCK_TASKS,
   type ParseError,
   type ParseSuccess,
   TASK_JSON_SCHEMA,
+  validateEditedTasks,
   validateTasks,
 } from "./scheduleParser";
 
@@ -496,5 +500,161 @@ export async function generateScheduleTasks(
     input.todos,
     input.hobbies,
     input.routines,
+  );
+}
+
+const SCHEDULE_EDIT_SYSTEM_PROMPT =
+  "You are a planning assistant for Chef Clyde that edits an existing time-blocked daily schedule. " +
+  "You are given the day's current task list and a single change the user wants. " +
+  "Apply exactly that change — adding, removing, retiming, or relabeling tasks as needed — and return the FULL updated list. " +
+  "Preserve every task the user did not ask you to touch, keeping its id, times, and label unchanged. " +
+  "Keep the day realistic and in chronological order, honor any FIXED COMMITMENTS at their stated times, " +
+  "and treat the chores, to-dos, hobbies, routines, and recent history below only as context for making the requested change fit sensibly.";
+
+/** Render the day's current tasks as one JSON object per line for the prompt. */
+function buildCurrentTasksContext(tasks: ScheduleTask[]): string {
+  const lines = tasks.map((t) =>
+    JSON.stringify({
+      id: t.id,
+      startTime: t.startTime,
+      endTime: t.endTime,
+      label: t.label,
+      status: t.status,
+    }),
+  );
+  return `The day's CURRENT task list (one task per line as JSON):\n${lines.join("\n")}`;
+}
+
+export type ScheduleEditInput = SchedulePromptInput & {
+  currentTasks: ScheduleTask[]; // the day's existing tasks, as stored
+  instruction: string; // the user's natural-language edit request
+};
+
+/**
+ * Assemble the system prompt + user message that ask the model to apply one
+ * natural-language change to an existing day and return the full updated task
+ * list. Reuses the same situational context as `buildSchedulePrompt` (minus the
+ * link instructions — links are preserved server-side by id). Exposed for
+ * symmetry with the generator, should the UI ever want to preview it.
+ */
+export function buildEditPrompt({
+  date,
+  dayContext,
+  chores,
+  todos,
+  hobbies,
+  routines,
+  currentTasks,
+  instruction,
+}: ScheduleEditInput): { system: string; userMessage: string } {
+  const sections: string[] = [
+    SCHEDULE_EDIT_SYSTEM_PROMPT,
+    `Today's date is ${isoDate(new Date())}. You are editing the schedule for ${date}.`,
+  ];
+
+  const fixedCommitments = buildFixedCommitmentsContext(hobbies, date);
+  if (fixedCommitments) sections.push(fixedCommitments);
+
+  sections.push(
+    buildChoresContext(chores),
+    buildTodosContext(todos),
+    buildHobbiesContext(hobbies, date),
+    buildRoutinesContext(routines, date),
+    buildRecentTaskHistoryContext(),
+  );
+
+  const instructions = readScheduleInstructions().trim();
+  if (instructions) {
+    sections.push(
+      `The user's standing scheduling instructions (apply these every time):\n${instructions}`,
+    );
+  }
+
+  const notes = dayContext.trim();
+  sections.push(
+    notes
+      ? `The user's notes for this specific day (one-off context to honor):\n${notes}`
+      : "The user added no extra notes for this day.",
+  );
+
+  sections.push(buildCurrentTasksContext(currentTasks));
+  sections.push(EDITED_TASK_JSON_SCHEMA);
+
+  return {
+    system: sections.join("\n\n"),
+    userMessage:
+      `Apply this change to the schedule for ${date}, then return the full updated task list as JSON ` +
+      `matching the schema in your instructions.\n\nRequested change:\n${instruction.trim()}`,
+  };
+}
+
+/** Shift an "HH:MM" time forward by `minutes`, clamped to end-of-day. */
+function shiftTime(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = Math.min(23 * 60 + 59, h * 60 + m + minutes);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(
+    total % 60,
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * Deterministic stand-in for the model under MOCK_AI: drop the first task,
+ * lengthen the last surviving task by 45 minutes, and add a banana — enough to
+ * exercise the removed / changed / added paths in the diff UI without a key.
+ */
+function mockEditTasks(currentTasks: ScheduleTask[]): EditSuccess {
+  const kept: EditedTask[] = currentTasks.slice(1).map((t) => ({
+    id: t.id,
+    startTime: t.startTime,
+    endTime: t.endTime,
+    label: t.label,
+  }));
+  if (kept.length > 0) {
+    const last = kept[kept.length - 1];
+    kept[kept.length - 1] = {
+      ...last,
+      endTime: shiftTime(last.startTime, 45),
+    };
+  }
+  const banana: EditedTask = {
+    startTime: "08:00",
+    endTime: "08:10",
+    label: "Eat a banana",
+  };
+  return { tasks: [...kept, banana] };
+}
+
+/**
+ * Apply one natural-language edit to a day's task list in a single model call,
+ * returning the proposed full list. Task identity is carried by id so the caller
+ * can keep status/links/completions on tasks that survive the edit.
+ */
+export async function editScheduleTasks(
+  input: ScheduleEditInput,
+): Promise<EditSuccess | ParseError> {
+  if (process.env.MOCK_AI === "true") {
+    return mockEditTasks(input.currentTasks);
+  }
+
+  const { system, userMessage } = buildEditPrompt(input);
+  let rawText: string;
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 8096,
+      thinking: { type: "adaptive" },
+      system,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    const textBlock = response.content.find((b) => b.type === "text");
+    rawText = textBlock?.text ?? "";
+  } catch (error) {
+    console.error("Schedule edit Anthropic error:", error);
+    return { error: "Failed to edit the task list" };
+  }
+
+  return validateEditedTasks(
+    rawText,
+    new Set(input.currentTasks.map((t) => t.id)),
   );
 }
