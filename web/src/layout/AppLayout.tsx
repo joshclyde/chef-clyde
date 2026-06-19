@@ -12,6 +12,7 @@ import Routines from "../pages/Routines/Routines";
 import ScheduleDaily from "../pages/Schedule/Daily";
 import ScheduleInstructions from "../pages/Schedule/Instructions";
 import ScheduleSaved from "../pages/Schedule/Saved";
+import SettingsPage from "../pages/Settings/Settings";
 import Todos from "../pages/Todos/Todos";
 import { Panel } from "../panel/Panel";
 import { usePanel } from "../panel/usePanel";
@@ -28,7 +29,7 @@ export function AppLayout() {
   return (
     <div className={styles.layout}>
       <ActivityBar activeActivity={activeActivity} />
-      <Sidebar activity={activeActivity} />
+      {activeActivity.id !== "settings" && <Sidebar activity={activeActivity} />}
       <div className={styles.workspace} data-panel-position={position}>
         <main className={styles.main}>
           <Routes>
@@ -55,6 +56,7 @@ export function AppLayout() {
             <Route path="/routines/breakdown" element={<RoutinesBreakdown />} />
             <Route path="/routines/manage" element={<Routines />} />
             <Route path="/todos" element={<Todos />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/schedule"
               element={<Navigate to="/schedule/daily" replace />}
