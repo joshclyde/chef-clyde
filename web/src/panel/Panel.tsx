@@ -1,4 +1,4 @@
-import { PanelBottom, PanelRight, X } from "lucide-react";
+import { PanelBottom, PanelRight, Sparkles, X } from "lucide-react";
 
 import { cn } from "../ui/cn";
 import styles from "./Panel.module.css";
@@ -18,6 +18,7 @@ export function Panel() {
   } = usePanel();
 
   const active = panelTabs.find((tab) => tab.id === activeTab) ?? panelTabs[0];
+  const showTabs = panelTabs.length > 1;
 
   return (
     <section
@@ -27,29 +28,36 @@ export function Panel() {
     >
       <PanelResizeHandle />
       <header className={styles.header}>
-        <div className={styles.tabs} role="tablist">
-          {panelTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = tab.id === active.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={cn(
-                  styles.tab,
-                  tab.id === "chat" && styles.aiTab,
-                  isActive && styles.tabActive,
-                )}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <Icon size={16} strokeWidth={2} aria-hidden />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        {showTabs ? (
+          <div className={styles.tabs} role="tablist">
+            {panelTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = tab.id === active.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={cn(
+                    styles.tab,
+                    tab.id === "chat" && styles.aiTab,
+                    isActive && styles.tabActive,
+                  )}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <Icon size={16} strokeWidth={2} aria-hidden />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={cn(styles.tab, styles.aiTab, styles.tabActive, styles.panelTitle)}>
+            <Sparkles size={16} strokeWidth={2} aria-hidden />
+            {active.label}
+          </div>
+        )}
         <div className={styles.controls}>
           <button
             type="button"
