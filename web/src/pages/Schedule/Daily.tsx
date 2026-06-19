@@ -50,16 +50,18 @@ function formatDate(date: string) {
   });
 }
 
-/** A task's expandable detail area: free-text notes + chore/to-do links + outcome controls. */
+/** A task's expandable detail area: free-text notes + chore/to-do/routine links + outcome controls. */
 function TaskDetail({
   task,
   chores,
   todos,
+  routines,
   onUpdate,
 }: {
   task: ScheduleTask;
   chores: Chore[];
   todos: Todo[];
+  routines: Routine[];
   onUpdate: (taskId: string, patch: TaskPatch) => void;
 }) {
   // Local draft so typing stays smooth; we persist on blur.
@@ -139,6 +141,36 @@ function TaskDetail({
             .map((t) => (
               <option key={t.id} value={t.id}>
                 {t.title}
+              </option>
+            ))}
+        </Select>
+      </Stack>
+      <Stack gap="3xs">
+        <Text as="label" size="xs" variant="muted">
+          Linked routine
+        </Text>
+        <Select
+          value={task.routineId ?? ""}
+          aria-label="Linked routine"
+          onChange={(e) =>
+            onUpdate(task.id, {
+              routineId: e.target.value === "" ? null : e.target.value,
+            })
+          }
+        >
+          <option value="">No linked routine</option>
+          {/* keep the select truthful if the routine was deleted */}
+          {task.routineId &&
+            !routines.some((r) => r.id === task.routineId) && (
+              <option value={task.routineId}>
+                Linked routine (unavailable)
+              </option>
+            )}
+          {[...routines]
+            .sort((a, b) => a.label.localeCompare(b.label))
+            .map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
               </option>
             ))}
         </Select>
@@ -450,6 +482,7 @@ function TaskList({
                     task={task}
                     chores={chores}
                     todos={todos}
+                    routines={routines}
                     onUpdate={update}
                   />
                 )}
