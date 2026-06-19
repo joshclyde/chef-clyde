@@ -39,14 +39,6 @@ const POKEMON_NAMES = [
   "mew",
 ];
 
-function djb2Hash(str: string): number {
-  let hash = 5381;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
-}
-
 function pokemonFromName(instanceName: string): { number: number; name: string } {
   const normalized = instanceName.toLowerCase().replace(/[^a-z0-9-]/g, "");
   const directIdx = POKEMON_NAMES.indexOf(normalized);
@@ -59,9 +51,8 @@ function pokemonFromName(instanceName: string): { number: number; name: string }
       return { number: i + 1, name: POKEMON_NAMES[i] };
     }
   }
-  // Fallback: hash-based assignment
-  const idx = djb2Hash(instanceName) % 151;
-  return { number: idx + 1, name: POKEMON_NAMES[idx] };
+  // Fallback: mew
+  return { number: 151, name: "mew" };
 }
 
 function getGitBranch(): string {
