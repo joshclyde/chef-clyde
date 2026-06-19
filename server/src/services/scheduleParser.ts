@@ -1,19 +1,10 @@
-import type { Chore } from "../types/chore";
-import type { Hobby } from "../types/hobby";
-import type { Routine } from "../types/routine";
 import type { ScheduleTask } from "../types/schedule";
-import type { Todo } from "../types/todo";
+import type { ScheduleItem } from "../types/scheduleItem";
 
 /** The task fields the model produces; id + status are added server-side. */
 export type ParsedTask = Omit<
   ScheduleTask,
-  | "id"
-  | "status"
-  | "notes"
-  | "choreCompletionId"
-  | "todoCompletionAt"
-  | "hobbyTaskCompletionId"
-  | "routineCompletionId"
+  "id" | "status" | "notes" | "itemCompletionId"
 >;
 
 export type ParseSuccess = { tasks: ParsedTask[] };
@@ -25,7 +16,7 @@ export type ParseError = { error: string };
  * keep/modify that task, absent for a brand-new task. Links are preserved
  * server-side by id, so the edit schema carries no link fields.
  */
-export type EditedTask = ParsedTask & { id?: string };
+export type EditedTask = Omit<ParsedTask, "itemId"> & { id?: string };
 
 export type EditSuccess = { tasks: EditedTask[] };
 
@@ -40,12 +31,12 @@ Produce one task per concrete time-blocked activity, in chronological order. Tim
 If no tasks can be produced, output exactly this JSON:
 {"error": "no_tasks_found"}
 
-"choreId", "todoId", "hobbyTaskId", and "routineId" are optional links explained below the schema; include at most one of them on a task, and only when it clearly applies.
+"itemId" is an optional link explained below the schema; include it only when a task clearly performs one of the user's scheduled items.
 
 Schema:
 {
   "tasks": [
-    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "choreId"?: string, "todoId"?: string, "hobbyTaskId"?: string, "routineId"?: string }
+    { "startTime": string ("HH:MM"), "endTime": string ("HH:MM") | null, "label": string, "itemId"?: string }
   ]
 }`;
 
@@ -105,10 +96,7 @@ export const TASK_OUTPUT_SCHEMA = {
               startTime: { type: "string" },
               endTime: NULLABLE_TIME,
               label: { type: "string" },
-              choreId: { type: "string" },
-              todoId: { type: "string" },
-              hobbyTaskId: { type: "string" },
-              routineId: { type: "string" },
+              itemId: { type: "string" },
             },
             required: ["startTime", "endTime", "label"],
             additionalProperties: false,
@@ -153,57 +141,28 @@ export const EDITED_TASK_OUTPUT_SCHEMA = {
   ],
 };
 
-/**
- * Chore-linking guidance appended to the prompt so the model can attach a
- * choreId to any task that performs one. Empty when the user has no chores, so
- * an empty list adds no noise.
- */
-export function buildChoreLinkingInstructions(chores: Chore[]): string {
-  if (chores.length === 0) return "";
-  const list = chores.map((c) => `- ${c.id} :: ${c.name}`).join("\n");
-  return `The user tracks recurring household chores. When a task is clearly an instance of one of the chores below, add an optional "choreId" field with that chore's exact id. Match on meaning, not exact wording (e.g. "Clean the shower (overdue)" is the chore "Clean the shower"). If no chore matches, omit "choreId". Never invent ids.\n\nChores (id :: name):\n${list}`;
+/** A short, human-readable tag for an item, used in the linking guidance. */
+function describeItem(item: ScheduleItem): string {
+  const name =
+    item.category === "hobby" && item.details.groupLabel
+      ? `${item.details.groupLabel} — ${item.label}`
+      : item.label;
+  const extra =
+    item.category === "todo" && item.details.dueDate
+      ? ` (due ${item.details.dueDate})`
+      : "";
+  return `- ${item.id} :: [${item.category}] ${name}${extra}`;
 }
 
 /**
- * To-do-linking guidance appended to the prompt so the model can attach a
- * todoId to any task that fulfills one of the user's one-off to-dos. Empty when
- * the user has no open to-dos, so it adds no noise.
+ * Linking guidance appended to the prompt so the model can attach an `itemId` to
+ * any task that performs one of the user's scheduled items (a chore, hobby task,
+ * routine, or one-off to-do). Empty when there are no items, so it adds no noise.
  */
-export function buildTodoLinkingInstructions(todos: Todo[]): string {
-  if (todos.length === 0) return "";
-  const list = todos
-    .map((t) => {
-      const due = t.dueDate ? `due ${t.dueDate}` : "no due date";
-      return `- ${t.id} :: ${t.title} (${due})`;
-    })
-    .join("\n");
-  return `The user also keeps one-off to-dos (separate from recurring chores). When a task fulfills one of the to-dos below, add an optional "todoId" field with that to-do's exact id. Match on meaning, not exact wording. If no to-do matches, omit "todoId". Never invent ids.\n\nTo-dos (id :: title):\n${list}`;
-}
-
-/**
- * Hobby-linking guidance appended to the prompt so the model can attach a
- * hobbyTaskId to any task that performs one of the user's hobby tasks. Empty
- * when the user has no hobby tasks, so it adds no noise.
- */
-export function buildHobbyLinkingInstructions(hobbies: Hobby[]): string {
-  const list = hobbies
-    .flatMap((h) => h.tasks.map((t) => `- ${t.id} :: ${h.name} — ${t.label}`))
-    .join("\n");
-  if (!list) return "";
-  return `The user pursues hobbies, each with its own tasks (a recurring session, a booked event, a loose idea, etc.). When a task is clearly an instance of one of the hobby tasks below, add an optional "hobbyTaskId" field with that task's exact id. Match on meaning, not exact wording. If none matches, omit "hobbyTaskId". Never invent ids.\n\nHobby tasks (id :: hobby — task):\n${list}`;
-}
-
-/**
- * Routine-linking guidance appended to the prompt so the model can attach a
- * routineId to any task that performs one of the user's daily routines. Empty
- * when the user has no routines, so it adds no noise.
- */
-export function buildRoutineLinkingInstructions(routines: Routine[]): string {
-  if (routines.length === 0) return "";
-  const list = routines
-    .map((r) => `- ${r.id} :: ${r.label} (${r.timeOfDay})`)
-    .join("\n");
-  return `The user keeps daily routines — small repeating things that shape the day (e.g. brush teeth, make coffee). When a task is clearly an instance of one of the routines below, add an optional "routineId" field with that routine's exact id. Match on meaning, not exact wording. If none matches, omit "routineId". Never invent ids.\n\nRoutines (id :: label (time of day)):\n${list}`;
+export function buildLinkingInstructions(items: ScheduleItem[]): string {
+  if (items.length === 0) return "";
+  const list = items.map(describeItem).join("\n");
+  return `The user tracks scheduled items — recurring chores, hobby tasks, daily routines, and one-off to-dos. When a task is clearly an instance of one of the items below, add an optional "itemId" field with that item's exact id. Match on meaning, not exact wording (e.g. "Clean the shower (overdue)" is the item "Clean the shower"). If none matches, omit "itemId". Never invent ids.\n\nItems (id :: [category] label):\n${list}`;
 }
 
 /** Deterministic stand-in for the model when MOCK_AI is set. */
@@ -228,14 +187,11 @@ const TIME_PATTERN = /^\d{2}:\d{2}$/;
 
 /**
  * Parse and validate the model's raw JSON reply into a clean task list. Drops
- * any chore link that doesn't point at a real chore (nulls and invented ids).
+ * any `itemId` link that doesn't point at a real item (nulls and invented ids).
  */
 export function validateTasks(
   rawText: string,
-  chores: Chore[],
-  todos: Todo[],
-  hobbies: Hobby[],
-  routines: Routine[],
+  items: ScheduleItem[],
 ): ParseSuccess | ParseError {
   let parsed: unknown;
   try {
@@ -270,46 +226,22 @@ export function validateTasks(
         (typeof (t as ParsedTask).endTime === "string" &&
           TIME_PATTERN.test((t as ParsedTask).endTime as string))) &&
       typeof (t as ParsedTask).label === "string" &&
-      // the model may emit choreId/todoId/hobbyTaskId: null; sanitize drops it
-      ((t as { choreId?: unknown }).choreId == null ||
-        typeof (t as { choreId?: unknown }).choreId === "string") &&
-      ((t as { todoId?: unknown }).todoId == null ||
-        typeof (t as { todoId?: unknown }).todoId === "string") &&
-      ((t as { hobbyTaskId?: unknown }).hobbyTaskId == null ||
-        typeof (t as { hobbyTaskId?: unknown }).hobbyTaskId === "string") &&
-      ((t as { routineId?: unknown }).routineId == null ||
-        typeof (t as { routineId?: unknown }).routineId === "string"),
+      // the model may emit itemId: null; sanitize drops it
+      ((t as { itemId?: unknown }).itemId == null ||
+        typeof (t as { itemId?: unknown }).itemId === "string"),
   );
   if (!valid) {
     console.error("Schedule generation returned malformed tasks:", parsed);
     return { error: "Generated tasks have an unexpected shape" };
   }
 
-  // Only keep links that point at real chores/to-dos/hobby tasks — drop nulls
-  // and any id the model invented.
-  const validChoreIds = new Set(chores.map((c) => c.id));
-  const validTodoIds = new Set(todos.map((t) => t.id));
-  const validHobbyTaskIds = new Set(
-    hobbies.flatMap((h) => h.tasks.map((t) => t.id)),
-  );
-  const validRoutineIds = new Set(routines.map((r) => r.id));
+  // Only keep links that point at a real item — drop nulls and invented ids.
+  const validItemIds = new Set(items.map((i) => i.id));
   return {
-    tasks: tasks.map(({ choreId, todoId, hobbyTaskId, routineId, ...rest }) => {
+    tasks: tasks.map(({ itemId, ...rest }) => {
       const task: ParsedTask = { ...rest };
-      if (typeof choreId === "string" && validChoreIds.has(choreId)) {
-        task.choreId = choreId;
-      }
-      if (typeof todoId === "string" && validTodoIds.has(todoId)) {
-        task.todoId = todoId;
-      }
-      if (
-        typeof hobbyTaskId === "string" &&
-        validHobbyTaskIds.has(hobbyTaskId)
-      ) {
-        task.hobbyTaskId = hobbyTaskId;
-      }
-      if (typeof routineId === "string" && validRoutineIds.has(routineId)) {
-        task.routineId = routineId;
+      if (typeof itemId === "string" && validItemIds.has(itemId)) {
+        task.itemId = itemId;
       }
       return task;
     }),

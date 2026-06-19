@@ -9,7 +9,7 @@
       "endTime": "07:15",
       "label": "Make coffee",
       "status": "completed",
-      "routineId": "fixture-routine-coffee"
+      "itemId": "fixture-routine-coffee"
     },
     {
       "id": "fixture-task-code",
@@ -24,7 +24,7 @@
       "endTime": "13:10",
       "label": "Water the plants",
       "status": "pending",
-      "choreId": "fixture-chore-plants"
+      "itemId": "fixture-chore-plants"
     },
     {
       "id": "fixture-task-oil-change",
@@ -33,7 +33,7 @@
       "label": "Schedule car oil change",
       "status": "future",
       "notes": "Call the shop.",
-      "todoId": "fixture-todo-oil-change"
+      "itemId": "fixture-todo-oil-change"
     },
     {
       "id": "fixture-task-stretch",
@@ -41,7 +41,7 @@
       "endTime": "21:45",
       "label": "Evening stretch",
       "status": "pending",
-      "routineId": "fixture-routine-stretch"
+      "itemId": "fixture-routine-stretch"
     }
   ],
   "createdAt": "2026-06-17T06:00:00.000Z",

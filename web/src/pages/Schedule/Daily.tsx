@@ -4,12 +4,19 @@ import {
   ChevronRight,
   Gamepad2,
   ListTodo,
+  type LucideIcon,
   Pencil,
   Repeat2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { todayLocal } from "../../lib/date";
+import {
+  itemDisplayName,
+  type ScheduleItem,
+  type ScheduleItemCategory,
+  useScheduleItems,
+} from "../../lib/scheduleItems";
 import {
   Button,
   Card,
@@ -21,10 +28,6 @@ import {
   Textarea,
 } from "../../ui";
 import { cn } from "../../ui/cn";
-import { type Chore, useChores } from "../Chores/useChores";
-import { type Hobby, useHobbies } from "../Hobbies/useHobbies";
-import { type Routine, useRoutines } from "../Routines/useRoutines";
-import { type Todo, useTodos } from "../Todos/useTodos";
 import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
 import styles from "./Schedule.module.css";
 import { ScheduleAiEdit } from "./ScheduleAiEdit";
@@ -50,16 +53,72 @@ function formatDate(date: string) {
   });
 }
 
-/** A task's expandable detail area: free-text notes + chore/to-do links + outcome controls. */
+/** Per-category presentation for the link icon + the picker's option groups. */
+const CATEGORY_META: Record<
+  ScheduleItemCategory,
+  { icon: LucideIcon; className: string; label: string; group: string }
+> = {
+  chore: {
+    icon: BrushCleaning,
+    className: styles.choreIcon,
+    label: "Linked chore",
+    group: "Chores",
+  },
+  todo: {
+    icon: ListTodo,
+    className: styles.todoIcon,
+    label: "From your to-dos",
+    group: "To-dos",
+  },
+  hobby: {
+    icon: Gamepad2,
+    className: styles.hobbyIcon,
+    label: "From your hobbies",
+    group: "Hobbies",
+  },
+  routine: {
+    icon: Repeat2,
+    className: styles.routineIcon,
+    label: "From your routines",
+    group: "Routines",
+  },
+};
+
+const LINK_CATEGORIES: ScheduleItemCategory[] = [
+  "chore",
+  "todo",
+  "hobby",
+  "routine",
+];
+
+/** The link icon shown beside a task that performs one of the user's items. */
+function LinkBadge({
+  task,
+  items,
+}: {
+  task: ScheduleTask;
+  items: ScheduleItem[];
+}) {
+  if (!task.itemId) return null;
+  const item = items.find((i) => i.id === task.itemId);
+  const meta = CATEGORY_META[item?.category ?? "chore"];
+  const Icon = meta.icon;
+  const label = item ? `${meta.label}: ${itemDisplayName(item)}` : meta.label;
+  return (
+    <span className={meta.className} role="img" aria-label={label} title={label}>
+      <Icon size={16} aria-hidden />
+    </span>
+  );
+}
+
+/** A task's expandable detail area: free-text notes + item link + outcome controls. */
 function TaskDetail({
   task,
-  chores,
-  todos,
+  items,
   onUpdate,
 }: {
   task: ScheduleTask;
-  chores: Chore[];
-  todos: Todo[];
+  items: ScheduleItem[];
   onUpdate: (taskId: string, patch: TaskPatch) => void;
 }) {
   // Local draft so typing stays smooth; we persist on blur.
@@ -91,56 +150,39 @@ function TaskDetail({
       </Stack>
       <Stack gap="3xs">
         <Text as="label" size="xs" variant="muted">
-          Linked chore
+          Linked item
         </Text>
         <Select
-          value={task.choreId ?? ""}
-          aria-label="Linked chore"
+          value={task.itemId ?? ""}
+          aria-label="Linked item"
           onChange={(e) =>
             onUpdate(task.id, {
-              choreId: e.target.value === "" ? null : e.target.value,
+              itemId: e.target.value === "" ? null : e.target.value,
             })
           }
         >
-          <option value="">No linked chore</option>
-          {/* keep the select truthful while chores load or if the chore was deleted */}
-          {task.choreId && !chores.some((c) => c.id === task.choreId) && (
-            <option value={task.choreId}>Linked chore (unavailable)</option>
+          <option value="">No linked item</option>
+          {/* keep the select truthful while items load or if the item was deleted */}
+          {task.itemId && !items.some((i) => i.id === task.itemId) && (
+            <option value={task.itemId}>Linked item (unavailable)</option>
           )}
-          {[...chores]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-        </Select>
-      </Stack>
-      <Stack gap="3xs">
-        <Text as="label" size="xs" variant="muted">
-          Linked to-do
-        </Text>
-        <Select
-          value={task.todoId ?? ""}
-          aria-label="Linked to-do"
-          onChange={(e) =>
-            onUpdate(task.id, {
-              todoId: e.target.value === "" ? null : e.target.value,
-            })
-          }
-        >
-          <option value="">No linked to-do</option>
-          {/* keep the select truthful if the to-do was completed or deleted */}
-          {task.todoId && !todos.some((t) => t.id === task.todoId) && (
-            <option value={task.todoId}>Linked to-do (unavailable)</option>
-          )}
-          {[...todos]
-            .sort((a, b) => a.title.localeCompare(b.title))
-            .map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
+          {LINK_CATEGORIES.map((category) => {
+            const group = items
+              .filter((i) => i.category === category)
+              .sort((a, b) =>
+                itemDisplayName(a).localeCompare(itemDisplayName(b)),
+              );
+            if (group.length === 0) return null;
+            return (
+              <optgroup key={category} label={CATEGORY_META[category].group}>
+                {group.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {itemDisplayName(i)}
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
         </Select>
       </Stack>
       <Inline gap="2xs">
@@ -166,19 +208,13 @@ function TaskDetail({
 /** Interactive, time-aware checklist of the day's tasks. */
 function TaskList({
   schedule,
-  chores,
-  todos,
-  hobbies,
-  routines,
+  items,
   onUpdate,
   onAddTask,
   onDeleteTask,
 }: {
   schedule: Schedule | undefined;
-  chores: Chore[];
-  todos: Todo[];
-  hobbies: Hobby[];
-  routines: Routine[];
+  items: ScheduleItem[];
   onUpdate: (id: string, taskId: string, patch: TaskPatch) => Promise<void>;
   onAddTask: (input: NewTaskInput) => Promise<void>;
   onDeleteTask: (id: string, taskId: string) => Promise<void>;
@@ -341,82 +377,7 @@ function TaskList({
                     {formatTimeRange(task)}
                   </span>
                   <span className={styles.taskLabel}>{task.label}</span>
-                  {task.choreId &&
-                    (() => {
-                      const chore = chores.find((c) => c.id === task.choreId);
-                      const label = chore
-                        ? `Linked chore: ${chore.name}`
-                        : "Linked chore";
-                      return (
-                        <span
-                          className={styles.choreIcon}
-                          role="img"
-                          aria-label={label}
-                          title={label}
-                        >
-                          <BrushCleaning size={16} aria-hidden />
-                        </span>
-                      );
-                    })()}
-                  {task.todoId &&
-                    (() => {
-                      const todo = todos.find((t) => t.id === task.todoId);
-                      const label = todo
-                        ? `From your to-dos: ${todo.title}`
-                        : "From your to-dos";
-                      return (
-                        <span
-                          className={styles.todoIcon}
-                          role="img"
-                          aria-label={label}
-                          title={label}
-                        >
-                          <ListTodo size={16} aria-hidden />
-                        </span>
-                      );
-                    })()}
-                  {task.hobbyTaskId &&
-                    (() => {
-                      const hobby = hobbies.find((h) =>
-                        h.tasks.some((t) => t.id === task.hobbyTaskId),
-                      );
-                      const hobbyTask = hobby?.tasks.find(
-                        (t) => t.id === task.hobbyTaskId,
-                      );
-                      const label =
-                        hobby && hobbyTask
-                          ? `From your hobbies: ${hobby.name} — ${hobbyTask.label}`
-                          : "From your hobbies";
-                      return (
-                        <span
-                          className={styles.hobbyIcon}
-                          role="img"
-                          aria-label={label}
-                          title={label}
-                        >
-                          <Gamepad2 size={16} aria-hidden />
-                        </span>
-                      );
-                    })()}
-                  {task.routineId &&
-                    (() => {
-                      const routine = routines.find(
-                        (r) => r.id === task.routineId,
-                      );
-                      const label = routine
-                        ? `From your routines: ${routine.label}`
-                        : "From your routines";
-                      return (
-                        <span
-                          className={styles.routineIcon}
-                          role="img"
-                          aria-label={label}
-                          title={label}
-                        >
-                          <Repeat2 size={16} aria-hidden />
-                        </span>
-                      );
-                    })()}
+                  <LinkBadge task={task} items={items} />
                   {status === "current" && (
                     <span className={styles.nowBadge}>Now</span>
                   )}
@@ -446,12 +407,7 @@ function TaskList({
                   </button>
                 </div>
                 {expanded && (
-                  <TaskDetail
-                    task={task}
-                    chores={chores}
-                    todos={todos}
-                    onUpdate={update}
-                  />
+                  <TaskDetail task={task} items={items} onUpdate={update} />
                 )}
               </div>
             );
@@ -485,10 +441,7 @@ export default function ScheduleDaily() {
     addTask,
     deleteTask,
   } = useSchedules();
-  const { chores } = useChores();
-  const { todos } = useTodos();
-  const { hobbies } = useHobbies();
-  const { routines } = useRoutines();
+  const { items } = useScheduleItems();
   const today = todayLocal();
   const schedule = schedules.find((s) => s.date === today);
   const hasTasks = (schedule?.tasks?.length ?? 0) > 0;
@@ -524,10 +477,7 @@ export default function ScheduleDaily() {
 
       <TaskList
         schedule={schedule}
-        chores={chores}
-        todos={todos}
-        hobbies={hobbies}
-        routines={routines}
+        items={items}
         onUpdate={updateTask}
         onAddTask={handleAddTask}
         onDeleteTask={deleteTask}

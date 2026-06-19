@@ -1,0 +1,13 @@
+{
+  "id": "fixture-hobby-pickleball-play",
+  "category": "hobby",
+  "label": "Play pickleball",
+  "occurrence": { "kind": "weekly", "days": ["Sat"] },
+  "completions": [],
+  "typicalTimeMinutes": 90,
+  "notes": "Casual games at the local courts.",
+  "timeOfDay": "morning",
+  "details": { "groupLabel": "Pickleball" },
+  "createdAt": "2026-05-01T12:00:00.000Z",
+  "updatedAt": "2026-05-01T12:00:00.000Z"
+}

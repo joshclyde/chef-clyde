@@ -1,4 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  createScheduleItem,
+  deleteScheduleItem,
+  deleteScheduleItemCompletion,
+  fetchScheduleItems,
+  logScheduleItemCompletion,
+  type Occurrence as ItemOccurrence,
+  type ScheduleItem,
+  type ScheduleItemInput,
+  updateScheduleItem,
+} from "../../lib/scheduleItems";
 
 export type FrequencyUnit = "days" | "weeks" | "months";
 export type DayOfWeek = "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
@@ -15,6 +27,11 @@ export type Completion = {
   performedAt: string;
 };
 
+/**
+ * The web's occurrence shape keeps `timeOfDay` ON the weekly variant for the
+ * editor's convenience; the server stores it on the item, so the hook maps
+ * between the two. Other kinds are identical to the stored shape.
+ */
 export type Occurrence =
   | { kind: "event"; date: string; startTime?: string; endTime?: string }
   | { kind: "weekly"; days: DayOfWeek[]; timeOfDay?: TimeOfDay }
@@ -115,76 +132,230 @@ export function dueSortKey(task: HobbyTask): number {
   return due ? due.getTime() : 0;
 }
 
+/** The group an item belongs to — its hobby name. Falls back to its own label. */
+function groupOf(item: ScheduleItem): string {
+  return item.details.groupLabel ?? item.label;
+}
+
+/** Stored occurrence → the editor's shape, lifting the item's time-of-day onto weekly. */
+function toWebOccurrence(
+  occ: ItemOccurrence,
+  timeOfDay: TimeOfDay | undefined,
+): Occurrence {
+  if (occ.kind === "weekly") {
+    return {
+      kind: "weekly",
+      days: occ.days,
+      ...(timeOfDay && timeOfDay !== "any" ? { timeOfDay } : {}),
+    };
+  }
+  return occ;
+}
+
+/** Editor's occurrence → the stored occurrence plus the item-level time-of-day. */
+function fromWebOccurrence(occ: Occurrence): {
+  occurrence: ItemOccurrence;
+  timeOfDay?: TimeOfDay;
+} {
+  if (occ.kind === "weekly") {
+    return {
+      occurrence: { kind: "weekly", days: occ.days },
+      timeOfDay: occ.timeOfDay,
+    };
+  }
+  return { occurrence: occ };
+}
+
+function toHobbyTask(item: ScheduleItem): HobbyTask {
+  return {
+    id: item.id,
+    label: item.label,
+    typicalTimeMinutes: item.typicalTimeMinutes,
+    occurrence: toWebOccurrence(item.occurrence, item.timeOfDay),
+    completions: item.completions,
+  };
+}
+
+/** Build the create/update payload for one task under a hobby group. */
+function toItemInput(
+  groupLabel: string,
+  notes: string | undefined,
+  task: HobbyTaskInput,
+): ScheduleItemInput {
+  const { occurrence, timeOfDay } = fromWebOccurrence(task.occurrence);
+  return {
+    category: "hobby",
+    label: task.label,
+    occurrence,
+    ...(task.typicalTimeMinutes != null
+      ? { typicalTimeMinutes: task.typicalTimeMinutes }
+      : {}),
+    ...(notes ? { notes } : {}),
+    ...(timeOfDay ? { timeOfDay } : {}),
+    details: { groupLabel },
+  };
+}
+
+/** A hobby created in the UI that has no tasks yet, so it isn't stored server-side. */
+type EmptyGroup = { name: string; notes?: string; createdAt: string };
+
+/** Reassemble the flat items (plus any task-less groups) into hobby cards. */
+function buildHobbies(
+  items: ScheduleItem[],
+  emptyGroups: EmptyGroup[],
+): Hobby[] {
+  const groups = new Map<string, ScheduleItem[]>();
+  for (const item of items) {
+    const key = groupOf(item);
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(item);
+    else groups.set(key, [item]);
+  }
+
+  const hobbies: Hobby[] = [];
+  for (const [name, groupItems] of groups) {
+    const notes = groupItems.find((i) => i.notes)?.notes;
+    const createdAt = groupItems.reduce(
+      (min, i) => (i.createdAt < min ? i.createdAt : min),
+      groupItems[0].createdAt,
+    );
+    const updatedAt = groupItems.reduce(
+      (max, i) => (i.updatedAt > max ? i.updatedAt : max),
+      groupItems[0].updatedAt,
+    );
+    hobbies.push({
+      id: name,
+      name,
+      ...(notes ? { notes } : {}),
+      tasks: groupItems.map(toHobbyTask),
+      createdAt,
+      updatedAt,
+    });
+  }
+
+  for (const g of emptyGroups) {
+    if (groups.has(g.name)) continue;
+    hobbies.push({
+      id: g.name,
+      name: g.name,
+      ...(g.notes ? { notes: g.notes } : {}),
+      tasks: [],
+      createdAt: g.createdAt,
+      updatedAt: g.createdAt,
+    });
+  }
+
+  return hobbies;
+}
+
 export function useHobbies() {
-  const [hobbies, setHobbies] = useState<Hobby[]>([]);
+  const [items, setItems] = useState<ScheduleItem[]>([]);
+  const [emptyGroups, setEmptyGroups] = useState<EmptyGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/hobbies")
-      .then((res) => res.json())
-      .then((data: { hobbies: Hobby[] }) => setHobbies(data.hobbies))
+    fetchScheduleItems("hobby")
+      .then(setItems)
       .catch(() => setError("Failed to load hobbies."))
       .finally(() => setLoading(false));
   }, []);
 
+  const hobbies = useMemo(
+    () => buildHobbies(items, emptyGroups),
+    [items, emptyGroups],
+  );
+
   async function createHobby(input: HobbyInput) {
-    const res = await fetch("/api/hobbies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to create hobby");
-    const data = (await res.json()) as { hobby: Hobby };
-    setHobbies((prev) => [...prev, data.hobby]);
+    if (input.tasks.length === 0) {
+      // A hobby with no tasks has nothing to store; hold it locally until a task
+      // is added, mirroring the old "create then add tasks" flow.
+      setEmptyGroups((prev) => [
+        ...prev.filter((g) => g.name !== input.name),
+        {
+          name: input.name,
+          notes: input.notes,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      return;
+    }
+    const created = await Promise.all(
+      input.tasks.map((t) =>
+        createScheduleItem(toItemInput(input.name, input.notes, t)),
+      ),
+    );
+    setItems((prev) => [...prev, ...created]);
+    setEmptyGroups((prev) => prev.filter((g) => g.name !== input.name));
   }
 
+  /**
+   * Apply a whole-hobby edit (name, notes, tasks) by reconciling the group's
+   * items: update tasks matched by id, create new ones, delete any dropped. A
+   * rename re-tags every task with the new group label.
+   */
   async function updateHobby(id: string, input: HobbyInput) {
-    const res = await fetch(`/api/hobbies/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+    const current = items.filter((i) => groupOf(i) === id);
+    const currentById = new Map(current.map((i) => [i.id, i]));
+
+    const results: ScheduleItem[] = [];
+    const keptIds = new Set<string>();
+    for (const task of input.tasks) {
+      const payload = toItemInput(input.name, input.notes, task);
+      if (task.id && currentById.has(task.id)) {
+        results.push(await updateScheduleItem(task.id, payload));
+        keptIds.add(task.id);
+      } else {
+        results.push(await createScheduleItem(payload));
+      }
+    }
+
+    await Promise.all(
+      current
+        .filter((i) => !keptIds.has(i.id))
+        .map((i) => deleteScheduleItem(i.id)),
+    );
+
+    setItems((prev) => [...prev.filter((i) => groupOf(i) !== id), ...results]);
+    setEmptyGroups((prev) => {
+      const without = prev.filter((g) => g.name !== id && g.name !== input.name);
+      // If the edit left the group with no tasks, keep its card around locally.
+      return results.length === 0
+        ? [
+            ...without,
+            {
+              name: input.name,
+              notes: input.notes,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : without;
     });
-    if (!res.ok) throw new Error("Failed to update hobby");
-    const data = (await res.json()) as { hobby: Hobby };
-    setHobbies((prev) => prev.map((h) => (h.id === id ? data.hobby : h)));
   }
 
   async function deleteHobby(id: string) {
-    await fetch(`/api/hobbies/${id}`, { method: "DELETE" });
-    setHobbies((prev) => prev.filter((h) => h.id !== id));
+    const groupItems = items.filter((i) => groupOf(i) === id);
+    await Promise.all(groupItems.map((i) => deleteScheduleItem(i.id)));
+    setItems((prev) => prev.filter((i) => groupOf(i) !== id));
+    setEmptyGroups((prev) => prev.filter((g) => g.name !== id));
   }
 
   async function logCompletion(
-    hobbyId: string,
+    _hobbyId: string,
     taskId: string,
     performedAt?: string,
   ) {
-    const res = await fetch(
-      `/api/hobbies/${hobbyId}/tasks/${taskId}/completions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(performedAt ? { performedAt } : {}),
-      },
-    );
-    if (!res.ok) throw new Error("Failed to log session");
-    const data = (await res.json()) as { hobby: Hobby };
-    setHobbies((prev) => prev.map((h) => (h.id === hobbyId ? data.hobby : h)));
+    const item = await logScheduleItemCompletion(taskId, performedAt);
+    setItems((prev) => prev.map((i) => (i.id === taskId ? item : i)));
   }
 
   async function deleteCompletion(
-    hobbyId: string,
+    _hobbyId: string,
     taskId: string,
     completionId: string,
   ) {
-    const res = await fetch(
-      `/api/hobbies/${hobbyId}/tasks/${taskId}/completions/${completionId}`,
-      { method: "DELETE" },
-    );
-    if (!res.ok) throw new Error("Failed to delete session");
-    const data = (await res.json()) as { hobby: Hobby };
-    setHobbies((prev) => prev.map((h) => (h.id === hobbyId ? data.hobby : h)));
+    const item = await deleteScheduleItemCompletion(taskId, completionId);
+    setItems((prev) => prev.map((i) => (i.id === taskId ? item : i)));
   }
 
   return {

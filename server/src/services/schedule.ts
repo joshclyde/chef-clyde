@@ -2,11 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { readScheduleInstructions } from "../db/scheduleInstructions";
 import { readAllSchedules } from "../db/schedules";
-import type { Chore, Completion, FrequencyUnit } from "../types/chore";
-import type { DayOfWeek, Hobby } from "../types/hobby";
-import type { Routine } from "../types/routine";
 import type { ScheduleTask, TaskStatus } from "../types/schedule";
-import type { Todo } from "../types/todo";
+import type {
+  Completion,
+  DayOfWeek,
+  FrequencyUnit,
+  ScheduleItem,
+} from "../types/scheduleItem";
 import {
   type AiOptions,
   type AiUsage,
@@ -15,10 +17,7 @@ import {
   toUsage,
 } from "./aiOptions";
 import {
-  buildChoreLinkingInstructions,
-  buildHobbyLinkingInstructions,
-  buildRoutineLinkingInstructions,
-  buildTodoLinkingInstructions,
+  buildLinkingInstructions,
   EDITED_TASK_JSON_SCHEMA,
   EDITED_TASK_OUTPUT_SCHEMA,
   type EditedTask,
@@ -33,6 +32,12 @@ import {
 } from "./scheduleParser";
 
 const anthropic = new Anthropic();
+
+/** A `ScheduleItem` narrowed to one category, so `details` is concrete. */
+type ItemOf<C extends ScheduleItem["category"]> = Extract<
+  ScheduleItem,
+  { category: C }
+>;
 
 const SCHEDULE_SYSTEM_PROMPT =
   "You are a planning assistant for Chef Clyde that builds realistic, time-blocked daily schedules. " +
@@ -63,14 +68,6 @@ function startOfDay(date: Date): number {
   return d.getTime();
 }
 
-function lastPerformed(chore: Chore): Date | null {
-  if (chore.completions.length === 0) return null;
-  const latest = Math.max(
-    ...chore.completions.map((c) => new Date(c.performedAt).getTime()),
-  );
-  return new Date(latest);
-}
-
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -85,70 +82,13 @@ function localIsoDate(date: Date): string {
   return date.toLocaleDateString("en-CA");
 }
 
-/**
- * Format every chore as a single line describing its cadence, location, time
- * estimate, and — most importantly — whether it is ready to be performed
- * (overdue / due now / upcoming), so the model can prioritize the day.
- */
-function buildChoresContext(chores: Chore[]): string {
-  if (chores.length === 0) {
-    return "The user has no chores recorded.";
-  }
-
-  const lines = chores.map((chore) => {
-    const parts = [
-      `${chore.name} — every ${chore.frequencyValue} ${chore.frequencyUnit}`,
-    ];
-    if (chore.typicalTimeMinutes != null) {
-      parts.push(`~${chore.typicalTimeMinutes} min`);
-    }
-    const location = [chore.room, chore.floor].filter(Boolean).join(", ");
-    if (location) parts.push(location);
-
-    const last = lastPerformed(chore);
-    if (!last) {
-      parts.push("never done — DUE NOW");
-    } else {
-      const due = addFrequency(last, chore.frequencyValue, chore.frequencyUnit);
-      const status =
-        startOfDay(due) < startOfDay(new Date()) ? "OVERDUE" : "upcoming";
-      parts.push(`last done ${isoDate(last)}`);
-      parts.push(`next due ${isoDate(due)} (${status})`);
-    }
-
-    return `- ${parts.join("; ")}`;
-  });
-
-  return `The user's chores and their readiness:\n${lines.join("\n")}`;
-}
-
-/**
- * Format every open to-do as a single line describing its deadline (or lack of
- * one) and any user note, so the model knows which one-off tasks to weave in
- * and how urgent each is. Callers pass only open (not-yet-completed) to-dos.
- */
-function buildTodosContext(todos: Todo[]): string {
-  if (todos.length === 0) {
-    return "The user has no open one-off to-dos.";
-  }
-
-  const today = localIsoDate(new Date());
-  const lines = todos.map((todo) => {
-    const parts = [todo.title];
-    if (!todo.dueDate) {
-      parts.push("no due date");
-    } else if (todo.dueDate < today) {
-      parts.push(`due ${todo.dueDate} (OVERDUE)`);
-    } else if (todo.dueDate === today) {
-      parts.push("due today");
-    } else {
-      parts.push(`due ${todo.dueDate} (upcoming)`);
-    }
-    if (todo.notes) parts.push(`notes: ${todo.notes}`);
-    return `- ${parts.join("; ")}`;
-  });
-
-  return `The user's one-off to-dos and their deadlines:\n${lines.join("\n")}`;
+/** Most recent completion date among a list, or null if there are none. */
+function latestCompletion(completions: Completion[]): Date | null {
+  if (completions.length === 0) return null;
+  const latest = Math.max(
+    ...completions.map((c) => new Date(c.performedAt).getTime()),
+  );
+  return new Date(latest);
 }
 
 const DAY_NAMES: DayOfWeek[] = [
@@ -167,34 +107,50 @@ function weekdayOf(date: string): DayOfWeek {
   return DAY_NAMES[new Date(y, m - 1, d).getDay()];
 }
 
-/** Most recent completion date among a list, or null if there are none. */
-function latestCompletion(completions: Completion[]): Date | null {
-  if (completions.length === 0) return null;
-  const latest = Math.max(
-    ...completions.map((c) => new Date(c.performedAt).getTime()),
-  );
-  return new Date(latest);
+/** Items split by category, so each context section reads concrete `details`. */
+function byCategory(items: ScheduleItem[]) {
+  return {
+    chores: items.filter(
+      (i): i is ItemOf<"chore"> => i.category === "chore",
+    ),
+    todos: items.filter((i): i is ItemOf<"todo"> => i.category === "todo"),
+    hobbies: items.filter(
+      (i): i is ItemOf<"hobby"> => i.category === "hobby",
+    ),
+    routines: items.filter(
+      (i): i is ItemOf<"routine"> => i.category === "routine",
+    ),
+  };
+}
+
+/** The display name for a hobby item — "<hobby> — <task>" when grouped. */
+function hobbyName(item: ItemOf<"hobby">): string {
+  return item.details.groupLabel
+    ? `${item.details.groupLabel} — ${item.label}`
+    : item.label;
 }
 
 /**
- * Hobby tasks of kind "event" that fall on the planned day. These are booked at
+ * Items of kind "event" that fall on the planned day. These are booked at
  * specific times and must be honored exactly, so they get their own emphatic
  * section at the top of the prompt. Empty when nothing is booked that day.
  */
-function buildFixedCommitmentsContext(hobbies: Hobby[], date: string): string {
+function buildFixedCommitmentsContext(
+  items: ScheduleItem[],
+  date: string,
+): string {
   const lines: string[] = [];
-  for (const hobby of hobbies) {
-    for (const task of hobby.tasks) {
-      const occ = task.occurrence;
-      if (occ.kind !== "event" || occ.date !== date) continue;
-      const time =
-        occ.startTime && occ.endTime
-          ? `${occ.startTime}–${occ.endTime}`
-          : occ.startTime
-            ? `at ${occ.startTime}`
-            : "time unspecified";
-      lines.push(`- ${hobby.name} — ${task.label}: ${time}`);
-    }
+  for (const item of items) {
+    const occ = item.occurrence;
+    if (occ.kind !== "event" || occ.date !== date) continue;
+    const time =
+      occ.startTime && occ.endTime
+        ? `${occ.startTime}–${occ.endTime}`
+        : occ.startTime
+          ? `at ${occ.startTime}`
+          : "time unspecified";
+    const name = item.category === "hobby" ? hobbyName(item) : item.label;
+    lines.push(`- ${name}: ${time}`);
   }
   if (lines.length === 0) return "";
   return (
@@ -205,53 +161,123 @@ function buildFixedCommitmentsContext(hobbies: Hobby[], date: string): string {
 }
 
 /**
- * Format the user's hobby tasks the planned day should consider: weekly tasks
+ * Format every chore as a single line describing its cadence, location, time
+ * estimate, and — most importantly — whether it is ready to be performed
+ * (overdue / due now / upcoming), so the model can prioritize the day.
+ */
+function buildChoresSection(chores: ItemOf<"chore">[]): string {
+  if (chores.length === 0) return "The user has no chores recorded.";
+
+  const lines = chores.map((chore) => {
+    const occ = chore.occurrence;
+    const cadence =
+      occ.kind === "frequency"
+        ? `every ${occ.value} ${occ.unit}`
+        : "no set cadence";
+    const parts = [`${chore.label} — ${cadence}`];
+    if (chore.typicalTimeMinutes != null) {
+      parts.push(`~${chore.typicalTimeMinutes} min`);
+    }
+    const location = [chore.details.room, chore.details.floor]
+      .filter(Boolean)
+      .join(", ");
+    if (location) parts.push(location);
+
+    const last = latestCompletion(chore.completions);
+    if (!last) {
+      parts.push("never done — DUE NOW");
+    } else if (occ.kind === "frequency") {
+      const due = addFrequency(last, occ.value, occ.unit);
+      const status =
+        startOfDay(due) < startOfDay(new Date()) ? "OVERDUE" : "upcoming";
+      parts.push(`last done ${isoDate(last)}`);
+      parts.push(`next due ${isoDate(due)} (${status})`);
+    } else {
+      parts.push(`last done ${isoDate(last)}`);
+    }
+
+    return `- ${parts.join("; ")}`;
+  });
+
+  return `The user's chores and their readiness:\n${lines.join("\n")}`;
+}
+
+/**
+ * Format every OPEN to-do (no completion logged) as a single line describing its
+ * deadline (or lack of one) and any note, so the model knows which one-off tasks
+ * to weave in and how urgent each is.
+ */
+function buildTodosSection(todos: ItemOf<"todo">[]): string {
+  const open = todos.filter((t) => t.completions.length === 0);
+  if (open.length === 0) return "The user has no open one-off to-dos.";
+
+  const today = localIsoDate(new Date());
+  const lines = open.map((todo) => {
+    const parts = [todo.label];
+    const due = todo.details.dueDate;
+    if (!due) {
+      parts.push("no due date");
+    } else if (due < today) {
+      parts.push(`due ${due} (OVERDUE)`);
+    } else if (due === today) {
+      parts.push("due today");
+    } else {
+      parts.push(`due ${due} (upcoming)`);
+    }
+    if (todo.notes) parts.push(`notes: ${todo.notes}`);
+    return `- ${parts.join("; ")}`;
+  });
+
+  return `The user's one-off to-dos and their deadlines:\n${lines.join("\n")}`;
+}
+
+/**
+ * Format the user's hobby items the planned day should consider: weekly tasks
  * landing on this weekday, cadence (frequency) tasks with their readiness, and
- * loose one-offs that are still open. Event tasks are handled separately by
+ * loose one-offs that are still open. Event items are handled separately by
  * `buildFixedCommitmentsContext`, so they're skipped here.
  */
-function buildHobbiesContext(hobbies: Hobby[], date: string): string {
+function buildHobbiesSection(
+  hobbies: ItemOf<"hobby">[],
+  date: string,
+): string {
   const today = weekdayOf(date);
   const lines: string[] = [];
 
-  for (const hobby of hobbies) {
-    for (const task of hobby.tasks) {
-      const occ = task.occurrence;
-      const prefix = `${hobby.name} — ${task.label}`;
-      const dur =
-        task.typicalTimeMinutes != null
-          ? ` (~${task.typicalTimeMinutes} min)`
-          : "";
+  for (const item of hobbies) {
+    const occ = item.occurrence;
+    const prefix = hobbyName(item);
+    const dur =
+      item.typicalTimeMinutes != null ? ` (~${item.typicalTimeMinutes} min)` : "";
 
-      if (occ.kind === "weekly") {
-        if (!occ.days.includes(today)) continue;
-        const tod =
-          occ.timeOfDay && occ.timeOfDay !== "any"
-            ? ` around ${occ.timeOfDay}`
-            : "";
+    if (occ.kind === "weekly") {
+      if (!occ.days.includes(today)) continue;
+      const tod =
+        item.timeOfDay && item.timeOfDay !== "any"
+          ? ` around ${item.timeOfDay}`
+          : "";
+      lines.push(
+        `- ${prefix}${dur}: recurs on ${occ.days.join("/")} — do it today${tod}.`,
+      );
+    } else if (occ.kind === "frequency") {
+      const last = latestCompletion(item.completions);
+      if (!last) {
         lines.push(
-          `- ${prefix}${dur}: recurs on ${occ.days.join("/")} — do it today${tod}.`,
+          `- ${prefix}${dur}: every ${occ.value} ${occ.unit}; never done — DUE NOW.`,
         );
-      } else if (occ.kind === "frequency") {
-        const last = latestCompletion(task.completions);
-        if (!last) {
-          lines.push(
-            `- ${prefix}${dur}: every ${occ.value} ${occ.unit}; never done — DUE NOW.`,
-          );
-        } else {
-          const due = addFrequency(last, occ.value, occ.unit);
-          const status =
-            startOfDay(due) < startOfDay(new Date()) ? "OVERDUE" : "upcoming";
-          lines.push(
-            `- ${prefix}${dur}: every ${occ.value} ${occ.unit}; last done ${isoDate(last)}; next due ${isoDate(due)} (${status}).`,
-          );
-        }
-      } else if (occ.kind === "oneoff") {
-        if (task.completions.length > 0) continue; // already done
+      } else {
+        const due = addFrequency(last, occ.value, occ.unit);
+        const status =
+          startOfDay(due) < startOfDay(new Date()) ? "OVERDUE" : "upcoming";
         lines.push(
-          `- ${prefix}${dur}: loose idea, no fixed time — weave in when there's room.`,
+          `- ${prefix}${dur}: every ${occ.value} ${occ.unit}; last done ${isoDate(last)}; next due ${isoDate(due)} (${status}).`,
         );
       }
+    } else if (occ.kind === "oneoff") {
+      if (item.completions.length > 0) continue; // already done
+      lines.push(
+        `- ${prefix}${dur}: loose idea, no fixed time — weave in when there's room.`,
+      );
     }
   }
 
@@ -264,10 +290,12 @@ function buildHobbiesContext(hobbies: Hobby[], date: string): string {
 /**
  * Format the user's routines the planned day should anchor on: weekly routines
  * landing on this weekday and cadence (frequency) routines with their readiness.
- * Every routine carries a time of day, so it's passed as a placement hint
- * (e.g. "around morning") to keep morning routines in the morning, etc.
+ * Each carries a time of day, passed as a placement hint (e.g. "around morning").
  */
-function buildRoutinesContext(routines: Routine[], date: string): string {
+function buildRoutinesSection(
+  routines: ItemOf<"routine">[],
+  date: string,
+): string {
   const today = weekdayOf(date);
   const lines: string[] = [];
 
@@ -278,14 +306,16 @@ function buildRoutinesContext(routines: Routine[], date: string): string {
         ? ` (~${routine.typicalTimeMinutes} min)`
         : "";
     const tod =
-      routine.timeOfDay !== "any" ? ` around ${routine.timeOfDay}` : "";
+      routine.timeOfDay && routine.timeOfDay !== "any"
+        ? ` around ${routine.timeOfDay}`
+        : "";
 
     if (occ.kind === "weekly") {
       if (!occ.days.includes(today)) continue;
       lines.push(
         `- ${routine.label}${dur}: recurs on ${occ.days.join("/")} — do it today${tod}.`,
       );
-    } else {
+    } else if (occ.kind === "frequency") {
       const last = latestCompletion(routine.completions);
       if (!last) {
         lines.push(
@@ -306,6 +336,21 @@ function buildRoutinesContext(routines: Routine[], date: string): string {
     return "The user has no routines to anchor today.";
   }
   return `The user's routines to anchor today (place each at its time of day):\n${lines.join("\n")}`;
+}
+
+/**
+ * Build the per-category readiness context from the unified item list. One
+ * function over one input type, emitting the same four labeled sections the
+ * model has always seen (chores, to-dos, hobbies, routines).
+ */
+function buildItemsContext(items: ScheduleItem[], date: string): string {
+  const { chores, todos, hobbies, routines } = byCategory(items);
+  return [
+    buildChoresSection(chores),
+    buildTodosSection(todos),
+    buildHobbiesSection(hobbies, date),
+    buildRoutinesSection(routines, date),
+  ].join("\n\n");
 }
 
 /** Human-readable outcome for each task status, used in the history summary. */
@@ -377,25 +422,19 @@ export function buildRecentTaskHistoryContext(): string {
 export type SchedulePromptInput = {
   date: string; // the day being planned, "YYYY-MM-DD"
   dayContext: string; // the user's one-off notes for that day
-  chores: Chore[];
-  todos: Todo[]; // the user's open one-off to-dos
-  hobbies: Hobby[]; // the user's hobbies and their tasks
-  routines: Routine[]; // the user's daily routines
+  items: ScheduleItem[]; // every scheduled item (chores, hobbies, routines, to-dos)
 };
 
 /**
  * Assemble the full system prompt + user message that turn all of a day's
- * inputs — chores, recent history, standing instructions, and the user's
- * one-off notes — into a structured task list in a single model call. Exposed
- * on its own so the UI can show the user exactly what will be sent.
+ * inputs — scheduled items, recent history, standing instructions, and the
+ * user's one-off notes — into a structured task list in a single model call.
+ * Exposed on its own so the UI can show the user exactly what will be sent.
  */
 export function buildSchedulePrompt({
   date,
   dayContext,
-  chores,
-  todos,
-  hobbies,
-  routines,
+  items,
 }: SchedulePromptInput): { system: string; userMessage: string } {
   const sections: string[] = [
     SCHEDULE_SYSTEM_PROMPT,
@@ -403,16 +442,10 @@ export function buildSchedulePrompt({
   ];
 
   // Fixed commitments lead the prompt when present — they're non-negotiable.
-  const fixedCommitments = buildFixedCommitmentsContext(hobbies, date);
+  const fixedCommitments = buildFixedCommitmentsContext(items, date);
   if (fixedCommitments) sections.push(fixedCommitments);
 
-  sections.push(
-    buildChoresContext(chores),
-    buildTodosContext(todos),
-    buildHobbiesContext(hobbies, date),
-    buildRoutinesContext(routines, date),
-    buildRecentTaskHistoryContext(),
-  );
+  sections.push(buildItemsContext(items, date), buildRecentTaskHistoryContext());
 
   // Standing, user-authored instructions that apply to every generation (e.g.
   // "sleep in until 9:00 AM every Saturday"). Appended only when non-empty.
@@ -430,17 +463,8 @@ export function buildSchedulePrompt({
       : "The user added no extra notes for this day.",
   );
 
-  const choreLinking = buildChoreLinkingInstructions(chores);
-  if (choreLinking) sections.push(choreLinking);
-
-  const todoLinking = buildTodoLinkingInstructions(todos);
-  if (todoLinking) sections.push(todoLinking);
-
-  const hobbyLinking = buildHobbyLinkingInstructions(hobbies);
-  if (hobbyLinking) sections.push(hobbyLinking);
-
-  const routineLinking = buildRoutineLinkingInstructions(routines);
-  if (routineLinking) sections.push(routineLinking);
+  const linking = buildLinkingInstructions(items);
+  if (linking) sections.push(linking);
 
   sections.push(TASK_JSON_SCHEMA);
 
@@ -459,30 +483,18 @@ export async function generateScheduleTasks(
   opts: AiOptions,
 ): Promise<(ParseSuccess | ParseError) & { usage: AiUsage }> {
   if (process.env.MOCK_AI === "true") {
-    // Link any mock task whose label mentions a chore by name, a to-do by
-    // title, a hobby task by label, or a routine by label, mirroring how the
-    // model would attach choreId/todoId/hobbyTaskId/routineId.
+    // Link any mock task whose label mentions a scheduled item by its label (or,
+    // for a hobby, its group name), mirroring how the model attaches itemId.
     const tasks = MOCK_TASKS.map((t) => {
       const label = t.label.toLowerCase();
-      const chore = input.chores.find((c) =>
-        label.includes(c.name.toLowerCase()),
+      const match = input.items.find(
+        (i) =>
+          label.includes(i.label.toLowerCase()) ||
+          (i.category === "hobby" &&
+            i.details.groupLabel != null &&
+            label.includes(i.details.groupLabel.toLowerCase())),
       );
-      if (chore) return { ...t, choreId: chore.id };
-      const todo = input.todos.find((td) =>
-        label.includes(td.title.toLowerCase()),
-      );
-      if (todo) return { ...t, todoId: todo.id };
-      for (const hobby of input.hobbies) {
-        const hobbyTask = hobby.tasks.find((ht) =>
-          label.includes(ht.label.toLowerCase()),
-        );
-        if (hobbyTask) return { ...t, hobbyTaskId: hobbyTask.id };
-      }
-      const routine = input.routines.find((r) =>
-        label.includes(r.label.toLowerCase()),
-      );
-      if (routine) return { ...t, routineId: routine.id };
-      return t;
+      return match ? { ...t, itemId: match.id } : t;
     });
     return { tasks, usage: MOCK_USAGE };
   }
@@ -506,13 +518,7 @@ export async function generateScheduleTasks(
   }
 
   return {
-    ...validateTasks(
-      rawText,
-      input.chores,
-      input.todos,
-      input.hobbies,
-      input.routines,
-    ),
+    ...validateTasks(rawText, input.items),
     usage,
   };
 }
@@ -554,10 +560,7 @@ export type ScheduleEditInput = SchedulePromptInput & {
 export function buildEditPrompt({
   date,
   dayContext,
-  chores,
-  todos,
-  hobbies,
-  routines,
+  items,
   currentTasks,
   instruction,
 }: ScheduleEditInput): { system: string; userMessage: string } {
@@ -566,16 +569,10 @@ export function buildEditPrompt({
     `Today's date is ${isoDate(new Date())}. You are editing the schedule for ${date}.`,
   ];
 
-  const fixedCommitments = buildFixedCommitmentsContext(hobbies, date);
+  const fixedCommitments = buildFixedCommitmentsContext(items, date);
   if (fixedCommitments) sections.push(fixedCommitments);
 
-  sections.push(
-    buildChoresContext(chores),
-    buildTodosContext(todos),
-    buildHobbiesContext(hobbies, date),
-    buildRoutinesContext(routines, date),
-    buildRecentTaskHistoryContext(),
-  );
+  sections.push(buildItemsContext(items, date), buildRecentTaskHistoryContext());
 
   const instructions = readScheduleInstructions().trim();
   if (instructions) {

@@ -1,0 +1,15 @@
+{
+  "id": "fixture-todo-return-package",
+  "category": "todo",
+  "label": "Return package to the post office",
+  "occurrence": { "kind": "oneoff" },
+  "completions": [
+    {
+      "id": "fixture-todo-return-package-c1",
+      "performedAt": "2026-06-14T16:00:00.000Z"
+    }
+  ],
+  "details": {},
+  "createdAt": "2026-06-11T12:00:00.000Z",
+  "updatedAt": "2026-06-14T16:00:00.000Z"
+}

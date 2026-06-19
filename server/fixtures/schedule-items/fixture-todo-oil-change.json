@@ -1,0 +1,11 @@
+{
+  "id": "fixture-todo-oil-change",
+  "category": "todo",
+  "label": "Schedule car oil change",
+  "occurrence": { "kind": "oneoff" },
+  "completions": [],
+  "notes": "Due around 30k miles.",
+  "details": { "dueDate": "2026-06-20" },
+  "createdAt": "2026-06-12T12:00:00.000Z",
+  "updatedAt": "2026-06-12T12:00:00.000Z"
+}
