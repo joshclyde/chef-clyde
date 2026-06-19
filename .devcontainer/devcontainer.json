@@ -34,6 +34,11 @@
       ],
       "settings": {
         "window.title": "${localWorkspaceFolderBasename}${separator}${remoteName}",
+        // Don't auto-forward the container's ports to the host — the shared proxy
+        // is the only path in. Prevents a container's Vite from landing on host
+        // 5173 and shadowing the native gengar clone. Paired with
+        // otherPortsAttributes below for older VS Code versions.
+        "remote.autoForwardPorts": false,
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.codeActionsOnSave": {
@@ -73,6 +78,13 @@
   // No forwardPorts: clones are reached by name through the shared host proxy
   // (see infra/proxy/), not by publishing host ports — which is what let every
   // clone keep 5173/3001 internally without colliding.
+  //
+  // Critically, also stop VS Code from AUTO-forwarding detected ports: otherwise
+  // each container's Vite (5173) gets published onto a host port and can collide
+  // with the native production clone (gengar) on host 5173 — making the gengar
+  // proxy route (host.docker.internal:5173) serve a container instead. "ignore"
+  // means detected ports are never forwarded; the proxy is the only path in.
+  "otherPortsAttributes": { "onAutoForward": "ignore" },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"

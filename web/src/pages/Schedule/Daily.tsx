@@ -503,7 +503,7 @@ export default function ScheduleDaily() {
 
   const header = (
     <Stack gap="2xs">
-      <Heading level={1}>Today</Heading>
+      <Heading level={1}>Bulbasaur</Heading>
       <Text variant="muted">{formatDate(today)}</Text>
     </Stack>
   );
