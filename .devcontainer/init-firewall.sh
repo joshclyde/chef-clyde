@@ -108,6 +108,12 @@ echo "Host network detected as: $HOST_NETWORK"
 iptables -A INPUT -s "$HOST_NETWORK" -j ACCEPT
 iptables -A OUTPUT -d "$HOST_NETWORK" -j ACCEPT
 
+# Allow inbound to the Vite web port so the shared host proxy (Traefik on the
+# chef-clyde-net network) can reach this clone by name. Explicit so it holds
+# regardless of which subnet the proxy network ends up on. The API port (3001)
+# stays closed to ingress: it's reached only via Vite's in-container /api proxy.
+iptables -A INPUT -p tcp --dport 5173 -j ACCEPT
+
 # Set default policies to DROP first
 iptables -P INPUT DROP
 iptables -P FORWARD DROP

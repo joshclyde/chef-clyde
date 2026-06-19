@@ -1,0 +1,34 @@
+# Shared host reverse proxy for all Chef Clyde clones.
+#
+# This file is a TEMPLATE. It is deployed to ~/chef-clyde-data/proxy/ (outside
+# every clone) by infra/proxy/sync-and-up.sh and runs from there, so editing it
+# inside a clone is inert until you deliberately sync. See infra/proxy/README.md.
+#
+# Traefik owns host port 80 and routes <clone>.localhost to the right backend:
+#   - dev-container clones: auto-discovered via Docker labels (see devcontainer.json)
+#   - native production (gengar): the static route in dynamic/gengar.yml
+services:
+  traefik:
+    image: traefik:v3
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # Traefik dashboard (optional, handy for debugging routes):
+      - "8080:8080"
+    volumes:
+      # Read-only Docker socket so Traefik can discover labelled containers.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+    # Lets the gengar file route reach the natively-run web server on the host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - chef-clyde-net
+
+networks:
+  # Shared with every dev container (they join via --network=chef-clyde-net).
+  # Declared external so the network name is stable and not compose-prefixed;
+  # sync-and-up.sh creates it if missing.
+  chef-clyde-net:
+    external: true

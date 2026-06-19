@@ -63,8 +63,44 @@ Verify the app loads against the new location, then delete the old in-clone
   environment. `BACKUP_DIR=/path npm run db:backup` changes the destination. This
   replaces the manual daily copy and can be wired to a launchd/cron job.
 
+## Running clones in parallel, reached by name
+
+Every clone's web app and API use the same ports (`5173`/`3001`), so to run several
+at once and open each in the browser without port collisions there's a single shared
+reverse proxy ([infra/proxy/](infra/proxy/)). It lets you open each clone by its
+directory name:
+
+- `http://chef-clyde-gengar.localhost` — the native production clone
+- `http://chef-clyde-charmander.localhost`, `http://chef-clyde-bulbasaur.localhost`, … — dev-container clones
+
+Start it once (also creates the shared Docker network the dev containers join):
+
+```bash
+bash infra/proxy/sync-and-up.sh
+```
+
+How it stays collision-free and isolated:
+
+- **Dev-container clones** are auto-discovered — each advertises its name via Traefik
+  labels in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) and
+  joins the `chef-clyde-net` network; the proxy reaches each container directly, so
+  they all keep `5173`/`3001` internally with no clash. Per-clone routing lives in
+  each clone's own labels, so changing one never affects another.
+- **The native production clone (gengar)** keeps running exactly as before (`npm run
+  dev` on the host). It can't be discovered by label, so it has one static route in
+  [infra/proxy/dynamic/gengar.yml](infra/proxy/dynamic/gengar.yml).
+- The proxy is host infrastructure shared by all clones, so it runs from
+  `~/chef-clyde-data/proxy/` (outside every clone, like production data);
+  `infra/proxy/` is a template that `sync-and-up.sh` deploys there. Editing it in a
+  clone is inert until you re-run the sync.
+
+Chrome/Edge/Firefox resolve `*.localhost` automatically; for Safari see the dnsmasq
+note in [infra/proxy/README.md](infra/proxy/README.md).
+
 ## Dev container
 
 The dev container ([.devcontainer/](.devcontainer/)) sets `DB_PATH=/workspace/database`
-and seeds it from fixtures on create — it never sees production. See
+and seeds it from fixtures on create — it never sees production. It joins the shared
+`chef-clyde-net` network and is reached by name through the proxy above (no host port
+forwarding), so **start the proxy before opening a dev container**. See
 [CLAUDE.md](CLAUDE.md) for the container and git workflow details.

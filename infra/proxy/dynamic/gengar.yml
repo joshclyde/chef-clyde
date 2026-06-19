@@ -1,0 +1,18 @@
+# Static route for the natively-run production clone (gengar).
+#
+# gengar is NOT containerised — it runs `npm run dev` directly on the host, so
+# Traefik can't discover it via Docker labels. This file points its name at the
+# host's native web server (Vite on 5173) through host.docker.internal.
+#
+# This is the one manual entry in the system. If you rename the production clone,
+# change the Host(...) rule below to match its directory basename.
+http:
+  routers:
+    gengar:
+      rule: "Host(`chef-clyde-gengar.localhost`)"
+      service: gengar
+  services:
+    gengar:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:5173"
