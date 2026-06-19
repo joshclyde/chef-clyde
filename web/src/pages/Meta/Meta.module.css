@@ -1,0 +1,75 @@
+.page {
+  max-width: 480px;
+}
+
+.pokemon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+}
+
+.sprite {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.pokemonInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.pokemonName {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  text-transform: capitalize;
+}
+
+.pokemonNum {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  width: 100px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-default);
+  font-family: monospace;
+  word-break: break-all;
+}

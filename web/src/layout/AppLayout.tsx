@@ -4,6 +4,7 @@ import Dashboard from "../pages/Chores/Dashboard";
 import Tasks from "../pages/Chores/Tasks";
 import HobbiesDashboard from "../pages/Hobbies/Dashboard";
 import Hobbies from "../pages/Hobbies/Hobbies";
+import Meta from "../pages/Meta/Meta";
 import Pantry from "../pages/Pantry";
 import Recipes from "../pages/Recipes";
 import RoutinesBreakdown from "../pages/Routines/Dashboard";
@@ -32,6 +33,7 @@ export function AppLayout() {
         <main className={styles.main}>
           <Routes>
             <Route path="/" element={<Navigate to="/recipes" replace />} />
+            <Route path="/meta" element={<Meta />} />
             <Route path="/pantry" element={<Pantry />} />
             <Route path="/recipes" element={<Recipes />} />
             <Route

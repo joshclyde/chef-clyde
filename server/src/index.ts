@@ -3,6 +3,7 @@ import express from "express";
 import chatRouter from "./routes/chat";
 import choresRouter from "./routes/chores";
 import hobbiesRouter from "./routes/hobbies";
+import metaRouter from "./routes/meta";
 import pantryRouter from "./routes/pantry";
 import recipesRouter from "./routes/recipes";
 import routinesRouter from "./routes/routines";
@@ -18,6 +19,7 @@ const PORT = process.env.PORT ?? 3001;
 
 app.use(express.json());
 app.use("/api/chat", chatRouter);
+app.use("/api/meta", metaRouter);
 app.use("/api/chores", choresRouter);
 app.use("/api/hobbies", hobbiesRouter);
 app.use("/api/pantry", pantryRouter);
