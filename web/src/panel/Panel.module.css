@@ -120,6 +120,11 @@
   }
 }
 
+.panelTitle {
+  cursor: default;
+  pointer-events: none;
+}
+
 .controls {
   display: flex;
   gap: var(--space-3xs);

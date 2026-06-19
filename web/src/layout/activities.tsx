@@ -7,6 +7,7 @@ import {
   ListTodo,
   type LucideIcon,
   Repeat2,
+  Settings,
 } from "lucide-react";
 
 export type NavItem = { label: string; path: string; end?: boolean };
@@ -76,6 +77,12 @@ export const activities: Activity[] = [
       { label: "Recipes", path: "/recipes" },
       { label: "Pantry", path: "/pantry" },
     ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    navItems: [{ label: "Settings", path: "/settings" }],
   },
 ];
 
