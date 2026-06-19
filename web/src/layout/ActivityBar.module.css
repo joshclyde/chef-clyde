@@ -52,3 +52,14 @@
 .panelToggle {
   margin-top: auto;
 }
+
+.pokemonItem {
+  padding: 2px;
+}
+
+.pokemonSprite {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}

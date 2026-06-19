@@ -2,6 +2,8 @@ import { Moon, PanelRight, Sparkles, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useAiMotion } from "../ai/useAiMotion";
+import { getPokemonSpriteUrl } from "../lib/pokemon";
+import { useMeta } from "../lib/useMeta";
 import { usePanel } from "../panel/usePanel";
 import { useTheme } from "../theme/useTheme";
 import { cn } from "../ui/cn";
@@ -17,23 +19,47 @@ export function ActivityBar({ activeActivity }: ActivityBarProps) {
   const { theme, toggle } = useTheme();
   const { motion, toggle: toggleMotion } = useAiMotion();
   const { open, toggleOpen } = usePanel();
+  const { meta } = useMeta();
+
+  const pokemonSpriteUrl = meta ? getPokemonSpriteUrl(meta.pokemonNumber) : null;
 
   return (
     <nav className={styles.activityBar} aria-label="Activities">
       {activities.map((activity) => {
-        const Icon = activity.icon;
         const isActive = activity.id === activeActivity.id;
+        const isMeta = activity.id === "meta";
+
         return (
           <button
             key={activity.id}
             type="button"
-            className={cn(styles.item, isActive && styles.active)}
+            className={cn(
+              styles.item,
+              isActive && styles.active,
+              isMeta && styles.pokemonItem,
+            )}
             aria-label={activity.label}
             aria-current={isActive ? "page" : undefined}
-            title={activity.label}
+            title={
+              isMeta && meta
+                ? `${meta.pokemonName} · ${meta.instanceName}`
+                : activity.label
+            }
             onClick={() => navigate(activity.navItems[0].path)}
           >
-            <Icon size={22} strokeWidth={2} aria-hidden />
+            {isMeta && pokemonSpriteUrl ? (
+              <img
+                src={pokemonSpriteUrl}
+                alt={meta?.pokemonName ?? "pokemon"}
+                className={styles.pokemonSprite}
+                aria-hidden
+              />
+            ) : (
+              (() => {
+                const Icon = activity.icon;
+                return <Icon size={22} strokeWidth={2} aria-hidden />;
+              })()
+            )}
           </button>
         );
       })}

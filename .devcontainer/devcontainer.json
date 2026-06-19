@@ -69,6 +69,7 @@
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "GH_TOKEN": "${localEnv:CHEF_CLYDE_GH_TOKEN}",
     "DB_PATH": "/workspace/database",
+    "INSTANCE_NAME": "${localWorkspaceFolderBasename}",
     // Vite is served through the host proxy on port 80, so its HMR client must
     // connect back on 80 (not the internal 5173). See web/vite.config.ts.
     "HMR_CLIENT_PORT": "80"

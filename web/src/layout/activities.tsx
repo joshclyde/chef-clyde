@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ChefHat,
   Gamepad2,
+  Info,
   ListTodo,
   type LucideIcon,
   Repeat2,
@@ -18,6 +19,12 @@ export type Activity = {
 };
 
 export const activities: Activity[] = [
+  {
+    id: "meta",
+    label: "About this instance",
+    icon: Info,
+    navItems: [{ label: "Overview", path: "/meta" }],
+  },
   {
     id: "schedule",
     label: "Schedule",
