@@ -38,8 +38,8 @@ export type ScheduleInput = {
 };
 
 /**
- * Fields accepted by the task PATCH endpoint. `choreId`/`todoId: null` clears
- * the respective link; `endTime: null` makes the task open-ended.
+ * Fields accepted by the task PATCH endpoint. `choreId`/`todoId`/`routineId: null`
+ * clears the respective link; `endTime: null` makes the task open-ended.
  */
 export type TaskPatch = {
   status?: TaskStatus;
@@ -49,6 +49,7 @@ export type TaskPatch = {
   endTime?: string | null;
   choreId?: string | null;
   todoId?: string | null;
+  routineId?: string | null;
 };
 
 /** The fields needed to create a task via the POST endpoint. */
@@ -220,12 +221,13 @@ export function useSchedules() {
         ),
       );
 
-    // choreId/todoId are tri-state in the patch (absent = untouched, null =
-    // clear), but plain optional on the task — only map them when present.
-    const { choreId, todoId, ...rest } = patch;
+    // choreId/todoId/routineId are tri-state in the patch (absent = untouched,
+    // null = clear), but plain optional on the task — only map when present.
+    const { choreId, todoId, routineId, ...rest } = patch;
     const optimistic: Partial<ScheduleTask> = { ...rest };
     if (choreId !== undefined) optimistic.choreId = choreId ?? undefined;
     if (todoId !== undefined) optimistic.todoId = todoId ?? undefined;
+    if (routineId !== undefined) optimistic.routineId = routineId ?? undefined;
     apply((t) => ({ ...t, ...optimistic }));
     try {
       const res = await fetch(`/api/schedules/${id}/tasks/${taskId}`, {
