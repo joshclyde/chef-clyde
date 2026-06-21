@@ -13,6 +13,13 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd server && npm run dev:mock"],
       "port": 3001
+    },
+    {
+      "name": "storybook",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd web && npm run storybook -- --port ${PORT:-5173}"],
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }
