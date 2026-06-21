@@ -1,15 +1,16 @@
 {
   "id": "fixture-chore-plants",
-  "name": "Water the plants",
-  "frequencyValue": 3,
-  "frequencyUnit": "days",
-  "typicalTimeMinutes": 10,
+  "category": "chore",
+  "label": "Water the plants",
+  "occurrence": { "kind": "frequency", "value": 3, "unit": "days" },
   "completions": [
     {
       "id": "fixture-chore-plants-c1",
       "performedAt": "2026-06-15T15:00:00.000Z"
     }
   ],
+  "typicalTimeMinutes": 10,
+  "details": {},
   "createdAt": "2026-05-01T12:00:00.000Z",
   "updatedAt": "2026-06-15T15:00:00.000Z"
 }

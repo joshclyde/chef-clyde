@@ -12,14 +12,8 @@ export type ScheduleTask = {
   label: string;
   status: TaskStatus;
   notes?: string;
-  choreId?: string; // the chore this task performs, when linked
-  choreCompletionId?: string; // completion logged when completed (server-managed)
-  todoId?: string; // the one-off to-do this task fulfills, when linked
-  todoCompletionAt?: string; // completedAt written onto the to-do (server-managed)
-  hobbyTaskId?: string; // the hobby task this performs, when linked
-  hobbyTaskCompletionId?: string; // completion logged when completed (server-managed)
-  routineId?: string; // the routine this performs, when linked
-  routineCompletionId?: string; // completion logged when completed (server-managed)
+  itemId?: string; // the ScheduleItem this task performs, when linked
+  itemCompletionId?: string; // completion logged on the item (server-managed)
 };
 
 export type Schedule = {
@@ -38,8 +32,8 @@ export type ScheduleInput = {
 };
 
 /**
- * Fields accepted by the task PATCH endpoint. `choreId`/`todoId`/`routineId: null`
- * clears the respective link; `endTime: null` makes the task open-ended.
+ * Fields accepted by the task PATCH endpoint. `itemId: null` clears the link;
+ * `endTime: null` makes the task open-ended.
  */
 export type TaskPatch = {
   status?: TaskStatus;
@@ -47,9 +41,7 @@ export type TaskPatch = {
   label?: string;
   startTime?: string;
   endTime?: string | null;
-  choreId?: string | null;
-  todoId?: string | null;
-  routineId?: string | null;
+  itemId?: string | null;
 };
 
 /** The fields needed to create a task via the POST endpoint. */
@@ -199,9 +191,9 @@ export function useSchedules() {
   }
 
   /**
-   * Patch a task's status, notes, and/or chore link. Optimistic: applies the
+   * Patch a task's status, notes, and/or item link. Optimistic: applies the
    * change locally, then reconciles with the server response (which carries
-   * server-managed fields like choreCompletionId), reverting the whole task on
+   * server-managed fields like itemCompletionId), reverting the whole task on
    * failure.
    */
   async function updateTask(id: string, taskId: string, patch: TaskPatch) {
@@ -221,13 +213,11 @@ export function useSchedules() {
         ),
       );
 
-    // choreId/todoId/routineId are tri-state in the patch (absent = untouched,
-    // null = clear), but plain optional on the task — only map when present.
-    const { choreId, todoId, routineId, ...rest } = patch;
+    // itemId is tri-state in the patch (absent = untouched, null = clear), but
+    // plain optional on the task — only map it when present.
+    const { itemId, ...rest } = patch;
     const optimistic: Partial<ScheduleTask> = { ...rest };
-    if (choreId !== undefined) optimistic.choreId = choreId ?? undefined;
-    if (todoId !== undefined) optimistic.todoId = todoId ?? undefined;
-    if (routineId !== undefined) optimistic.routineId = routineId ?? undefined;
+    if (itemId !== undefined) optimistic.itemId = itemId ?? undefined;
     apply((t) => ({ ...t, ...optimistic }));
     try {
       const res = await fetch(`/api/schedules/${id}/tasks/${taskId}`, {

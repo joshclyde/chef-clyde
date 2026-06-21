@@ -3,9 +3,11 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 
-import { readAllChores, readChore, writeChore } from "../db/chores";
-import { findHobbyByTaskId, readAllHobbies, writeHobby } from "../db/hobbies";
-import { findRoutineById, readAllRoutines, writeRoutine } from "../db/routines";
+import {
+  readAllScheduleItems,
+  readScheduleItem,
+  writeScheduleItem,
+} from "../db/scheduleItems";
 import {
   getSchedulesDir,
   getSoftDeleteDir,
@@ -13,20 +15,14 @@ import {
   readSchedule,
   writeSchedule,
 } from "../db/schedules";
-import { readAllTodos, readTodo, writeTodo } from "../db/todos";
 import { resolveAiOptions } from "../services/aiOptions";
 import {
   buildSchedulePrompt,
   editScheduleTasks,
   generateScheduleTasks,
 } from "../services/schedule";
-import type { Completion } from "../types/chore";
 import type { Schedule, ScheduleTask, TaskStatus } from "../types/schedule";
-
-/** All open (not-yet-completed) to-dos — what the generator considers. */
-function openTodos() {
-  return readAllTodos().filter((t) => !t.completedAt);
-}
+import type { Completion } from "../types/scheduleItem";
 
 const router = express.Router();
 
@@ -65,10 +61,7 @@ router.post("/preview-prompt", (req, res) => {
   const { system, userMessage } = buildSchedulePrompt({
     date,
     dayContext,
-    chores: readAllChores(),
-    todos: openTodos(),
-    hobbies: readAllHobbies(),
-    routines: readAllRoutines(),
+    items: readAllScheduleItems(),
   });
   res.json({ prompt: `${system}\n\n────────\nRequest: ${userMessage}` });
 });
@@ -149,8 +142,8 @@ router.put("/:id", (req, res) => {
 });
 
 // Generate the day's structured task list from all of its inputs (day notes,
-// chores, standing instructions, recent history) in a single model call and
-// persist it onto the schedule.
+// scheduled items, standing instructions, recent history) in a single model
+// call and persist it onto the schedule.
 router.post("/:id/generate", async (req, res) => {
   const { id } = req.params;
   const schedule = readSchedule(id);
@@ -163,10 +156,7 @@ router.post("/:id/generate", async (req, res) => {
     {
       date: schedule.date,
       dayContext: schedule.dayContext,
-      chores: readAllChores(),
-      todos: openTodos(),
-      hobbies: readAllHobbies(),
-      routines: readAllRoutines(),
+      items: readAllScheduleItems(),
     },
     resolveAiOptions(req.body),
   );
@@ -217,10 +207,7 @@ router.post("/:id/edit-preview", async (req, res) => {
     {
       date: schedule.date,
       dayContext: schedule.dayContext,
-      chores: readAllChores(),
-      todos: openTodos(),
-      hobbies: readAllHobbies(),
-      routines: readAllRoutines(),
+      items: readAllScheduleItems(),
       currentTasks,
       instruction,
     },
@@ -234,9 +221,9 @@ router.post("/:id/edit-preview", async (req, res) => {
   }
 
   // Reconstruct a full proposed task list for the diff, WITHOUT persisting it.
-  // A task the model kept (matched by id) carries its original status, links,
-  // and completion bookkeeping with only its plan fields overlaid; a new task
-  // gets a fresh id and pending status.
+  // A task the model kept (matched by id) carries its original status, link, and
+  // completion bookkeeping with only its plan fields overlaid; a new task gets a
+  // fresh id and pending status.
   const byId = new Map(currentTasks.map((t) => [t.id, t]));
   const proposal: ScheduleTask[] = result.tasks.map((edited) => {
     const existing = edited.id ? byId.get(edited.id) : undefined;
@@ -268,199 +255,59 @@ const TASK_STATUSES: TaskStatus[] = [
 ];
 
 /**
- * Remove the chore completion this task previously logged. Best-effort: the
- * chore or completion may have been deleted from the Chores page in the
- * meantime, so a miss is not an error. Mutates the task; caller persists the
- * schedule.
+ * Remove the completion this task previously logged on its linked item.
+ * Best-effort: the item may have been deleted from its page in the meantime, so
+ * a miss is not an error. Mutates the task; caller persists the schedule.
  */
 function removeLinkedCompletion(task: ScheduleTask): void {
-  const completionId = task.choreCompletionId;
+  const completionId = task.itemCompletionId;
   if (!completionId) return;
-  const chore = task.choreId ? readChore(task.choreId) : null;
-  if (chore) {
-    const remaining = chore.completions.filter((c) => c.id !== completionId);
-    if (remaining.length !== chore.completions.length) {
-      chore.completions = remaining;
-      chore.updatedAt = new Date().toISOString();
-      writeChore(chore);
+  const item = task.itemId ? readScheduleItem(task.itemId) : null;
+  if (item) {
+    const remaining = item.completions.filter((c) => c.id !== completionId);
+    if (remaining.length !== item.completions.length) {
+      item.completions = remaining;
+      item.updatedAt = new Date().toISOString();
+      writeScheduleItem(item);
     }
   }
-  delete task.choreCompletionId;
+  delete task.itemCompletionId;
 }
 
 /**
- * Log a completion on the task's linked chore and remember its id so
- * unchecking can undo it. If the chore was deleted since linking, drop the
- * stale link instead of failing the task update.
+ * Log a completion on the task's linked item and remember its id so unchecking
+ * can undo it. If the item was deleted since linking, drop the stale link
+ * instead of failing the task update.
  */
 function logLinkedCompletion(task: ScheduleTask): void {
-  if (!task.choreId || task.choreCompletionId) return;
-  const chore = readChore(task.choreId);
-  if (!chore) {
-    delete task.choreId;
+  if (!task.itemId || task.itemCompletionId) return;
+  const item = readScheduleItem(task.itemId);
+  if (!item) {
+    delete task.itemId;
     return;
   }
   const completion: Completion = {
     id: crypto.randomUUID(),
     performedAt: new Date().toISOString(),
   };
-  chore.completions = [...chore.completions, completion];
-  chore.updatedAt = new Date().toISOString();
-  writeChore(chore);
-  task.choreCompletionId = completion.id;
+  item.completions = [...item.completions, completion];
+  item.updatedAt = new Date().toISOString();
+  writeScheduleItem(item);
+  task.itemCompletionId = completion.id;
 }
 
-/**
- * Clear the completion this task wrote onto its linked to-do. Only undoes a
- * completion we created (tracked via todoCompletionAt) so we never clobber one
- * the user set on the To-Dos page. Best-effort: the to-do may have been deleted.
- * Mutates the task; caller persists the schedule.
- */
-function clearLinkedTodo(task: ScheduleTask): void {
-  const completedAt = task.todoCompletionAt;
-  if (!completedAt) return;
-  const todo = task.todoId ? readTodo(task.todoId) : null;
-  if (todo && todo.completedAt === completedAt) {
-    delete todo.completedAt;
-    todo.updatedAt = new Date().toISOString();
-    writeTodo(todo);
-  }
-  delete task.todoCompletionAt;
-}
-
-/**
- * Mark the task's linked to-do done and remember the timestamp so unchecking
- * can undo it. Skips a to-do already completed elsewhere (so it stays owned by
- * whoever finished it). If the to-do was deleted since linking, drop the stale
- * link instead of failing the task update.
- */
-function completeLinkedTodo(task: ScheduleTask): void {
-  if (!task.todoId || task.todoCompletionAt) return;
-  const todo = readTodo(task.todoId);
-  if (!todo) {
-    delete task.todoId;
-    return;
-  }
-  if (todo.completedAt) return; // already done elsewhere; don't claim ownership
-  const now = new Date().toISOString();
-  todo.completedAt = now;
-  todo.updatedAt = now;
-  writeTodo(todo);
-  task.todoCompletionAt = now;
-}
-
-/**
- * Remove the hobby-task completion this task previously logged. Best-effort:
- * the hobby or its task may have been deleted in the meantime, so a miss is not
- * an error. Mutates the task; caller persists the schedule.
- */
-function removeLinkedHobbyTaskCompletion(task: ScheduleTask): void {
-  const completionId = task.hobbyTaskCompletionId;
-  if (!completionId) return;
-  const hobby = task.hobbyTaskId ? findHobbyByTaskId(task.hobbyTaskId) : null;
-  const hobbyTask = hobby?.tasks.find((t) => t.id === task.hobbyTaskId);
-  if (hobby && hobbyTask) {
-    const remaining = hobbyTask.completions.filter(
-      (c) => c.id !== completionId,
-    );
-    if (remaining.length !== hobbyTask.completions.length) {
-      hobbyTask.completions = remaining;
-      hobby.updatedAt = new Date().toISOString();
-      writeHobby(hobby);
-    }
-  }
-  delete task.hobbyTaskCompletionId;
-}
-
-/**
- * Log a completion on the task's linked hobby task and remember its id so
- * unchecking can undo it. If the hobby task was deleted since linking, drop the
- * stale link instead of failing the task update.
- */
-function logLinkedHobbyTaskCompletion(task: ScheduleTask): void {
-  if (!task.hobbyTaskId || task.hobbyTaskCompletionId) return;
-  const hobby = findHobbyByTaskId(task.hobbyTaskId);
-  const hobbyTask = hobby?.tasks.find((t) => t.id === task.hobbyTaskId);
-  if (!hobby || !hobbyTask) {
-    delete task.hobbyTaskId;
-    return;
-  }
-  const completion: Completion = {
-    id: crypto.randomUUID(),
-    performedAt: new Date().toISOString(),
-  };
-  hobbyTask.completions = [...hobbyTask.completions, completion];
-  hobby.updatedAt = new Date().toISOString();
-  writeHobby(hobby);
-  task.hobbyTaskCompletionId = completion.id;
-}
-
-/**
- * Remove the routine completion this task previously logged. Best-effort: the
- * routine may have been deleted in the meantime, so a miss is not an error.
- * Mutates the task; caller persists the schedule.
- */
-function removeLinkedRoutineCompletion(task: ScheduleTask): void {
-  const completionId = task.routineCompletionId;
-  if (!completionId) return;
-  const routine = task.routineId ? findRoutineById(task.routineId) : null;
-  if (routine) {
-    const remaining = routine.completions.filter((c) => c.id !== completionId);
-    if (remaining.length !== routine.completions.length) {
-      routine.completions = remaining;
-      routine.updatedAt = new Date().toISOString();
-      writeRoutine(routine);
-    }
-  }
-  delete task.routineCompletionId;
-}
-
-/**
- * Log a completion on the task's linked routine and remember its id so
- * unchecking can undo it. If the routine was deleted since linking, drop the
- * stale link instead of failing the task update.
- */
-function logLinkedRoutineCompletion(task: ScheduleTask): void {
-  if (!task.routineId || task.routineCompletionId) return;
-  const routine = findRoutineById(task.routineId);
-  if (!routine) {
-    delete task.routineId;
-    return;
-  }
-  const completion: Completion = {
-    id: crypto.randomUUID(),
-    performedAt: new Date().toISOString(),
-  };
-  routine.completions = [...routine.completions, completion];
-  routine.updatedAt = new Date().toISOString();
-  writeRoutine(routine);
-  task.routineCompletionId = completion.id;
-}
-
-// Update a single task's status, notes, and/or chore link. All fields are
-// optional, but at least one must be present. `choreId: null` clears the link.
+// Update a single task's status, notes, plan fields, and/or item link. All
+// fields are optional, but at least one must be present. `itemId: null` clears
+// the link.
 router.patch("/:id/tasks/:taskId", (req, res) => {
   const { id, taskId } = req.params;
-  const {
-    status,
-    notes,
-    label,
-    startTime,
-    endTime,
-    choreId,
-    todoId,
-    hobbyTaskId,
-    routineId,
-  } = req.body as {
+  const { status, notes, label, startTime, endTime, itemId } = req.body as {
     status?: unknown;
     notes?: unknown;
     label?: unknown;
     startTime?: unknown;
     endTime?: unknown;
-    choreId?: unknown;
-    todoId?: unknown;
-    hobbyTaskId?: unknown;
-    routineId?: unknown;
+    itemId?: unknown;
   };
 
   if (status !== undefined && !TASK_STATUSES.includes(status as TaskStatus)) {
@@ -495,32 +342,8 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     res.status(400).json({ error: "endTime must be HH:MM (24h) or null" });
     return;
   }
-  if (
-    choreId !== undefined &&
-    choreId !== null &&
-    typeof choreId !== "string"
-  ) {
-    res.status(400).json({ error: "choreId must be a string or null" });
-    return;
-  }
-  if (todoId !== undefined && todoId !== null && typeof todoId !== "string") {
-    res.status(400).json({ error: "todoId must be a string or null" });
-    return;
-  }
-  if (
-    hobbyTaskId !== undefined &&
-    hobbyTaskId !== null &&
-    typeof hobbyTaskId !== "string"
-  ) {
-    res.status(400).json({ error: "hobbyTaskId must be a string or null" });
-    return;
-  }
-  if (
-    routineId !== undefined &&
-    routineId !== null &&
-    typeof routineId !== "string"
-  ) {
-    res.status(400).json({ error: "routineId must be a string or null" });
+  if (itemId !== undefined && itemId !== null && typeof itemId !== "string") {
+    res.status(400).json({ error: "itemId must be a string or null" });
     return;
   }
   if (
@@ -529,14 +352,10 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     label === undefined &&
     startTime === undefined &&
     endTime === undefined &&
-    choreId === undefined &&
-    todoId === undefined &&
-    hobbyTaskId === undefined &&
-    routineId === undefined
+    itemId === undefined
   ) {
     res.status(400).json({
-      error:
-        "status, notes, label, startTime, endTime, choreId, todoId, hobbyTaskId, or routineId is required",
+      error: "status, notes, label, startTime, endTime, or itemId is required",
     });
     return;
   }
@@ -553,20 +372,8 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
     return;
   }
 
-  if (typeof choreId === "string" && !readChore(choreId)) {
-    res.status(400).json({ error: "Chore not found" });
-    return;
-  }
-  if (typeof todoId === "string" && !readTodo(todoId)) {
-    res.status(400).json({ error: "Todo not found" });
-    return;
-  }
-  if (typeof hobbyTaskId === "string" && !findHobbyByTaskId(hobbyTaskId)) {
-    res.status(400).json({ error: "Hobby task not found" });
-    return;
-  }
-  if (typeof routineId === "string" && !findRoutineById(routineId)) {
-    res.status(400).json({ error: "Routine not found" });
+  if (typeof itemId === "string" && !readScheduleItem(itemId)) {
+    res.status(400).json({ error: "Schedule item not found" });
     return;
   }
 
@@ -585,61 +392,24 @@ router.patch("/:id/tasks/:taskId", (req, res) => {
 
   if (notes !== undefined) task.notes = notes;
 
-  if (choreId !== undefined) {
-    const next = choreId === null ? undefined : choreId;
-    if (task.choreId !== next) {
+  if (itemId !== undefined) {
+    const next = itemId === null ? undefined : itemId;
+    if (task.itemId !== next) {
       // Re-linking: undo the completion the old link created before switching.
       removeLinkedCompletion(task);
-      if (next === undefined) delete task.choreId;
-      else task.choreId = next;
-    }
-  }
-
-  if (todoId !== undefined) {
-    const next = todoId === null ? undefined : todoId;
-    if (task.todoId !== next) {
-      // Re-linking: undo the completion the old link created before switching.
-      clearLinkedTodo(task);
-      if (next === undefined) delete task.todoId;
-      else task.todoId = next;
-    }
-  }
-
-  if (hobbyTaskId !== undefined) {
-    const next = hobbyTaskId === null ? undefined : hobbyTaskId;
-    if (task.hobbyTaskId !== next) {
-      // Re-linking: undo the completion the old link created before switching.
-      removeLinkedHobbyTaskCompletion(task);
-      if (next === undefined) delete task.hobbyTaskId;
-      else task.hobbyTaskId = next;
-    }
-  }
-
-  if (routineId !== undefined) {
-    const next = routineId === null ? undefined : routineId;
-    if (task.routineId !== next) {
-      // Re-linking: undo the completion the old link created before switching.
-      removeLinkedRoutineCompletion(task);
-      if (next === undefined) delete task.routineId;
-      else task.routineId = next;
+      if (next === undefined) delete task.itemId;
+      else task.itemId = next;
     }
   }
 
   if (status !== undefined) task.status = status as TaskStatus;
 
-  // Invariant: a completed linked task owns exactly one chore completion, at
-  // most one to-do completion, one hobby-task completion, and one routine
-  // completion; anything else owns none.
+  // Invariant: a completed linked task owns exactly one item completion;
+  // anything else owns none.
   if (task.status === "completed") {
     logLinkedCompletion(task);
-    completeLinkedTodo(task);
-    logLinkedHobbyTaskCompletion(task);
-    logLinkedRoutineCompletion(task);
   } else {
     removeLinkedCompletion(task);
-    clearLinkedTodo(task);
-    removeLinkedHobbyTaskCompletion(task);
-    removeLinkedRoutineCompletion(task);
   }
 
   // A changed start time can move this task within the day; keep order intact.
@@ -704,8 +474,8 @@ router.post("/:id/tasks", (req, res) => {
 
 // Replace the day's whole task list — the "accept" step of an AI edit. Only plan
 // fields (label/start/end) and membership come from the client; a task matched
-// by id keeps its server-side status, links, and completion bookkeeping, while
-// any current task left out is removed (undoing its completions like a delete).
+// by id keeps its server-side status, link, and completion bookkeeping, while
+// any current task left out is removed (undoing its completion like a delete).
 router.put("/:id/tasks", (req, res) => {
   const { id } = req.params;
   const { tasks } = req.body as { tasks?: unknown };
@@ -794,14 +564,11 @@ router.put("/:id/tasks", (req, res) => {
     };
   });
 
-  // Anything dropped from the day is removed — undo its logged completions, the
+  // Anything dropped from the day is removed — undo its logged completion, the
   // same bookkeeping as DELETE /:id/tasks/:taskId.
   for (const task of current) {
     if (keptIds.has(task.id)) continue;
     removeLinkedCompletion(task);
-    clearLinkedTodo(task);
-    removeLinkedHobbyTaskCompletion(task);
-    removeLinkedRoutineCompletion(task);
   }
 
   schedule.tasks = sortTasks(nextTasks);
@@ -810,9 +577,9 @@ router.put("/:id/tasks", (req, res) => {
   res.status(200).json({ schedule });
 });
 
-// Delete a single task. If it had logged completions on a linked chore / to-do
-// / hobby / routine (i.e. it was completed), undo those first so nothing is
-// left orphaned — the same bookkeeping as moving a task out of "completed".
+// Delete a single task. If it had a logged completion on a linked item (i.e. it
+// was completed), undo it first so nothing is left orphaned — the same
+// bookkeeping as moving a task out of "completed".
 router.delete("/:id/tasks/:taskId", (req, res) => {
   const { id, taskId } = req.params;
   const schedule = readSchedule(id);
@@ -827,9 +594,6 @@ router.delete("/:id/tasks/:taskId", (req, res) => {
   }
 
   removeLinkedCompletion(task);
-  clearLinkedTodo(task);
-  removeLinkedHobbyTaskCompletion(task);
-  removeLinkedRoutineCompletion(task);
 
   schedule.tasks = (schedule.tasks ?? []).filter((t) => t.id !== taskId);
   schedule.updatedAt = new Date().toISOString();

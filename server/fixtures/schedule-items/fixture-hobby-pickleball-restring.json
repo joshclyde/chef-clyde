@@ -1,0 +1,11 @@
+{
+  "id": "fixture-hobby-pickleball-restring",
+  "category": "hobby",
+  "label": "Replace paddle grip",
+  "occurrence": { "kind": "oneoff" },
+  "completions": [],
+  "typicalTimeMinutes": 20,
+  "details": { "groupLabel": "Pickleball" },
+  "createdAt": "2026-05-01T12:00:00.000Z",
+  "updatedAt": "2026-05-01T12:00:00.000Z"
+}

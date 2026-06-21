@@ -13,14 +13,8 @@ export type ScheduleTask = {
   label: string;
   status: TaskStatus;
   notes?: string; // free-text context the user attaches to the task
-  choreId?: string; // the chore this task performs, when linked
-  choreCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
-  todoId?: string; // the one-off to-do this task fulfills, when linked
-  todoCompletionAt?: string; // completedAt this task wrote onto the to-do; kept so unchecking can undo it
-  hobbyTaskId?: string; // the hobby task this performs, when linked
-  hobbyTaskCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
-  routineId?: string; // the routine this performs, when linked
-  routineCompletionId?: string; // completion logged when completed; kept so unchecking can undo it
+  itemId?: string; // the ScheduleItem (chore/hobby/routine/to-do) this task performs, when linked
+  itemCompletionId?: string; // completion logged on the item when completed; kept so unchecking can undo it
 };
 
 export type Schedule = {

@@ -1,13 +1,15 @@
 {
   "id": "fixture-routine-coffee",
+  "category": "routine",
   "label": "Make coffee",
-  "timeOfDay": "morning",
-  "typicalTimeMinutes": 10,
   "occurrence": {
     "kind": "weekly",
     "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
   "completions": [],
+  "typicalTimeMinutes": 10,
+  "timeOfDay": "morning",
+  "details": {},
   "createdAt": "2026-05-01T12:00:00.000Z",
   "updatedAt": "2026-05-01T12:00:00.000Z"
 }

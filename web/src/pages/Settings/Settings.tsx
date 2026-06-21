@@ -10,7 +10,7 @@ import { useAiSettings } from "../../ai/useAiSettings";
 import { type PanelPosition } from "../../panel/PanelContext";
 import { usePanel } from "../../panel/usePanel";
 import { useTheme } from "../../theme/useTheme";
-import { Button, Heading, Inline, Select, Stack, Text } from "../../ui";
+import { Button, Heading, Inline, Select, Stack } from "../../ui";
 import styles from "./Settings.module.css";
 
 const THEMES = [

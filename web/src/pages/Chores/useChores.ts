@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
 
+import {
+  createScheduleItem,
+  deleteScheduleItem,
+  deleteScheduleItemCompletion,
+  fetchScheduleItems,
+  logScheduleItemCompletion,
+  type ScheduleItem,
+  type ScheduleItemInput,
+  updateScheduleItem,
+} from "../../lib/scheduleItems";
+
 export type FrequencyUnit = "days" | "weeks" | "months";
 
 export type Completion = {
@@ -19,6 +30,43 @@ export type Chore = {
   createdAt: string;
   updatedAt: string;
 };
+
+/** Project the unified item onto the chore view this page works with. */
+function toChore(item: ScheduleItem): Chore {
+  const occ = item.occurrence;
+  return {
+    id: item.id,
+    name: item.label,
+    frequencyValue: occ.kind === "frequency" ? occ.value : 1,
+    frequencyUnit: occ.kind === "frequency" ? occ.unit : "weeks",
+    typicalTimeMinutes: item.typicalTimeMinutes,
+    room: item.details.room,
+    floor: item.details.floor,
+    completions: item.completions,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+/** Map the chore form fields onto a unified create/update payload. */
+function toItemInput(input: ChoreInput): ScheduleItemInput {
+  return {
+    category: "chore",
+    label: input.name,
+    occurrence: {
+      kind: "frequency",
+      value: input.frequencyValue,
+      unit: input.frequencyUnit,
+    },
+    ...(input.typicalTimeMinutes != null
+      ? { typicalTimeMinutes: input.typicalTimeMinutes }
+      : {}),
+    details: {
+      ...(input.room ? { room: input.room } : {}),
+      ...(input.floor ? { floor: input.floor } : {}),
+    },
+  };
+}
 
 /** The user-editable fields sent to the create/update endpoints. */
 export type ChoreInput = {
@@ -88,63 +136,42 @@ export function dueSortKey(chore: Chore): number {
 }
 
 export function useChores() {
-  const [chores, setChores] = useState<Chore[]>([]);
+  const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/chores")
-      .then((res) => res.json())
-      .then((data: { chores: Chore[] }) => setChores(data.chores))
+    fetchScheduleItems("chore")
+      .then(setItems)
       .catch(() => setError("Failed to load chores."))
       .finally(() => setLoading(false));
   }, []);
 
+  const chores = items.map(toChore);
+
   async function createChore(input: ChoreInput) {
-    const res = await fetch("/api/chores", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to create chore");
-    const data = (await res.json()) as { chore: Chore };
-    setChores((prev) => [...prev, data.chore]);
+    const item = await createScheduleItem(toItemInput(input));
+    setItems((prev) => [...prev, item]);
   }
 
   async function updateChore(id: string, input: ChoreInput) {
-    const res = await fetch(`/api/chores/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to update chore");
-    const data = (await res.json()) as { chore: Chore };
-    setChores((prev) => prev.map((c) => (c.id === id ? data.chore : c)));
+    const item = await updateScheduleItem(id, toItemInput(input));
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   async function deleteChore(id: string) {
-    await fetch(`/api/chores/${id}`, { method: "DELETE" });
-    setChores((prev) => prev.filter((c) => c.id !== id));
+    await deleteScheduleItem(id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   async function logCompletion(id: string, performedAt?: string) {
-    const res = await fetch(`/api/chores/${id}/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(performedAt ? { performedAt } : {}),
-    });
-    if (!res.ok) throw new Error("Failed to log completion");
-    const data = (await res.json()) as { chore: Chore };
-    setChores((prev) => prev.map((c) => (c.id === id ? data.chore : c)));
+    const item = await logScheduleItemCompletion(id, performedAt);
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   async function deleteCompletion(id: string, completionId: string) {
-    const res = await fetch(`/api/chores/${id}/completions/${completionId}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Failed to delete completion");
-    const data = (await res.json()) as { chore: Chore };
-    setChores((prev) => prev.map((c) => (c.id === id ? data.chore : c)));
+    const item = await deleteScheduleItemCompletion(id, completionId);
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   return {

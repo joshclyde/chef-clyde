@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 
 import { todayLocal } from "../../lib/date";
+import {
+  createScheduleItem,
+  deleteScheduleItem,
+  deleteScheduleItemCompletion,
+  fetchScheduleItems,
+  logScheduleItemCompletion,
+  type ScheduleItem,
+  type ScheduleItemInput,
+  updateScheduleItem,
+} from "../../lib/scheduleItems";
 
 export type Todo = {
   id: string;
@@ -18,6 +28,33 @@ export type TodoInput = {
   dueDate?: string;
   notes?: string;
 };
+
+/**
+ * Project the unified item onto the to-do view. A to-do is binary done/not-done,
+ * so its first (and only) completion is what `completedAt` reflects.
+ */
+function toTodo(item: ScheduleItem): Todo {
+  return {
+    id: item.id,
+    title: item.label,
+    dueDate: item.details.dueDate,
+    notes: item.notes,
+    completedAt: item.completions[0]?.performedAt,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+/** Map the to-do form fields onto a unified create/update payload. */
+function toItemInput(input: TodoInput): ScheduleItemInput {
+  return {
+    category: "todo",
+    label: input.title,
+    occurrence: { kind: "oneoff" },
+    ...(input.notes ? { notes: input.notes } : {}),
+    details: input.dueDate ? { dueDate: input.dueDate } : {},
+  };
+}
 
 export type DueStatus = "none" | "overdue" | "today" | "upcoming";
 
@@ -41,54 +78,47 @@ export function dueSortKey(todo: Todo): number {
 }
 
 export function useTodos() {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/todos")
-      .then((res) => res.json())
-      .then((data: { todos: Todo[] }) => setTodos(data.todos))
+    fetchScheduleItems("todo")
+      .then(setItems)
       .catch(() => setError("Failed to load to-dos."))
       .finally(() => setLoading(false));
   }, []);
 
+  const todos = items.map(toTodo);
+
   async function createTodo(input: TodoInput) {
-    const res = await fetch("/api/todos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to create to-do");
-    const data = (await res.json()) as { todo: Todo };
-    setTodos((prev) => [...prev, data.todo]);
+    const item = await createScheduleItem(toItemInput(input));
+    setItems((prev) => [...prev, item]);
   }
 
   async function updateTodo(id: string, input: TodoInput) {
-    const res = await fetch(`/api/todos/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to update to-do");
-    const data = (await res.json()) as { todo: Todo };
-    setTodos((prev) => prev.map((t) => (t.id === id ? data.todo : t)));
+    const item = await updateScheduleItem(id, toItemInput(input));
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
+  // A to-do is done/not-done: completing logs a single completion, un-completing
+  // removes the one it logged.
   async function toggleComplete(id: string, completed: boolean) {
-    const res = await fetch(`/api/todos/${id}/complete`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed }),
-    });
-    if (!res.ok) throw new Error("Failed to update to-do");
-    const data = (await res.json()) as { todo: Todo };
-    setTodos((prev) => prev.map((t) => (t.id === id ? data.todo : t)));
+    if (completed) {
+      const item = await logScheduleItemCompletion(id);
+      setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
+      return;
+    }
+    const current = items.find((i) => i.id === id);
+    const completionId = current?.completions[0]?.id;
+    if (!completionId) return;
+    const item = await deleteScheduleItemCompletion(id, completionId);
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   async function deleteTodo(id: string) {
-    await fetch(`/api/todos/${id}`, { method: "DELETE" });
-    setTodos((prev) => prev.filter((t) => t.id !== id));
+    await deleteScheduleItem(id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   return {

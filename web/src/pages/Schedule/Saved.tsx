@@ -4,17 +4,51 @@ import {
   ChevronRight,
   Gamepad2,
   ListTodo,
+  type LucideIcon,
   Repeat2,
 } from "lucide-react";
 import { useState } from "react";
 
 import { todayLocal } from "../../lib/date";
+import {
+  itemDisplayName,
+  type ScheduleItem,
+  type ScheduleItemCategory,
+  useScheduleItems,
+} from "../../lib/scheduleItems";
 import { Button, Card, Heading, Inline, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
 import { formatTimeRange } from "./dailyTime";
 import styles from "./Schedule.module.css";
 import { ScheduleGenerator } from "./ScheduleGenerator";
 import { type Schedule, type ScheduleTask, useSchedules } from "./useSchedules";
+
+/** Per-category icon + style for a task's link badge. */
+const CATEGORY_ICON: Record<
+  ScheduleItemCategory,
+  { icon: LucideIcon; className: string; label: string }
+> = {
+  chore: {
+    icon: BrushCleaning,
+    className: styles.choreIcon,
+    label: "Linked to a chore",
+  },
+  todo: {
+    icon: ListTodo,
+    className: styles.todoIcon,
+    label: "From your to-dos",
+  },
+  hobby: {
+    icon: Gamepad2,
+    className: styles.hobbyIcon,
+    label: "From your hobbies",
+  },
+  routine: {
+    icon: Repeat2,
+    className: styles.routineIcon,
+    label: "From your routines",
+  },
+};
 
 /** Format a "YYYY-MM-DD" string as a readable local date (no TZ shift). */
 function formatDate(date: string) {
@@ -27,8 +61,34 @@ function formatDate(date: string) {
   });
 }
 
+/** The category icon for a task's linked item, or nothing when unlinked. */
+function SavedLinkBadge({
+  task,
+  items,
+}: {
+  task: ScheduleTask;
+  items: ScheduleItem[];
+}) {
+  if (!task.itemId) return null;
+  const item = items.find((i) => i.id === task.itemId);
+  const meta = CATEGORY_ICON[item?.category ?? "chore"];
+  const Icon = meta.icon;
+  const label = item ? `${meta.label}: ${itemDisplayName(item)}` : meta.label;
+  return (
+    <span className={meta.className} role="img" aria-label={label} title={label}>
+      <Icon size={14} aria-hidden />
+    </span>
+  );
+}
+
 /** Read-only summary of a schedule's parsed tasks, styled by persisted status. */
-function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
+function SavedTaskList({
+  tasks,
+  items,
+}: {
+  tasks: ScheduleTask[];
+  items: ScheduleItem[];
+}) {
   const resolved = tasks.filter((t) => t.status !== "pending").length;
   return (
     <Stack gap="2xs">
@@ -46,46 +106,7 @@ function SavedTaskList({ tasks }: { tasks: ScheduleTask[] }) {
           <div className={styles.taskMain}>
             <span className={styles.taskTime}>{formatTimeRange(task)}</span>
             <span className={styles.taskLabel}>{task.label}</span>
-            {task.choreId && (
-              <span
-                className={styles.choreIcon}
-                role="img"
-                aria-label="Linked to a chore"
-                title="Linked to a chore"
-              >
-                <BrushCleaning size={14} aria-hidden />
-              </span>
-            )}
-            {task.todoId && (
-              <span
-                className={styles.todoIcon}
-                role="img"
-                aria-label="From your to-dos"
-                title="From your to-dos"
-              >
-                <ListTodo size={14} aria-hidden />
-              </span>
-            )}
-            {task.hobbyTaskId && (
-              <span
-                className={styles.hobbyIcon}
-                role="img"
-                aria-label="From your hobbies"
-                title="From your hobbies"
-              >
-                <Gamepad2 size={14} aria-hidden />
-              </span>
-            )}
-            {task.routineId && (
-              <span
-                className={styles.routineIcon}
-                role="img"
-                aria-label="From your routines"
-                title="From your routines"
-              >
-                <Repeat2 size={14} aria-hidden />
-              </span>
-            )}
+            <SavedLinkBadge task={task} items={items} />
           </div>
         </div>
       ))}
@@ -130,6 +151,7 @@ function ScheduleCard({
   schedule,
   isToday,
   schedules,
+  items,
   onSave,
   onGenerate,
   previewPrompt,
@@ -138,6 +160,7 @@ function ScheduleCard({
   schedule: Schedule;
   isToday: boolean;
   schedules: Schedule[];
+  items: ScheduleItem[];
   onSave: (date: string, dayContext: string) => Promise<Schedule>;
   onGenerate: (id: string) => Promise<Schedule>;
   previewPrompt: (date: string, dayContext: string) => Promise<string>;
@@ -183,7 +206,7 @@ function ScheduleCard({
         </Inline>
         {hasTasks ? (
           <>
-            <SavedTaskList tasks={schedule.tasks ?? []} />
+            <SavedTaskList tasks={schedule.tasks ?? []} items={items} />
             <CollapsibleText
               label="Day context"
               content={schedule.dayContext}
@@ -210,6 +233,7 @@ export default function ScheduleSaved() {
     generateTasks,
     previewPrompt,
   } = useSchedules();
+  const { items } = useScheduleItems();
   const [creating, setCreating] = useState(false);
   const today = todayLocal();
 
@@ -268,6 +292,7 @@ export default function ScheduleSaved() {
               schedule={schedule}
               isToday={schedule.date === today}
               schedules={schedules}
+              items={items}
               onSave={onSave}
               onGenerate={generateTasks}
               previewPrompt={previewPrompt}

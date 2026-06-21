@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
 
+import {
+  createScheduleItem,
+  deleteScheduleItem,
+  deleteScheduleItemCompletion,
+  fetchScheduleItems,
+  logScheduleItemCompletion,
+  type ScheduleItem,
+  type ScheduleItemInput,
+  updateScheduleItem,
+} from "../../lib/scheduleItems";
+
 export type FrequencyUnit = "days" | "weeks" | "months";
 export type DayOfWeek = "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
 export type TimeOfDay =
@@ -40,6 +51,41 @@ export type RoutineInput = {
   typicalTimeMinutes?: number;
   occurrence: RoutineOccurrence;
 };
+
+/** Project the unified item onto the routine view this page works with. */
+function toRoutine(item: ScheduleItem): Routine {
+  const occ = item.occurrence;
+  const occurrence: RoutineOccurrence =
+    occ.kind === "weekly"
+      ? { kind: "weekly", days: occ.days }
+      : occ.kind === "frequency"
+        ? { kind: "frequency", value: occ.value, unit: occ.unit }
+        : { kind: "frequency", value: 1, unit: "weeks" };
+  return {
+    id: item.id,
+    label: item.label,
+    timeOfDay: item.timeOfDay ?? "any",
+    typicalTimeMinutes: item.typicalTimeMinutes,
+    occurrence,
+    completions: item.completions,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+/** Map the routine form fields onto a unified create/update payload. */
+function toItemInput(input: RoutineInput): ScheduleItemInput {
+  return {
+    category: "routine",
+    label: input.label,
+    occurrence: input.occurrence,
+    timeOfDay: input.timeOfDay,
+    ...(input.typicalTimeMinutes != null
+      ? { typicalTimeMinutes: input.typicalTimeMinutes }
+      : {}),
+    details: {},
+  };
+}
 
 export type DueStatus = "never" | "overdue" | "upcoming";
 
@@ -102,63 +148,42 @@ export function dueSortKey(routine: Routine): number {
 }
 
 export function useRoutines() {
-  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/routines")
-      .then((res) => res.json())
-      .then((data: { routines: Routine[] }) => setRoutines(data.routines))
+    fetchScheduleItems("routine")
+      .then(setItems)
       .catch(() => setError("Failed to load routines."))
       .finally(() => setLoading(false));
   }, []);
 
+  const routines = items.map(toRoutine);
+
   async function createRoutine(input: RoutineInput) {
-    const res = await fetch("/api/routines", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to create routine");
-    const data = (await res.json()) as { routine: Routine };
-    setRoutines((prev) => [...prev, data.routine]);
+    const item = await createScheduleItem(toItemInput(input));
+    setItems((prev) => [...prev, item]);
   }
 
   async function updateRoutine(id: string, input: RoutineInput) {
-    const res = await fetch(`/api/routines/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error("Failed to update routine");
-    const data = (await res.json()) as { routine: Routine };
-    setRoutines((prev) => prev.map((r) => (r.id === id ? data.routine : r)));
+    const item = await updateScheduleItem(id, toItemInput(input));
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   async function deleteRoutine(id: string) {
-    await fetch(`/api/routines/${id}`, { method: "DELETE" });
-    setRoutines((prev) => prev.filter((r) => r.id !== id));
+    await deleteScheduleItem(id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   async function logCompletion(id: string, performedAt?: string) {
-    const res = await fetch(`/api/routines/${id}/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(performedAt ? { performedAt } : {}),
-    });
-    if (!res.ok) throw new Error("Failed to log routine");
-    const data = (await res.json()) as { routine: Routine };
-    setRoutines((prev) => prev.map((r) => (r.id === id ? data.routine : r)));
+    const item = await logScheduleItemCompletion(id, performedAt);
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   async function deleteCompletion(id: string, completionId: string) {
-    const res = await fetch(`/api/routines/${id}/completions/${completionId}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Failed to delete completion");
-    const data = (await res.json()) as { routine: Routine };
-    setRoutines((prev) => prev.map((r) => (r.id === id ? data.routine : r)));
+    const item = await deleteScheduleItemCompletion(id, completionId);
+    setItems((prev) => prev.map((i) => (i.id === id ? item : i)));
   }
 
   return {
