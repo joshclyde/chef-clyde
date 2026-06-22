@@ -32,6 +32,7 @@ export const activities: Activity[] = [
     icon: CalendarDays,
     navItems: [
       { label: "Daily", path: "/schedule/daily" },
+      { label: "Today (v2)", path: "/schedule/today" },
       { label: "Saved", path: "/schedule/saved" },
       { label: "Instructions", path: "/schedule/instructions" },
     ],

@@ -1,0 +1,70 @@
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-default);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--easing-standard),
+    color var(--duration-fast) var(--easing-standard),
+    opacity var(--duration-fast) var(--easing-standard);
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ----- sizes (square, so the pill radius yields a circle) ----- */
+.sm {
+  width: 36px;
+  height: 36px;
+}
+
+.md {
+  width: 44px;
+  height: 44px;
+}
+
+/* ----- variants ----- */
+.default {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-default);
+}
+.default:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-default);
+}
+
+.primary {
+  background: var(--color-action-primary-bg);
+  border-color: transparent;
+  color: var(--color-action-primary-fg);
+}
+.primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+/* Toggle "on" state — filled, regardless of base variant. */
+.iconButton[aria-pressed="true"] {
+  background: var(--color-action-primary-bg);
+  border-color: transparent;
+  color: var(--color-action-primary-fg);
+}
+.iconButton[aria-pressed="true"]:hover:not(:disabled) {
+  opacity: 0.85;
+  background: var(--color-action-primary-bg);
+}
