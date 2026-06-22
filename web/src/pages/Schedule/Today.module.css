@@ -1,0 +1,102 @@
+/* Mobile-first, full-screen V2 schedule. Renders without the app chrome; the
+   menu button reveals it in a drawer. */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg-canvas);
+  color: var(--color-text-default);
+}
+
+/* ----- top bar: menu | period+date | edit ----- */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.titleBlock {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.period {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-strong);
+}
+
+.dateLine {
+  margin: var(--space-3xs) 0 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* ----- body: centered column, comfortable on wide screens ----- */
+.body {
+  flex: 1;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+  overflow: auto;
+}
+
+/* period section label in the complex (full-day) view */
+.periodHeading {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle);
+}
+.periodHeading.current {
+  color: var(--color-action-primary-bg);
+}
+
+/* ----- menu drawer ----- */
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgba(15, 18, 22, 0.5);
+  cursor: pointer;
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: flex;
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawer {
+    animation: drawer-in var(--duration-fast) var(--easing-standard);
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

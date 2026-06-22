@@ -2,6 +2,7 @@ export { Badge } from "./Badge/Badge";
 export { Button } from "./Button/Button";
 export { Card } from "./Card/Card";
 export { Heading } from "./Heading/Heading";
+export { IconButton } from "./IconButton/IconButton";
 export { Inline } from "./Inline/Inline";
 export { Input } from "./Input/Input";
 export { Select } from "./Select/Select";
