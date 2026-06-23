@@ -128,10 +128,7 @@
   color: var(--color-text-default);
 }
 
-/* current — the task happening right now: accent-colored icon + stronger text */
-.task.current .taskIcon {
-  color: var(--color-action-primary-bg);
-}
+/* current — the task happening right now: stronger text */
 .task.current .taskLabel {
   color: var(--color-text-strong);
   font-weight: var(--font-weight-semibold);
