@@ -9,10 +9,11 @@ import { todayLocal } from "../../lib/date";
 import { useScheduleItems } from "../../lib/scheduleItems";
 import { Button, IconButton, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
-import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
+import { formatStartTime, taskStatus, useNow } from "./dailyTime";
 import rowStyles from "./Schedule.module.css";
 import { TaskEditor } from "./TaskEditor";
-import { LinkBadge, TaskDetail } from "./taskParts";
+import { taskIcon } from "./taskIcon";
+import { TaskDetail } from "./taskParts";
 import {
   currentPeriodId,
   groupTasksByPeriod,
@@ -169,7 +170,12 @@ export default function ScheduleToday() {
   }
 
   function renderTask(task: ScheduleTask) {
-    const status = taskStatus(tasks, indexById.get(task.id) ?? 0, now);
+    const index = indexById.get(task.id) ?? 0;
+    const status = taskStatus(tasks, index, now);
+    // "completed" and "wontDo" are the resolved (terminal) states; both get the
+    // same de-emphasized styling.
+    const resolved = status === "completed" || status === "wontDo";
+    const statusClass = resolved ? styles.resolved : styles[status];
 
     if (complex && editingId === task.id) {
       return (
@@ -186,12 +192,13 @@ export default function ScheduleToday() {
     }
 
     const expanded = expandedId === task.id;
+    const Icon = taskIcon(task, items);
     return (
-      <div key={task.id} className={cn(rowStyles.taskRow, rowStyles[status])}>
-        <div className={rowStyles.taskMain}>
+      <div key={task.id} className={cn(styles.task, statusClass)}>
+        <div className={styles.taskMain}>
           <input
             type="checkbox"
-            className={rowStyles.taskCheckbox}
+            className={styles.taskCheckbox}
             checked={task.status === "completed"}
             aria-label={`Mark "${task.label}" complete`}
             onChange={(e) =>
@@ -200,12 +207,11 @@ export default function ScheduleToday() {
               })
             }
           />
-          <span className={rowStyles.taskTime}>{formatTimeRange(task)}</span>
-          <span className={rowStyles.taskLabel}>{task.label}</span>
-          {complex && <LinkBadge task={task} items={items} />}
-          {status === "current" && (
-            <span className={rowStyles.nowBadge}>Now</span>
-          )}
+          <span className={styles.taskLabel}>{task.label}</span>
+          <span className={styles.taskIcon}>
+            {Icon && <Icon size={14} aria-hidden />}
+          </span>
+          <span className={styles.taskTime}>{formatStartTime(task)}</span>
           {complex && (
             <>
               <button
@@ -255,7 +261,11 @@ export default function ScheduleToday() {
   return (
     <div className={styles.page}>
       <header className={styles.topBar}>
-        <IconButton aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+        <IconButton
+          aria-label="Open menu"
+          className={styles.topBarButton}
+          onClick={() => setMenuOpen(true)}
+        >
           <Menu size={22} strokeWidth={2} aria-hidden />
         </IconButton>
         <div className={styles.titleBlock}>
@@ -267,6 +277,7 @@ export default function ScheduleToday() {
         <IconButton
           aria-label="Toggle edit mode"
           aria-pressed={complex}
+          className={styles.topBarButton}
           onClick={() => setComplex((v) => !v)}
         >
           {complex ? (

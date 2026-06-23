@@ -49,10 +49,10 @@
   --c-ai-teal: #0a9d84; /* teal */
   --c-ai-green: #16a34a; /* emerald green */
 
-  /* ----- PRIMITIVES: typography (system sans) ----- */
+  /* ----- PRIMITIVES: typography (Nunito, with a system-sans fallback) ----- */
   --font-family-base:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+    "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 0.95rem;

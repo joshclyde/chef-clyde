@@ -1,10 +1,4 @@
-import {
-  BrushCleaning,
-  Gamepad2,
-  ListTodo,
-  type LucideIcon,
-  Repeat2,
-} from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -14,6 +8,7 @@ import {
 } from "../../lib/scheduleItems";
 import { Button, Inline, Select, Stack, Text, Textarea } from "../../ui";
 import styles from "./Schedule.module.css";
+import { CATEGORY_ICON } from "./taskIcon";
 import type { ScheduleTask, TaskPatch, TaskStatus } from "./useSchedules";
 
 /** Per-category presentation for the link icon + the picker's option groups. */
@@ -22,25 +17,25 @@ const CATEGORY_META: Record<
   { icon: LucideIcon; className: string; label: string; group: string }
 > = {
   chore: {
-    icon: BrushCleaning,
+    icon: CATEGORY_ICON.chore,
     className: styles.choreIcon,
     label: "Linked chore",
     group: "Chores",
   },
   todo: {
-    icon: ListTodo,
+    icon: CATEGORY_ICON.todo,
     className: styles.todoIcon,
     label: "From your to-dos",
     group: "To-dos",
   },
   hobby: {
-    icon: Gamepad2,
+    icon: CATEGORY_ICON.hobby,
     className: styles.hobbyIcon,
     label: "From your hobbies",
     group: "Hobbies",
   },
   routine: {
-    icon: Repeat2,
+    icon: CATEGORY_ICON.routine,
     className: styles.routineIcon,
     label: "From your routines",
     group: "Routines",

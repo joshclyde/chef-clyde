@@ -64,15 +64,26 @@ export function taskStatus(
   return "past";
 }
 
+/** A 12-hour label like "7:30 AM" for an "HH:MM" string. */
+function format12h(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 /** A 12-hour label like "7:30 AM", or a range "7:30 AM – 8:00 AM". */
 export function formatTimeRange(task: ScheduleTask): string {
-  const fmt = (time: string) => {
-    const [h, m] = time.split(":").map(Number);
-    const period = h < 12 ? "AM" : "PM";
-    const hour12 = h % 12 === 0 ? 12 : h % 12;
-    return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
-  };
   return task.endTime
-    ? `${fmt(task.startTime)} – ${fmt(task.endTime)}`
-    : fmt(task.startTime);
+    ? `${format12h(task.startTime)} – ${format12h(task.endTime)}`
+    : format12h(task.startTime);
+}
+
+/**
+ * The 12-hour start time with no AM/PM (so 2am and 2pm both read "2:00").
+ */
+export function formatStartTime(task: ScheduleTask): string {
+  const [h, m] = task.startTime.split(":").map(Number);
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")}`;
 }
