@@ -13,13 +13,17 @@ This README is the human-facing overview. The operating rules Claude follows liv
 |--------|--------|---------|
 | Backlog | `board/1-backlog/` | Captured, not yet refined or scheduled |
 | To Do | `board/2-todo/` | Refined and ready to pick up |
-| In Progress | `board/3-in-progress/` | Actively being worked (PR not yet open) |
-| Review | `board/4-review/` | Implementation done, PR open, awaiting merge |
-| Done | `board/5-done/` | Merged and verified |
+| In Progress | `board/3-in-progress/` | Actively being worked on a feature branch |
+| Done | `board/4-done/` | Merged to `main` |
 
 An item's status **is** the folder it lives in. Moving a card means `git mv`-ing the
 file to the next column. Epics live in `epics/` and don't move — they group related
 items and track their collective progress.
+
+There's deliberately **no Review column**: an item awaiting merge is simply an open PR
+(GitHub's PR list is your review queue). The PR that completes an item moves its card into
+Done itself, so merging on GitHub lands the code and the Done card together — "Done" means
+exactly *merged to `main`*.
 
 ## Working the board
 

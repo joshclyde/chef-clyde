@@ -21,10 +21,14 @@ backlog/
 └── board/              ← the Kanban board; items live in exactly ONE column
     ├── 1-backlog/      ← captured, not yet refined or scheduled
     ├── 2-todo/         ← refined and ready to be picked up
-    ├── 3-in-progress/  ← actively being worked (the WIP column)
-    ├── 4-review/       ← implementation done, PR open, awaiting review/merge
-    └── 5-done/         ← merged and verified
+    ├── 3-in-progress/  ← actively being worked on a feature branch (WIP)
+    └── 4-done/         ← merged to main
 ```
+
+There is intentionally **no Review column**: an item awaiting merge is simply an open PR.
+The PR that completes an item moves the card into `4-done/` itself (see step 4 below), so
+merging on GitHub lands the code and the Done card together. GitHub's open-PR list is your
+review queue.
 
 An item's **status is its location**: the column folder it sits in. Moving a card =
 `git mv`-ing the file from one column folder to the next. Keep the `status:` frontmatter
@@ -43,7 +47,7 @@ id: CC-7                       # unique, immutable
 title: Add OpenAPI docs        # short imperative summary
 type: story                    # story | task | bug | chore
 epic: CC-EPIC-1                # parent epic id, or null
-status: todo                   # backlog | todo | in-progress | review | done
+status: todo                   # backlog | todo | in-progress | done
 priority: P2                   # P1 (highest) … P4 (lowest)
 created: 2026-06-23            # YYYY-MM-DD
 updated: 2026-06-23            # YYYY-MM-DD, bump on every transition
@@ -63,7 +67,7 @@ Implementation Notes, Activity Log).
 When asked to "work the backlog" or "pick up the next item":
 
 1. Look in `board/2-todo/`. Choose the highest-priority item (P1 before P4) whose
-   `depends_on` items are all already in `board/5-done/`. Break ties by lowest id.
+   `depends_on` items are all already in `board/4-done/`. Break ties by lowest id.
 2. If `2-todo/` is empty, tell the user the board is clear and ask whether to refine
    something from `1-backlog/`.
 3. Never silently pick a `1-backlog/` item — those are unrefined. Refine first (move to
@@ -80,26 +84,37 @@ When asked to "work the backlog" or "pick up the next item":
 
 ### 3. Starting work on an item
 
-1. `git mv` the file from `board/2-todo/` → `board/3-in-progress/`.
-2. Set `status: in-progress`, bump `updated:`, and append an Activity Log line.
-3. Create the feature branch for the actual code change and record it in `branch:`.
-   Use a name like `cc-7-openapi-docs`.
-4. Enforce WIP limit: there should normally be **at most one** item in
-   `board/3-in-progress/`. If one is already there, finish or park it first.
+1. Create the feature branch for the code change **first** and record it in `branch:` —
+   use a name like `cc-7-openapi-docs`. Every move below happens on that branch, so the
+   card travels with the work (the board on `main` only changes when a PR merges).
+2. `git mv` the card from `board/2-todo/` → `board/3-in-progress/`, set
+   `status: in-progress`, bump `updated:`, and append an Activity Log line.
+3. Enforce the WIP limit: normally **at most one** item is in progress at a time. If a
+   branch is already mid-flight, finish or park it first.
 
 ### 4. Completing an item
 
-When the implementation is done:
+The PR carries the card to Done in the **same branch** — opening the PR *is* the
+completion step, and merging it publishes Done to `main`:
 
-1. Commit the code changes, push the branch, and open a PR **per the repo-root
-   [CLAUDE.md](../CLAUDE.md) rules** (branch → commit → push → `gh pr create`). The
-   backlog never replaces that PR workflow; it sits on top of it.
-2. Record the PR URL in `pr:` and `git mv` the file to `board/4-review/` with
-   `status: review`.
-3. Append an Activity Log entry noting the PR.
-4. Only after the PR is merged **and** the change is verified does the item move to
-   `board/5-done/` with `status: done`. If you cannot confirm the merge, leave it in
-   `4-review/` and tell the user it's awaiting merge.
+1. On the feature branch, `git mv` the card from `board/3-in-progress/` → `board/4-done/`,
+   set `status: done`, bump `updated:`, tick the item's checkbox in its epic, and append
+   an Activity Log entry.
+2. Commit **both** the code change and the card move together, push, and open a PR **per
+   the repo-root [CLAUDE.md](../CLAUDE.md) rules** (branch → commit → push →
+   `gh pr create`). Record the PR URL in `pr:`. The backlog never replaces that PR
+   workflow; it rides on top of it.
+3. That's the end of the board work. Merging the PR on GitHub lands the code **and** the
+   Done card on `main` in one action — there is **no post-merge board step**.
+
+Notes:
+
+- **"In review" is not a board column — it's an open PR.** The awaiting-merge queue is
+  GitHub's open-PR list, not a folder.
+- Marking the card done before the merge is safe: if the PR is closed without merging, the
+  branch is discarded and `main`'s board is untouched, so the optimistic "done" never
+  leaks.
+- "Done" therefore means exactly **merged to `main`**.
 
 ### 5. Updating an epic
 
@@ -114,5 +129,7 @@ When an item under an epic changes column, update the epic's checklist (in
 - **Always log activity.** Every transition appends a dated line to the item's Activity
   Log so the history is auditable from the file alone.
 - **Respect dependencies.** Do not start an item whose `depends_on` is unmet.
+- **Done means merged.** A card reaches `4-done/` inside the PR that completes it; merging
+  that PR is what publishes Done to `main`. There is no separate post-merge step.
 - **Defer to the repo PR workflow** for anything that touches code. This board tracks
   *what* and *why*; the PR delivers the *how*.

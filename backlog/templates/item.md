@@ -3,7 +3,7 @@ id: CC-000
 title: Short imperative summary
 type: story # story | task | bug | chore
 epic: null # parent epic id (e.g. CC-EPIC-1) or null
-status: backlog # backlog | todo | in-progress | review | done
+status: backlog # backlog | todo | in-progress | done
 priority: P3 # P1 (highest) … P4 (lowest)
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
