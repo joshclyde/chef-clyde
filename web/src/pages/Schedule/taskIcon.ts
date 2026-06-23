@@ -1,6 +1,5 @@
 import {
   BrushCleaning,
-  Circle,
   Gamepad2,
   ListTodo,
   type LucideIcon,
@@ -22,11 +21,15 @@ export const CATEGORY_ICON: Record<ScheduleItemCategory, LucideIcon> = {
 };
 
 /**
- * The icon representing a task: the icon for its linked item's category, or a
- * neutral bullet for a task that isn't linked to one of the user's items.
+ * The icon representing a task: the icon for its linked item's category, or
+ * `null` for a task that isn't linked to one of the user's items (its icon slot
+ * is left empty).
  */
-export function taskIcon(task: ScheduleTask, items: ScheduleItem[]): LucideIcon {
-  if (!task.itemId) return Circle;
+export function taskIcon(
+  task: ScheduleTask,
+  items: ScheduleItem[],
+): LucideIcon | null {
+  if (!task.itemId) return null;
   const item = items.find((i) => i.id === task.itemId);
   return CATEGORY_ICON[item?.category ?? "chore"];
 }

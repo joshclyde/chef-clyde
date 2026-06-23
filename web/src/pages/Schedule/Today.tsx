@@ -197,7 +197,7 @@ export default function ScheduleToday() {
       <div key={task.id} className={cn(styles.task, statusClass)}>
         <div className={styles.taskMain}>
           <span className={styles.taskIcon}>
-            <Icon size={18} aria-hidden />
+            {Icon && <Icon size={14} aria-hidden />}
           </span>
           <input
             type="checkbox"

@@ -93,12 +93,14 @@
   padding: var(--space-2xs) var(--space-xs);
 }
 
-/* the task's category icon, leading the row */
+/* the task's category icon, leading the row. Fixed-width so unlinked tasks
+   (no icon) keep the same checkbox/label alignment as linked ones. */
 .taskIcon {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 14px;
   color: var(--color-text-muted);
 }
 
