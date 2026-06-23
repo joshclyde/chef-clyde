@@ -105,7 +105,12 @@ function LinkBadge({
   const Icon = meta.icon;
   const label = item ? `${meta.label}: ${itemDisplayName(item)}` : meta.label;
   return (
-    <span className={meta.className} role="img" aria-label={label} title={label}>
+    <span
+      className={meta.className}
+      role="img"
+      aria-label={label}
+      title={label}
+    >
       <Icon size={16} aria-hidden />
     </span>
   );

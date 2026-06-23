@@ -39,7 +39,9 @@ export function AiControls() {
           value={effort}
           disabled={!effortEnabled}
           title={
-            effortEnabled ? undefined : "This model doesn't support effort levels"
+            effortEnabled
+              ? undefined
+              : "This model doesn't support effort levels"
           }
           onChange={(e) => setEffort(e.target.value as AiEffort)}
         >

@@ -110,13 +110,9 @@ function weekdayOf(date: string): DayOfWeek {
 /** Items split by category, so each context section reads concrete `details`. */
 function byCategory(items: ScheduleItem[]) {
   return {
-    chores: items.filter(
-      (i): i is ItemOf<"chore"> => i.category === "chore",
-    ),
+    chores: items.filter((i): i is ItemOf<"chore"> => i.category === "chore"),
     todos: items.filter((i): i is ItemOf<"todo"> => i.category === "todo"),
-    hobbies: items.filter(
-      (i): i is ItemOf<"hobby"> => i.category === "hobby",
-    ),
+    hobbies: items.filter((i): i is ItemOf<"hobby"> => i.category === "hobby"),
     routines: items.filter(
       (i): i is ItemOf<"routine"> => i.category === "routine",
     ),
@@ -237,10 +233,7 @@ function buildTodosSection(todos: ItemOf<"todo">[]): string {
  * loose one-offs that are still open. Event items are handled separately by
  * `buildFixedCommitmentsContext`, so they're skipped here.
  */
-function buildHobbiesSection(
-  hobbies: ItemOf<"hobby">[],
-  date: string,
-): string {
+function buildHobbiesSection(hobbies: ItemOf<"hobby">[], date: string): string {
   const today = weekdayOf(date);
   const lines: string[] = [];
 
@@ -248,7 +241,9 @@ function buildHobbiesSection(
     const occ = item.occurrence;
     const prefix = hobbyName(item);
     const dur =
-      item.typicalTimeMinutes != null ? ` (~${item.typicalTimeMinutes} min)` : "";
+      item.typicalTimeMinutes != null
+        ? ` (~${item.typicalTimeMinutes} min)`
+        : "";
 
     if (occ.kind === "weekly") {
       if (!occ.days.includes(today)) continue;
@@ -445,7 +440,10 @@ export function buildSchedulePrompt({
   const fixedCommitments = buildFixedCommitmentsContext(items, date);
   if (fixedCommitments) sections.push(fixedCommitments);
 
-  sections.push(buildItemsContext(items, date), buildRecentTaskHistoryContext());
+  sections.push(
+    buildItemsContext(items, date),
+    buildRecentTaskHistoryContext(),
+  );
 
   // Standing, user-authored instructions that apply to every generation (e.g.
   // "sleep in until 9:00 AM every Saturday"). Appended only when non-empty.
@@ -572,7 +570,10 @@ export function buildEditPrompt({
   const fixedCommitments = buildFixedCommitmentsContext(items, date);
   if (fixedCommitments) sections.push(fixedCommitments);
 
-  sections.push(buildItemsContext(items, date), buildRecentTaskHistoryContext());
+  sections.push(
+    buildItemsContext(items, date),
+    buildRecentTaskHistoryContext(),
+  );
 
   const instructions = readScheduleInstructions().trim();
   if (instructions) {

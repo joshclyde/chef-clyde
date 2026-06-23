@@ -29,7 +29,9 @@ export function AppLayout() {
   return (
     <div className={styles.layout}>
       <ActivityBar activeActivity={activeActivity} />
-      {activeActivity.id !== "settings" && <Sidebar activity={activeActivity} />}
+      {activeActivity.id !== "settings" && (
+        <Sidebar activity={activeActivity} />
+      )}
       <div className={styles.workspace} data-panel-position={position}>
         <main className={styles.main}>
           <Routes>

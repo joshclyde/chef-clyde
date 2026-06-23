@@ -53,7 +53,14 @@ export function Panel() {
             })}
           </div>
         ) : (
-          <div className={cn(styles.tab, styles.aiTab, styles.tabActive, styles.panelTitle)}>
+          <div
+            className={cn(
+              styles.tab,
+              styles.aiTab,
+              styles.tabActive,
+              styles.panelTitle,
+            )}
+          >
             <Sparkles size={16} strokeWidth={2} aria-hidden />
             {active.label}
           </div>

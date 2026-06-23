@@ -116,7 +116,11 @@ function validateOccurrence(
       if (end != null && (typeof end !== "string" || !TIME_PATTERN.test(end))) {
         return { error: "event endTime must be HH:MM" };
       }
-      if (typeof start === "string" && typeof end === "string" && end <= start) {
+      if (
+        typeof start === "string" &&
+        typeof end === "string" &&
+        end <= start
+      ) {
         return { error: "event endTime must be after startTime" };
       }
       const occurrence: Occurrence = { kind: "event", date: o.date };
@@ -164,9 +168,10 @@ function validateDetails(
   category: ScheduleItemCategory,
   raw: unknown,
 ): { details: CategoryDetails } | { error: string } {
-  const d = (
-    typeof raw === "object" && raw !== null ? raw : {}
-  ) as Record<string, unknown>;
+  const d = (typeof raw === "object" && raw !== null ? raw : {}) as Record<
+    string,
+    unknown
+  >;
 
   switch (category) {
     case "chore": {
@@ -284,7 +289,12 @@ function validateItemInput(
  */
 function buildItem(
   fields: ValidatedFields,
-  meta: { id: string; completions: Completion[]; createdAt: string; updatedAt: string },
+  meta: {
+    id: string;
+    completions: Completion[];
+    createdAt: string;
+    updatedAt: string;
+  },
 ): ScheduleItem {
   const base = {
     id: meta.id,
@@ -303,11 +313,23 @@ function buildItem(
   // independent fields here, so narrow each with a cast as we pair them up.
   switch (fields.category) {
     case "chore":
-      return { ...base, category: "chore", details: fields.details as ChoreDetails };
+      return {
+        ...base,
+        category: "chore",
+        details: fields.details as ChoreDetails,
+      };
     case "hobby":
-      return { ...base, category: "hobby", details: fields.details as HobbyDetails };
+      return {
+        ...base,
+        category: "hobby",
+        details: fields.details as HobbyDetails,
+      };
     case "todo":
-      return { ...base, category: "todo", details: fields.details as TodoDetails };
+      return {
+        ...base,
+        category: "todo",
+        details: fields.details as TodoDetails,
+      };
     default:
       return { ...base, category: "routine", details: {} };
   }

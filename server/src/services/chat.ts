@@ -3,7 +3,12 @@ import fs from "fs";
 import path from "path";
 
 import type { ChatMode } from "../types/chat";
-import { type AiOptions, type AiUsage, buildModelParams, toUsage } from "./aiOptions";
+import {
+  type AiOptions,
+  type AiUsage,
+  buildModelParams,
+  toUsage,
+} from "./aiOptions";
 
 const anthropic = new Anthropic();
 

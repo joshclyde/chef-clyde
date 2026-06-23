@@ -32,9 +32,13 @@ export function usePanelChat(config: ChatConfig) {
     fetch(config.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config.buildBody(newMessages, mode, { model, effort })),
+      body: JSON.stringify(
+        config.buildBody(newMessages, mode, { model, effort }),
+      ),
     })
-      .then((res) => res.json() as Promise<{ content: string; usage?: AiUsage }>)
+      .then(
+        (res) => res.json() as Promise<{ content: string; usage?: AiUsage }>,
+      )
       .then((data) => {
         if (data.usage) setLastUsage(data.usage);
         setMessages([

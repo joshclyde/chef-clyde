@@ -15,7 +15,9 @@ export function ActivityBar({ activeActivity }: ActivityBarProps) {
   const navigate = useNavigate();
   const { meta } = useMeta();
 
-  const pokemonSpriteUrl = meta ? getPokemonSpriteUrl(meta.pokemonNumber) : null;
+  const pokemonSpriteUrl = meta
+    ? getPokemonSpriteUrl(meta.pokemonNumber)
+    : null;
 
   return (
     <nav className={styles.activityBar} aria-label="Activities">

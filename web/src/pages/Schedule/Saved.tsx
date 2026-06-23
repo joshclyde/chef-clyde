@@ -75,7 +75,12 @@ function SavedLinkBadge({
   const Icon = meta.icon;
   const label = item ? `${meta.label}: ${itemDisplayName(item)}` : meta.label;
   return (
-    <span className={meta.className} role="img" aria-label={label} title={label}>
+    <span
+      className={meta.className}
+      role="img"
+      aria-label={label}
+      title={label}
+    >
       <Icon size={14} aria-hidden />
     </span>
   );

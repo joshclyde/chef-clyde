@@ -10,7 +10,11 @@ export type Meta = {
   environment: string;
 };
 
-export function useMeta(): { meta: Meta | null; loading: boolean; error: string | null } {
+export function useMeta(): {
+  meta: Meta | null;
+  loading: boolean;
+  error: string | null;
+} {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

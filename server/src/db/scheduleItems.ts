@@ -26,9 +26,7 @@ export function readAllScheduleItems(): ScheduleItem[] {
     .filter((f) => f.endsWith(".json"))
     .map(
       (f) =>
-        JSON.parse(
-          fs.readFileSync(path.join(dir, f), "utf-8"),
-        ) as ScheduleItem,
+        JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8")) as ScheduleItem,
     );
 }
 

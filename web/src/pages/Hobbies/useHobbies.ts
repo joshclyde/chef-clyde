@@ -318,7 +318,9 @@ export function useHobbies() {
 
     setItems((prev) => [...prev.filter((i) => groupOf(i) !== id), ...results]);
     setEmptyGroups((prev) => {
-      const without = prev.filter((g) => g.name !== id && g.name !== input.name);
+      const without = prev.filter(
+        (g) => g.name !== id && g.name !== input.name,
+      );
       // If the edit left the group with no tasks, keep its card around locally.
       return results.length === 0
         ? [

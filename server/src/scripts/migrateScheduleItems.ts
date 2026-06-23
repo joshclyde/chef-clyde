@@ -133,7 +133,10 @@ function splitOccurrence(occ: OldOccurrence): {
   timeOfDay?: TimeOfDay;
 } {
   if (occ.kind === "weekly") {
-    return { occurrence: { kind: "weekly", days: occ.days }, timeOfDay: occ.timeOfDay };
+    return {
+      occurrence: { kind: "weekly", days: occ.days },
+      timeOfDay: occ.timeOfDay,
+    };
   }
   return { occurrence: occ };
 }
@@ -149,19 +152,28 @@ function main(): void {
   const writeItem = (item: ScheduleItem): boolean => {
     const dest = path.join(itemsDir, `${item.id}.json`);
     if (!force && fs.existsSync(dest)) return false;
-    fs.writeFileSync(dest, JSON.stringify(pruneUndefined({ ...item }), null, 2));
+    fs.writeFileSync(
+      dest,
+      JSON.stringify(pruneUndefined({ ...item }), null, 2),
+    );
     return true;
   };
 
   let written = 0;
 
   // Chores → frequency items.
-  for (const { record: c } of readJsonDir<OldChore>(path.join(dbPath, "chores"))) {
+  for (const { record: c } of readJsonDir<OldChore>(
+    path.join(dbPath, "chores"),
+  )) {
     const item: ScheduleItem = {
       id: c.id,
       category: "chore",
       label: c.name,
-      occurrence: { kind: "frequency", value: c.frequencyValue, unit: c.frequencyUnit },
+      occurrence: {
+        kind: "frequency",
+        value: c.frequencyValue,
+        unit: c.frequencyUnit,
+      },
       completions: c.completions ?? [],
       typicalTimeMinutes: c.typicalTimeMinutes,
       details: pruneUndefined({ room: c.room, floor: c.floor }),
@@ -172,7 +184,9 @@ function main(): void {
   }
 
   // Routines → items (timeOfDay lifted to the item level).
-  for (const { record: r } of readJsonDir<OldRoutine>(path.join(dbPath, "routines"))) {
+  for (const { record: r } of readJsonDir<OldRoutine>(
+    path.join(dbPath, "routines"),
+  )) {
     const item: ScheduleItem = {
       id: r.id,
       category: "routine",
@@ -191,7 +205,9 @@ function main(): void {
   // To-dos → one-off items; completedAt becomes the single completion. Remember
   // each todo's new completion so schedules can point itemCompletionId at it.
   const todoCompletion = new Map<string, string>(); // todoId -> completion id
-  for (const { record: t } of readJsonDir<OldTodo>(path.join(dbPath, "todos"))) {
+  for (const { record: t } of readJsonDir<OldTodo>(
+    path.join(dbPath, "todos"),
+  )) {
     const completions: Completion[] = [];
     if (t.completedAt) {
       const completion: Completion = {
@@ -216,7 +232,9 @@ function main(): void {
   }
 
   // Hobbies → one item per task, keyed by the task id, grouped by hobby name.
-  for (const { record: h } of readJsonDir<OldHobby>(path.join(dbPath, "hobbies"))) {
+  for (const { record: h } of readJsonDir<OldHobby>(
+    path.join(dbPath, "hobbies"),
+  )) {
     for (const task of h.tasks) {
       const { occurrence, timeOfDay } = splitOccurrence(task.occurrence);
       const item: ScheduleItem = {
@@ -239,7 +257,9 @@ function main(): void {
   // Rewrite saved schedules' task links onto the single itemId/itemCompletionId.
   let schedulesUpdated = 0;
   const schedulesDir = path.join(dbPath, "schedules");
-  for (const { name, record } of readJsonDir<{ tasks?: AnyTask[] }>(schedulesDir)) {
+  for (const { name, record } of readJsonDir<{ tasks?: AnyTask[] }>(
+    schedulesDir,
+  )) {
     if (!record.tasks || record.tasks.length === 0) continue;
     let changed = false;
     record.tasks = record.tasks.map((task) => {
