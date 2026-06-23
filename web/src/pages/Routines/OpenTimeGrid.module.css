@@ -1,0 +1,82 @@
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: separate;
+  border-spacing: var(--space-2xs);
+  table-layout: fixed;
+}
+
+/* top-left empty corner, sized to match the row headers */
+.corner {
+  width: 88px;
+}
+
+/* weekday column headers */
+.colHead {
+  padding: var(--space-3xs) var(--space-2xs);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+.colDate {
+  color: var(--color-text-subtle);
+}
+.colHead.today {
+  color: var(--color-text-strong);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* day-part row headers */
+.rowHead {
+  width: 88px;
+  padding: var(--space-2xs) var(--space-sm) var(--space-2xs) 0;
+  text-align: left;
+  vertical-align: top;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-default);
+  white-space: nowrap;
+}
+
+/* data cells */
+.cell {
+  height: 60px;
+  padding: var(--space-2xs);
+  vertical-align: top;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+
+.cellItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+
+/* open / free slot — recessed and dashed, with a muted "+" */
+.open {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+}
+.openMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-md);
+  line-height: 1;
+}
+
+/* today's column — declared last so it wins the shared border-color property */
+.today {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-action-primary-bg);
+}
