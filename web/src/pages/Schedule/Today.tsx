@@ -9,7 +9,7 @@ import { todayLocal } from "../../lib/date";
 import { useScheduleItems } from "../../lib/scheduleItems";
 import { Button, IconButton, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
-import { formatTimeRange, taskStatus, useNow } from "./dailyTime";
+import { formatStartWithDuration, taskStatus, useNow } from "./dailyTime";
 import rowStyles from "./Schedule.module.css";
 import { TaskEditor } from "./TaskEditor";
 import { LinkBadge, TaskDetail } from "./taskParts";
@@ -169,7 +169,12 @@ export default function ScheduleToday() {
   }
 
   function renderTask(task: ScheduleTask) {
-    const status = taskStatus(tasks, indexById.get(task.id) ?? 0, now);
+    const index = indexById.get(task.id) ?? 0;
+    const status = taskStatus(tasks, index, now);
+    // "completed" and "wontDo" are the resolved (terminal) states; both get the
+    // same de-emphasized styling.
+    const resolved = status === "completed" || status === "wontDo";
+    const statusClass = resolved ? styles.resolved : styles[status];
 
     if (complex && editingId === task.id) {
       return (
@@ -187,11 +192,11 @@ export default function ScheduleToday() {
 
     const expanded = expandedId === task.id;
     return (
-      <div key={task.id} className={cn(rowStyles.taskRow, rowStyles[status])}>
-        <div className={rowStyles.taskMain}>
+      <div key={task.id} className={cn(styles.task, statusClass)}>
+        <div className={styles.taskMain}>
           <input
             type="checkbox"
-            className={rowStyles.taskCheckbox}
+            className={styles.taskCheckbox}
             checked={task.status === "completed"}
             aria-label={`Mark "${task.label}" complete`}
             onChange={(e) =>
@@ -200,8 +205,10 @@ export default function ScheduleToday() {
               })
             }
           />
-          <span className={rowStyles.taskTime}>{formatTimeRange(task)}</span>
-          <span className={rowStyles.taskLabel}>{task.label}</span>
+          <span className={styles.taskTime}>
+            {formatStartWithDuration(tasks, index)}
+          </span>
+          <span className={styles.taskLabel}>{task.label}</span>
           {complex && <LinkBadge task={task} items={items} />}
           {status === "current" && (
             <span className={rowStyles.nowBadge}>Now</span>

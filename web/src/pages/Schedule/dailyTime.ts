@@ -64,15 +64,36 @@ export function taskStatus(
   return "past";
 }
 
+/** A 12-hour label like "7:30 AM" for an "HH:MM" string. */
+function format12h(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 /** A 12-hour label like "7:30 AM", or a range "7:30 AM – 8:00 AM". */
 export function formatTimeRange(task: ScheduleTask): string {
-  const fmt = (time: string) => {
-    const [h, m] = time.split(":").map(Number);
-    const period = h < 12 ? "AM" : "PM";
-    const hour12 = h % 12 === 0 ? 12 : h % 12;
-    return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
-  };
   return task.endTime
-    ? `${fmt(task.startTime)} – ${fmt(task.endTime)}`
-    : fmt(task.startTime);
+    ? `${format12h(task.startTime)} – ${format12h(task.endTime)}`
+    : format12h(task.startTime);
+}
+
+/**
+ * The length of a task's time block in minutes — its own endTime when present,
+ * else the gap to the next task's start (see `effectiveEnd`).
+ */
+export function taskDurationMinutes(
+  tasks: ScheduleTask[],
+  index: number,
+): number {
+  return effectiveEnd(tasks, index) - toMinutes(tasks[index].startTime);
+}
+
+/** A start-plus-duration label like "7:30 AM - 30m". */
+export function formatStartWithDuration(
+  tasks: ScheduleTask[],
+  index: number,
+): string {
+  return `${format12h(tasks[index].startTime)} - ${taskDurationMinutes(tasks, index)}m`;
 }
