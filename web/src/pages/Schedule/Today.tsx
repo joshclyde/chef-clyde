@@ -15,6 +15,7 @@ import { TaskEditor } from "./TaskEditor";
 import { taskIcon } from "./taskIcon";
 import { TaskDetail } from "./taskParts";
 import {
+  PERIODS,
   currentPeriodId,
   groupTasksByPeriod,
   periodForTask,
@@ -254,6 +255,19 @@ export default function ScheduleToday() {
   // Simple view: only the current period. Complex view: every period that has
   // tasks, plus the current one (so it can be added to even when empty).
   const currentTasks = tasks.filter((t) => periodForTask(t) === periodId);
+
+  // Simple view: past period groups that still have pending (missed) tasks.
+  const currentPeriodIdx = PERIODS.findIndex((p) => p.id === periodId);
+  const pastGroupsWithMissed = groupTasksByPeriod(tasks)
+    .filter((g) => PERIODS.findIndex((p) => p.id === g.period.id) < currentPeriodIdx)
+    .map((g) => ({
+      ...g,
+      tasks: g.tasks.filter(
+        (t) => taskStatus(tasks, indexById.get(t.id) ?? 0, now) === "past",
+      ),
+    }))
+    .filter((g) => g.tasks.length > 0);
+
   const groups = groupTasksByPeriod(tasks).filter(
     (g) => g.tasks.length > 0 || g.period.id === periodId,
   );
@@ -306,14 +320,38 @@ export default function ScheduleToday() {
               </Text>
             )}
 
-            {!complex &&
-              (currentTasks.length === 0 ? (
-                <Text variant="muted" size="sm">
-                  Nothing scheduled this {periodTitle.toLowerCase()}.
-                </Text>
-              ) : (
-                <Stack gap="2xs">{currentTasks.map(renderTask)}</Stack>
-              ))}
+            {!complex && (
+              <>
+                {pastGroupsWithMissed.map((group) => (
+                  <Stack key={group.period.id} gap="2xs">
+                    <Text
+                      as="h2"
+                      size="xs"
+                      className={styles.periodHeading}
+                    >
+                      {group.period.label}
+                    </Text>
+                    {group.tasks.map(renderTask)}
+                  </Stack>
+                ))}
+                {pastGroupsWithMissed.length > 0 && (
+                  <Text
+                    as="h2"
+                    size="xs"
+                    className={cn(styles.periodHeading, styles.current)}
+                  >
+                    {periodTitle}
+                  </Text>
+                )}
+                {currentTasks.length === 0 ? (
+                  <Text variant="muted" size="sm">
+                    Nothing scheduled this {periodTitle.toLowerCase()}.
+                  </Text>
+                ) : (
+                  <Stack gap="2xs">{currentTasks.map(renderTask)}</Stack>
+                )}
+              </>
+            )}
 
             {complex && (
               <>
