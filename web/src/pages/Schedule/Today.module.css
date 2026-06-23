@@ -115,7 +115,6 @@
 /* time sits at the right edge of the row, pushed there by the flex-1 label */
 .taskTime {
   flex-shrink: 0;
-  margin-left: var(--space-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);

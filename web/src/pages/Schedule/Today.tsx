@@ -196,9 +196,6 @@ export default function ScheduleToday() {
     return (
       <div key={task.id} className={cn(styles.task, statusClass)}>
         <div className={styles.taskMain}>
-          <span className={styles.taskIcon}>
-            {Icon && <Icon size={14} aria-hidden />}
-          </span>
           <input
             type="checkbox"
             className={styles.taskCheckbox}
@@ -211,6 +208,9 @@ export default function ScheduleToday() {
             }
           />
           <span className={styles.taskLabel}>{task.label}</span>
+          <span className={styles.taskIcon}>
+            {Icon && <Icon size={14} aria-hidden />}
+          </span>
           <span className={styles.taskTime}>{formatStartTime(task)}</span>
           {complex && (
             <>
