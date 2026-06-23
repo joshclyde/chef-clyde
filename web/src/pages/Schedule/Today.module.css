@@ -17,6 +17,24 @@
   padding: var(--space-md) var(--space-lg);
 }
 
+/* The menu / edit toggle: circular but borderless. A neutral fill (not a
+   colorful one like the primary green) makes the circle read on its own. The
+   doubled class + explicit pressed rule keep these from inheriting IconButton's
+   bordered "default" and green "pressed" treatments. */
+.topBarButton.topBarButton {
+  border-color: transparent;
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+}
+.topBarButton.topBarButton:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+  filter: brightness(0.95);
+}
+.topBarButton.topBarButton[aria-pressed="true"] {
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+}
+
 .titleBlock {
   flex: 1;
   min-width: 0;
@@ -69,6 +87,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  /* A fixed row height so de-emphasized (resolved) rows don't shrink and break
+     the rhythm of the list. */
+  min-height: 2.25rem;
   padding: var(--space-2xs) var(--space-xs);
 }
 
@@ -80,17 +101,20 @@
   accent-color: var(--color-action-primary-bg);
 }
 
+/* time sits at the right edge of the row, pushed there by the flex-1 label */
 .taskTime {
   flex-shrink: 0;
-  min-width: 92px;
+  margin-left: var(--space-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .taskLabel {
   flex: 1;
+  min-width: 0;
   color: var(--color-text-default);
 }
 
@@ -126,15 +150,12 @@
 }
 
 /* resolved — completed or won't-do: de-emphasized (smaller, dimmer, muted
-   checkbox rather than a bright green one) */
-.task.resolved .taskMain {
-  gap: var(--space-sm);
-  padding-top: var(--space-3xs);
-  padding-bottom: var(--space-3xs);
-}
+   checkbox rather than a bright green one). The size changes are visual only:
+   the checkbox keeps its 18px footprint (scaled, not resized) and the row keeps
+   its min-height and gap, so the label column and row height stay aligned with
+   active tasks. */
 .task.resolved .taskCheckbox {
-  width: 14px;
-  height: 14px;
+  transform: scale(0.78);
   accent-color: var(--color-text-subtle);
 }
 .task.resolved .taskTime {

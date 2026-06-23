@@ -90,10 +90,17 @@ export function taskDurationMinutes(
   return effectiveEnd(tasks, index) - toMinutes(tasks[index].startTime);
 }
 
-/** A start-plus-duration label like "7:30 AM - 30m". */
+/**
+ * A duration-plus-start label like "30m - 7:30" — the block's length in minutes
+ * followed by the 12-hour start time with no AM/PM (so 2am and 2pm both read
+ * "2:00").
+ */
 export function formatStartWithDuration(
   tasks: ScheduleTask[],
   index: number,
 ): string {
-  return `${format12h(tasks[index].startTime)} - ${taskDurationMinutes(tasks, index)}m`;
+  const [h, m] = tasks[index].startTime.split(":").map(Number);
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  const start = `${hour12}:${String(m).padStart(2, "0")}`;
+  return `${taskDurationMinutes(tasks, index)}m - ${start}`;
 }

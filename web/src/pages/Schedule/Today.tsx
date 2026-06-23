@@ -205,14 +205,11 @@ export default function ScheduleToday() {
               })
             }
           />
+          <span className={styles.taskLabel}>{task.label}</span>
+          {complex && <LinkBadge task={task} items={items} />}
           <span className={styles.taskTime}>
             {formatStartWithDuration(tasks, index)}
           </span>
-          <span className={styles.taskLabel}>{task.label}</span>
-          {complex && <LinkBadge task={task} items={items} />}
-          {status === "current" && (
-            <span className={rowStyles.nowBadge}>Now</span>
-          )}
           {complex && (
             <>
               <button
@@ -262,7 +259,11 @@ export default function ScheduleToday() {
   return (
     <div className={styles.page}>
       <header className={styles.topBar}>
-        <IconButton aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+        <IconButton
+          aria-label="Open menu"
+          className={styles.topBarButton}
+          onClick={() => setMenuOpen(true)}
+        >
           <Menu size={22} strokeWidth={2} aria-hidden />
         </IconButton>
         <div className={styles.titleBlock}>
@@ -274,6 +275,7 @@ export default function ScheduleToday() {
         <IconButton
           aria-label="Toggle edit mode"
           aria-pressed={complex}
+          className={styles.topBarButton}
           onClick={() => setComplex((v) => !v)}
         >
           {complex ? (
