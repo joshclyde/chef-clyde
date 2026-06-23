@@ -93,6 +93,15 @@
   padding: var(--space-2xs) var(--space-xs);
 }
 
+/* the task's category icon, leading the row */
+.taskIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
 .taskCheckbox {
   flex-shrink: 0;
   width: 18px;
@@ -118,17 +127,9 @@
   color: var(--color-text-default);
 }
 
-/* current — the task happening right now: accent bar + stronger text */
-.task.current .taskMain::before {
-  content: "";
-  position: absolute;
-  left: calc(-1 * var(--space-2xs));
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 60%;
-  border-radius: var(--radius-pill);
-  background: var(--color-action-primary-bg);
+/* current — the task happening right now: accent-colored icon + stronger text */
+.task.current .taskIcon {
+  color: var(--color-action-primary-bg);
 }
 .task.current .taskLabel {
   color: var(--color-text-strong);
@@ -154,6 +155,10 @@
    the checkbox keeps its 18px footprint (scaled, not resized) and the row keeps
    its min-height and gap, so the label column and row height stay aligned with
    active tasks. */
+.task.resolved .taskIcon {
+  color: var(--color-text-subtle);
+  opacity: 0.7;
+}
 .task.resolved .taskCheckbox {
   transform: scale(0.78);
   accent-color: var(--color-text-subtle);

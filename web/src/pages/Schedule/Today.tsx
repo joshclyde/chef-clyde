@@ -12,7 +12,8 @@ import { cn } from "../../ui/cn";
 import { formatStartTime, taskStatus, useNow } from "./dailyTime";
 import rowStyles from "./Schedule.module.css";
 import { TaskEditor } from "./TaskEditor";
-import { LinkBadge, TaskDetail } from "./taskParts";
+import { taskIcon } from "./taskIcon";
+import { TaskDetail } from "./taskParts";
 import {
   currentPeriodId,
   groupTasksByPeriod,
@@ -191,9 +192,13 @@ export default function ScheduleToday() {
     }
 
     const expanded = expandedId === task.id;
+    const Icon = taskIcon(task, items);
     return (
       <div key={task.id} className={cn(styles.task, statusClass)}>
         <div className={styles.taskMain}>
+          <span className={styles.taskIcon}>
+            <Icon size={18} aria-hidden />
+          </span>
           <input
             type="checkbox"
             className={styles.taskCheckbox}
@@ -206,7 +211,6 @@ export default function ScheduleToday() {
             }
           />
           <span className={styles.taskLabel}>{task.label}</span>
-          {complex && <LinkBadge task={task} items={items} />}
           <span className={styles.taskTime}>{formatStartTime(task)}</span>
           {complex && (
             <>
