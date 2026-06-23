@@ -1,4 +1,4 @@
-import type { DayOfWeek, Routine } from "./useRoutines";
+import { type DayOfWeek, frequencyDays, type Routine } from "./useRoutines";
 
 export const DAY_INDEX: Record<DayOfWeek, number> = {
   Sun: 0,
@@ -61,6 +61,18 @@ export function weekDates(monday: Date): Date[] {
     d.setDate(d.getDate() + i);
     return d;
   });
+}
+
+/**
+ * Whether a routine lands on a given weekday. Weekly routines land on their
+ * listed days; daily cadences land every day. Coarser cadences have no fixed
+ * weekday, so they don't land anywhere specific — they live in the typical-day
+ * view instead.
+ */
+export function landsOn(routine: Routine, weekday: DayOfWeek): boolean {
+  const occ = routine.occurrence;
+  if (occ.kind === "weekly") return occ.days.includes(weekday);
+  return frequencyDays(occ.value, occ.unit) <= 1;
 }
 
 /** A human-readable summary of when a routine recurs. */

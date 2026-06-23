@@ -1,0 +1,32 @@
+/* Routine chips, accented by time of day. Shared across the Routines views. */
+.chip {
+  display: block;
+  padding: var(--space-3xs) var(--space-2xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+  border-left: 3px solid var(--color-border-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip.morning {
+  border-left-color: #e0a44b;
+}
+.chip.midday {
+  border-left-color: #46a0dc;
+}
+.chip.afternoon {
+  border-left-color: #14a096;
+}
+.chip.evening {
+  border-left-color: #966ed2;
+}
+.chip.night {
+  border-left-color: #5a64b4;
+}
+.chip.any {
+  border-left-color: var(--color-border-strong);
+}
