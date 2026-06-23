@@ -9,7 +9,7 @@ import { todayLocal } from "../../lib/date";
 import { useScheduleItems } from "../../lib/scheduleItems";
 import { Button, IconButton, Stack, Text } from "../../ui";
 import { cn } from "../../ui/cn";
-import { formatStartWithDuration, taskStatus, useNow } from "./dailyTime";
+import { formatStartTime, taskStatus, useNow } from "./dailyTime";
 import rowStyles from "./Schedule.module.css";
 import { TaskEditor } from "./TaskEditor";
 import { LinkBadge, TaskDetail } from "./taskParts";
@@ -207,9 +207,7 @@ export default function ScheduleToday() {
           />
           <span className={styles.taskLabel}>{task.label}</span>
           {complex && <LinkBadge task={task} items={items} />}
-          <span className={styles.taskTime}>
-            {formatStartWithDuration(tasks, index)}
-          </span>
+          <span className={styles.taskTime}>{formatStartTime(task)}</span>
           {complex && (
             <>
               <button

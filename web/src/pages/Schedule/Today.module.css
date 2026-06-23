@@ -165,7 +165,6 @@
 .task.resolved .taskLabel {
   font-size: var(--font-size-xs);
   color: var(--color-text-subtle);
-  text-decoration: line-through;
 }
 
 /* ----- menu drawer ----- */

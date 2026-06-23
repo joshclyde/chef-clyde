@@ -80,27 +80,10 @@ export function formatTimeRange(task: ScheduleTask): string {
 }
 
 /**
- * The length of a task's time block in minutes — its own endTime when present,
- * else the gap to the next task's start (see `effectiveEnd`).
+ * The 12-hour start time with no AM/PM (so 2am and 2pm both read "2:00").
  */
-export function taskDurationMinutes(
-  tasks: ScheduleTask[],
-  index: number,
-): number {
-  return effectiveEnd(tasks, index) - toMinutes(tasks[index].startTime);
-}
-
-/**
- * A duration-plus-start label like "30m - 7:30" — the block's length in minutes
- * followed by the 12-hour start time with no AM/PM (so 2am and 2pm both read
- * "2:00").
- */
-export function formatStartWithDuration(
-  tasks: ScheduleTask[],
-  index: number,
-): string {
-  const [h, m] = tasks[index].startTime.split(":").map(Number);
+export function formatStartTime(task: ScheduleTask): string {
+  const [h, m] = task.startTime.split(":").map(Number);
   const hour12 = h % 12 === 0 ? 12 : h % 12;
-  const start = `${hour12}:${String(m).padStart(2, "0")}`;
-  return `${taskDurationMinutes(tasks, index)}m - ${start}`;
+  return `${hour12}:${String(m).padStart(2, "0")}`;
 }
